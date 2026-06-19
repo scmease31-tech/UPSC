@@ -577,16 +577,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                       child: CircularProgressIndicator(color: Color(0xFF00BFA6)),
                     ));
                   }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Text(
-                          'Content loading... Check back shortly!',
-                          style: GoogleFonts.inter(fontSize: 15, color: AppTheme.textTertiary),
-                        ),
-                      ),
-                    );
+                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    // Show static preview if Firestore is inaccessible or empty
+                    return _buildStaticContentPreview(isWide);
                   }
 
                   // Group articles by date
@@ -762,6 +755,88 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       child: Text(label, style: GoogleFonts.inter(
         fontSize: 11, fontWeight: FontWeight.w600, color: color.withValues(alpha: 0.8),
       )),
+    );
+  }
+
+  Widget _buildStaticContentPreview(bool isWide) {
+    final samples = [
+      {'title': 'India-US Trade Relations: New Framework', 'source': 'Drishti IAS', 'tag': 'GS-II', 'cat': 'International Relations'},
+      {'title': 'Green Hydrogen Mission: Progress & Challenges', 'source': 'Drishti IAS', 'tag': 'GS-III', 'cat': 'Economy'},
+      {'title': 'Supreme Court on Federalism', 'source': 'Insights on India', 'tag': 'GS-II', 'cat': 'Polity'},
+      {'title': 'Climate Finance & Carbon Markets', 'source': 'Insights on India', 'tag': 'GS-III', 'cat': 'Environment'},
+      {'title': 'Digital Public Infrastructure: UPI Model', 'source': 'Drishti IAS', 'tag': 'GS-III', 'cat': 'Science & Tech'},
+      {'title': 'Tribal Welfare Schemes: Implementation Gap', 'source': 'Insights on India', 'tag': 'GS-I', 'cat': 'Society'},
+    ];
+
+    final drishti = samples.where((s) => s['source'] == 'Drishti IAS').toList();
+    final insights = samples.where((s) => s['source'] == 'Insights on India').toList();
+
+    Widget sourceGroup(String name, Color accent, List<Map<String, String>> items) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(width: 4, height: 20, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 10),
+            Text(name, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+          ]),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: items.map((item) => Container(
+              width: isWide ? 360 : double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent.withValues(alpha: 0.12)),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 12, offset: const Offset(0, 4))],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item['title']!, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 10),
+                  Wrap(spacing: 6, children: [
+                    _tagChip(item['tag']!, accent),
+                    _tagChip(item['cat']!, Colors.grey),
+                  ]),
+                ],
+              ),
+            )).toList(),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(color: const Color(0xFF0D1B2A), borderRadius: BorderRadius.circular(10)),
+          child: Text("Today's Editorials", style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+        ),
+        const SizedBox(height: 16),
+        sourceGroup('Drishti IAS', const Color(0xFF00BFA6), drishti),
+        const SizedBox(height: 20),
+        sourceGroup('Insights on India', const Color(0xFF7C4DFF), insights),
+        const SizedBox(height: 24),
+        Center(
+          child: ElevatedButton(
+            onPressed: () => Navigator.pushReplacementNamed(context, '/signup'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              elevation: 0,
+            ),
+            child: Text('Sign up to read full articles →', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+          ),
+        ),
+      ],
     );
   }
 
