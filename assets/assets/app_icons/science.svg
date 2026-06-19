@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Science & Tech — Flask + atom + circuit -->
+  <!-- Flask body -->
+  <path d="M24,8 L24,24 L12,48 C10,52 13,56 18,56 L46,56 C51,56 54,52 52,48 L40,24 L40,8 Z" fill="#E3F2FD" stroke="#448AFF" stroke-width="1.5"/>
+  <!-- Flask neck -->
+  <rect x="22" y="6" width="20" height="4" rx="2" fill="#448AFF"/>
+  <rect x="22" y="6" width="20" height="1.5" rx="0.75" fill="#82B1FF" opacity="0.5"/>
+  <!-- Liquid in flask -->
+  <path d="M18,42 L14,48 C12,52 15,54 18,54 L46,54 C49,54 52,52 50,48 L46,42 Z" fill="#448AFF" opacity="0.35"/>
+  <path d="M20,42 L16,48 C14,51 17,52 20,52 L44,52 C47,52 50,51 48,48 L44,42 Z" fill="#2196F3" opacity="0.25"/>
+  <!-- Bubbles in liquid -->
+  <circle cx="26" cy="48" r="2" fill="#BBDEFB" opacity="0.7"/>
+  <circle cx="34" cy="46" r="1.5" fill="#BBDEFB" opacity="0.6"/>
+  <circle cx="40" cy="50" r="1" fill="#BBDEFB" opacity="0.5"/>
+  <circle cx="30" cy="52" r="1.5" fill="#90CAF9" opacity="0.5"/>
+  <!-- Measurement lines on flask -->
+  <line x1="20" y1="36" x2="23" y2="36" stroke="#90CAF9" stroke-width="0.7"/>
+  <line x1="18" y1="42" x2="21" y2="42" stroke="#90CAF9" stroke-width="0.7"/>
+  <line x1="22" y1="30" x2="24" y2="30" stroke="#90CAF9" stroke-width="0.7"/>
+  <!-- Atom orbiting the flask -->
+  <ellipse cx="46" cy="16" rx="10" ry="4" stroke="#82B1FF" stroke-width="1" fill="none" transform="rotate(-30 46 16)"/>
+  <ellipse cx="46" cy="16" rx="10" ry="4" stroke="#BBDEFB" stroke-width="1" fill="none" transform="rotate(30 46 16)"/>
+  <ellipse cx="46" cy="16" rx="10" ry="4" stroke="#64B5F6" stroke-width="1" fill="none" transform="rotate(90 46 16)"/>
+  <circle cx="46" cy="16" r="2.5" fill="#448AFF"/>
+  <circle cx="46" cy="16" r="1" fill="#BBDEFB"/>
+  <!-- Electron dots -->
+  <circle cx="54" cy="12" r="1.2" fill="#82B1FF"/>
+  <circle cx="40" cy="10" r="1.2" fill="#82B1FF"/>
+  <circle cx="50" cy="22" r="1.2" fill="#82B1FF"/>
+  <!-- Gear/tech element -->
+  <circle cx="10" cy="14" r="4" fill="none" stroke="#90CAF9" stroke-width="1.2"/>
+  <circle cx="10" cy="14" r="1.5" fill="#90CAF9"/>
+  <line x1="10" y1="9" x2="10" y2="10" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="10" y1="18" x2="10" y2="19" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="5" y1="14" x2="6" y2="14" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="14" y1="14" x2="15" y2="14" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
