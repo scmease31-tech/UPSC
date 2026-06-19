@@ -1,14 +1,16 @@
 ﻿import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../widgets/glass_widgets.dart';
 
-const _apkDownloadUrl = 'https://github.com/sohildobariya31-blip/UPSC/releases/latest';
+const _apkDownloadUrl = 'https://github.com/sohildobariya31-blip/UPSC/releases/latest/download/UPSC-Daily-Edge.apk';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// OnboardingScreen — 4-page premium intro with hero illustrations,
@@ -114,6 +116,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             _buildWebHero(context, isWide),
             // ── Features Grid ──
             _buildWebFeatures(context, isWide),
+            // ── Daily Current Affairs ──
+            _buildDailyContentSection(context, isWide),
             // ── Stats Banner ──
             _buildWebStats(context, isWide),
             // ── CTA Section ──
@@ -508,6 +512,256 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           ),
         ),
       ),
+    );
+  }
+
+  // ── Daily Current Affairs Section (reads from Firestore) ──
+  Widget _buildDailyContentSection(BuildContext context, bool isWide) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF7F8FC),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          padding: EdgeInsets.symmetric(
+            horizontal: isWide ? 64 : 20,
+            vertical: 56,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF448AFF).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('📰 Live Content', style: GoogleFonts.inter(
+                        fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF448AFF),
+                      )),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Today's Current Affairs",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: isWide ? 36 : 26,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Auto-scraped from Drishti IAS & Insights on India — updated daily',
+                      style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textSecondary, height: 1.5),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 36),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('articles')
+                    .orderBy('publishedDate', descending: true)
+                    .limit(12)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(color: Color(0xFF00BFA6)),
+                    ));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          'Content loading... Check back shortly!',
+                          style: GoogleFonts.inter(fontSize: 15, color: AppTheme.textTertiary),
+                        ),
+                      ),
+                    );
+                  }
+
+                  // Group articles by date
+                  final docs = snapshot.data!.docs;
+                  final grouped = <String, List<QueryDocumentSnapshot>>{};
+                  for (final doc in docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final date = data['publishedDate'] as String? ?? 'Unknown';
+                    grouped.putIfAbsent(date, () => []).add(doc);
+                  }
+                  final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: sortedDates.map((date) {
+                      final articles = grouped[date]!;
+                      // Sub-group by source
+                      final drishti = articles.where((d) =>
+                        (d.data() as Map<String, dynamic>)['newspaper'] == 'Drishti IAS').toList();
+                      final insights = articles.where((d) =>
+                        (d.data() as Map<String, dynamic>)['newspaper'] == 'Insights on India').toList();
+
+                      String dateLabel;
+                      try {
+                        final dt = DateTime.parse(date);
+                        final now = DateTime.now();
+                        if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+                          dateLabel = 'Today — ${DateFormat('d MMMM yyyy').format(dt)}';
+                        } else if (dt.year == now.year && dt.month == now.month && dt.day == now.day - 1) {
+                          dateLabel = 'Yesterday — ${DateFormat('d MMMM yyyy').format(dt)}';
+                        } else {
+                          dateLabel = DateFormat('EEEE, d MMMM yyyy').format(dt);
+                        }
+                      } catch (_) {
+                        dateLabel = date;
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Date header
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0D1B2A),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(dateLabel, style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white,
+                              )),
+                            ),
+                            const SizedBox(height: 16),
+                            // Source sections
+                            if (drishti.isNotEmpty)
+                              _buildSourceGroup('Drishti IAS', const Color(0xFF00BFA6), drishti, isWide),
+                            if (insights.isNotEmpty) ...[
+                              if (drishti.isNotEmpty) const SizedBox(height: 16),
+                              _buildSourceGroup('Insights on India', const Color(0xFF7C4DFF), insights, isWide),
+                            ],
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceGroup(String source, Color accent, List<QueryDocumentSnapshot> articles, bool isWide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4, height: 20,
+              decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(width: 10),
+            Text(source, style: GoogleFonts.plusJakartaSans(
+              fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary,
+            )),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('${articles.length}', style: GoogleFonts.inter(
+                fontSize: 12, fontWeight: FontWeight.w700, color: accent,
+              )),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: articles.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final title = data['title'] as String? ?? '';
+            final summary = data['summary'] as String? ?? '';
+            final tags = (data['categoryTags'] as List?)?.cast<String>() ?? [];
+            final paper = data['upscPaper'] as String? ?? '';
+
+            return Container(
+              width: isWide ? 360 : double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent.withValues(alpha: 0.12)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 12, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary, height: 1.4,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (summary.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      summary,
+                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary, height: 1.5),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (tags.isNotEmpty || paper.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        if (paper.isNotEmpty)
+                          _tagChip(paper, accent),
+                        ...tags.take(2).map((t) => _tagChip(t, Colors.grey)),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _tagChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(label, style: GoogleFonts.inter(
+        fontSize: 11, fontWeight: FontWeight.w600, color: color.withValues(alpha: 0.8),
+      )),
     );
   }
 
