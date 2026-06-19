@@ -1,5 +1,6 @@
 ﻿import 'dart:math';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,6 +39,50 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
+    // ── Web: Quick redirect with minimal splash ──
+    if (kIsWeb) {
+      _logoCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+      _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(
+        CurvedAnimation(parent: _logoCtrl, curve: Curves.easeOutCubic),
+      );
+      _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _logoCtrl, curve: Curves.easeOut),
+      );
+      _ringRotation = Tween<double>(begin: 0, end: pi).animate(_logoCtrl);
+      _ringScale = Tween<double>(begin: 0.0, end: 1.0).animate(_logoCtrl);
+      _contentCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+      _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(_contentCtrl);
+      _titleSlide = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(_contentCtrl);
+      _taglineFade = Tween<double>(begin: 0.0, end: 1.0).animate(_contentCtrl);
+      _loaderFade = Tween<double>(begin: 0.0, end: 1.0).animate(_contentCtrl);
+      _shimmerCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat();
+      _orbCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat(reverse: true);
+      _orbPulse = Tween<double>(begin: 0.9, end: 1.1).animate(
+        CurvedAnimation(parent: _orbCtrl, curve: Curves.easeInOut),
+      );
+      _logoCtrl.forward();
+      _contentCtrl.forward();
+
+      // Fast redirect on web (800ms)
+      Future.delayed(const Duration(milliseconds: 800), () async {
+        if (!mounted) return;
+        try {
+          final user = await FirebaseAuth.instance.authStateChanges().first;
+          if (!mounted) return;
+          if (user != null) {
+            Navigator.pushReplacementNamed(context, '/main');
+          } else {
+            Navigator.pushReplacementNamed(context, '/onboarding');
+          }
+        } catch (_) {
+          if (mounted) Navigator.pushReplacementNamed(context, '/onboarding');
+        }
+      });
+      return;
+    }
+
+    // ── Mobile: Full animated splash ──
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,

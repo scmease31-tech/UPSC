@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -72,6 +73,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final name = auth.userProfile?.name ?? 'Scholar';
     final firstName = name.split(' ').first;
 
+    // ── Web: Multi-column dashboard ──
+    if (kIsWeb) {
+      return _buildWebDashboard(context, auth, articles, progress, dark, now, greeting, firstName);
+    }
+
+    // ── Mobile: Original scrollable layout ──
     return SafeArea(
       bottom: false,
       child: FadeTransition(
@@ -130,7 +137,480 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   // ═════════════════════════════════════════════════════════════════
-  // HEADER
+  // WEB DASHBOARD LAYOUT
+  // ═════════════════════════════════════════════════════════════════
+
+  Widget _buildWebDashboard(BuildContext context, AuthProvider auth, ArticlesProvider articles, DailyProgressProvider progress, bool dark, DateTime now, String greeting, String firstName) {
+    final w = MediaQuery.of(context).size.width;
+    final isWide = w > 1100;
+    final maxWidth = 1400.0;
+
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(28),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Welcome Header ──
+                _buildWebHeader(context, greeting, firstName, now, dark),
+                const SizedBox(height: 24),
+
+                // ── Row 1: Progress + Stats ──
+                if (isWide)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: _buildWebProgressCard(context, progress, dark)),
+                      const SizedBox(width: 20),
+                      Expanded(flex: 2, child: _buildWebStatsColumn(context, progress, articles, dark)),
+                    ],
+                  )
+                else ...[
+                  _buildWebProgressCard(context, progress, dark),
+                  const SizedBox(height: 16),
+                  _buildWebStatsRow(context, progress, articles),
+                ],
+                const SizedBox(height: 24),
+
+                // ── Quick Actions (wider grid) ──
+                _buildWebQuickActions(context, dark),
+                const SizedBox(height: 24),
+
+                // ── Row 2: Trending + Sidebar ──
+                if (isWide)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: _buildWebTrending(context, articles, dark)),
+                      const SizedBox(width: 20),
+                      Expanded(flex: 2, child: _buildWebSidebar(context, progress, dark)),
+                    ],
+                  )
+                else ...[
+                  _buildWebTrending(context, articles, dark),
+                  const SizedBox(height: 24),
+                  _buildWebSidebar(context, progress, dark),
+                ],
+                const SizedBox(height: 24),
+
+                // ── Study Tools Grid (4-6 columns) ──
+                _buildWebStudyTools(context, dark),
+                const SizedBox(height: 24),
+
+                // ── Weekly Progress + Exam Countdown ──
+                if (isWide)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _buildWeeklyProgress(context, progress)),
+                      const SizedBox(width: 20),
+                      Expanded(child: _buildExamCountdown(context, progress)),
+                    ],
+                  )
+                else ...[
+                  _buildWeeklyProgress(context, progress),
+                  const SizedBox(height: 16),
+                  _buildExamCountdown(context, progress),
+                ],
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWebHeader(BuildContext context, String greeting, String name, DateTime now, bool dark) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$greeting, $name!',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: dark ? Colors.white : AppTheme.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                DateFormat('EEEE, d MMMM yyyy').format(now),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWebProgressCard(BuildContext context, DailyProgressProvider p, bool dark) {
+    final completion = _dailyCompletion(p);
+    final completionPct = (completion * 100).round();
+
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0D1B2A), Color(0xFF1A3A4A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0D1B2A).withValues(alpha: 0.2),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.rocket_launch_rounded, size: 14, color: Colors.white70),
+                      const SizedBox(width: 6),
+                      Text("Today's Mission", style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white70)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  '${p.articlesReadToday} of 5 Tasks Completed',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 22, color: Colors.white, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  completionPct >= 100 ? 'All done! Great job today!' : 'Keep pushing — every task counts!',
+                  style: GoogleFonts.inter(fontSize: 14, color: Colors.white60),
+                ),
+                const SizedBox(height: 20),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: completion,
+                    minHeight: 8,
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
+                    valueColor: AlwaysStoppedAnimation(completion >= 1.0 ? AppTheme.successGreen : AppTheme.primaryLight),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 32),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: AppTheme.primaryLight.withValues(alpha: 0.2), blurRadius: 24, spreadRadius: 2),
+              ],
+            ),
+            child: CircularProgressWidget(
+              progress: completion,
+              size: 100,
+              strokeWidth: 10,
+              progressColor: AppTheme.primaryLight,
+              trackColor: Colors.white.withValues(alpha: 0.1),
+              child: Text(
+                '$completionPct%',
+                style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebStatsColumn(BuildContext context, DailyProgressProvider p, ArticlesProvider articles, bool dark) {
+    return Column(
+      children: [
+        _webStatCard(Icons.local_fire_department_rounded, '${p.currentStreak}', 'Day Streak', [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)], dark),
+        const SizedBox(height: 12),
+        _webStatCard(Icons.emoji_events_rounded, '${p.quizzesThisWeek}', 'Quizzes/Week', [const Color(0xFFFBBF24), const Color(0xFFF59E0B)], dark),
+        const SizedBox(height: 12),
+        _webStatCard(Icons.timer_rounded, '${p.studyMinutesThisWeek}m', 'Study/Week', [AppTheme.primaryColor, AppTheme.primaryLight], dark),
+      ],
+    );
+  }
+
+  Widget _webStatCard(IconData icon, String value, String label, List<Color> gradient, bool dark) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF161B22) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.05)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.15 : 0.03), blurRadius: 12, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: gradient),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))],
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: dark ? Colors.white : AppTheme.textPrimary)),
+              Text(label, style: GoogleFonts.inter(fontSize: 12, color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebStatsRow(BuildContext context, DailyProgressProvider p, ArticlesProvider articles) {
+    final dark = AppTheme.isDark(context);
+    return Row(
+      children: [
+        Expanded(child: _webStatCard(Icons.local_fire_department_rounded, '${p.currentStreak}', 'Streak', [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)], dark)),
+        const SizedBox(width: 12),
+        Expanded(child: _webStatCard(Icons.emoji_events_rounded, '${p.quizzesThisWeek}', 'Quizzes/wk', [const Color(0xFFFBBF24), const Color(0xFFF59E0B)], dark)),
+        const SizedBox(width: 12),
+        Expanded(child: _webStatCard(Icons.timer_rounded, '${p.studyMinutesThisWeek}m', 'Study/wk', [AppTheme.primaryColor, AppTheme.primaryLight], dark)),
+      ],
+    );
+  }
+
+  Widget _buildWebQuickActions(BuildContext context, bool dark) {
+    final actions = [
+      _QAction(Icons.flash_on_rounded, 'Daily Challenge', AppTheme.primaryColor, '/daily-challenge'),
+      _QAction(Icons.auto_awesome_rounded, 'AI Search', const Color(0xFF7C4DFF), '/ai-search'),
+      _QAction(Icons.view_carousel_rounded, 'Flashcards', const Color(0xFFFF6B6B), '/flashcards'),
+      _QAction(Icons.explore_rounded, 'Explore', AppTheme.warmYellow, '/explore'),
+      _QAction(Icons.history_edu_rounded, 'PYQ Practice', const Color(0xFFE91E63), '/pyq'),
+      _QAction(Icons.timer_rounded, 'Study Timer', const Color(0xFF448AFF), '/study-timer'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Quick Actions', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: actions.map((a) => _WebActionChip(action: a, dark: dark)).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWebTrending(BuildContext context, ArticlesProvider articles, bool dark) {
+    final topArticles = articles.articles.take(6).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Trending Topics', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+            const Spacer(),
+            TextButton(
+              onPressed: () => _navigateToTab(1),
+              child: Text('View All →', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (topArticles.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: dark ? const Color(0xFF161B22) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.05)),
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.article_outlined, size: 40, color: AppTheme.textT(context)),
+                  const SizedBox(height: 8),
+                  Text('No articles yet', style: GoogleFonts.inter(color: AppTheme.textS(context))),
+                ],
+              ),
+            ),
+          )
+        else
+          ...topArticles.map((article) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ArticleCard(article: article),
+          )),
+      ],
+    );
+  }
+
+  Widget _buildWebSidebar(BuildContext context, DailyProgressProvider progress, bool dark) {
+    final activities = [
+      _Activity('Articles Read', '${progress.articlesReadToday} today', Icons.article_rounded, AppTheme.primaryColor, '${progress.articlesReadToday}/5'),
+      _Activity('Quiz Practice', '${progress.quizzesToday} completed', Icons.quiz_rounded, AppTheme.accentViolet, '${progress.quizzesToday}'),
+      _Activity('Study Time', '${progress.studyMinutesToday} min', Icons.timer_rounded, const Color(0xFFFF6B6B), '${progress.studyMinutesToday}m'),
+    ];
+
+    final insights = [
+      '"The secret of getting ahead is getting started." — Mark Twain',
+      '"Education is the most powerful weapon." — Nelson Mandela',
+      '"Success is the sum of small efforts repeated daily."',
+      '"An investment in knowledge pays the best interest." — Benjamin Franklin',
+      '"Discipline is the bridge between goals and accomplishment."',
+    ];
+    final todayInsight = insights[DateTime.now().day % insights.length];
+
+    return Column(
+      children: [
+        // Activity
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: dark ? const Color(0xFF161B22) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.05)),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.1 : 0.03), blurRadius: 12)],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Today's Activity", style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+              const SizedBox(height: 16),
+              ...activities.map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(color: a.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                      child: Icon(a.icon, color: a.color, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(a.title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+                          Text(a.subtitle, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: a.color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+                      child: Text(a.time, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: a.color)),
+                    ),
+                  ],
+                ),
+              )),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Daily Insight
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 6))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.lightbulb_rounded, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Daily Insight', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white70)),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(todayInsight, style: GoogleFonts.inter(fontSize: 14, color: Colors.white, height: 1.5)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWebStudyTools(BuildContext context, bool dark) {
+    final w = MediaQuery.of(context).size.width;
+    final cols = w > 1200 ? 6 : (w > 900 ? 4 : 3);
+    final tools = [
+      _StudyTool('UPSC Must Know', 'Facts & data', Icons.lightbulb_rounded, AppTheme.primaryColor, '/upsc-must-know'),
+      _StudyTool('Previous Year Qs', 'PYQ practice', Icons.history_edu_rounded, const Color(0xFFE91E63), '/pyq'),
+      _StudyTool('Study Timer', 'Pomodoro', Icons.timer_rounded, const Color(0xFFFF6B6B), '/study-timer'),
+      _StudyTool('Quick Revision', 'Short notes', Icons.note_alt_rounded, const Color(0xFF8D6E63), '/quick-revision'),
+      _StudyTool('Answer Writing', 'Mains practice', Icons.edit_note_rounded, const Color(0xFF448AFF), '/answer-writing'),
+      _StudyTool('Content Tracker', 'Track progress', Icons.track_changes_rounded, AppTheme.accentViolet, '/content-tracker'),
+      _StudyTool('Current Affairs', 'Compilations', Icons.newspaper_rounded, const Color(0xFF00897B), '/current-affairs'),
+      _StudyTool('Syllabus Tracker', 'Preparation', Icons.checklist_rounded, const Color(0xFFEF6C00), '/syllabus-tracker'),
+      _StudyTool('Vocabulary', 'Word power', Icons.abc_rounded, const Color(0xFF5C6BC0), '/vocabulary'),
+      _StudyTool('Mock Tests', 'Prelims tests', Icons.quiz_rounded, const Color(0xFFD32F2F), '/mock-test'),
+      _StudyTool('Govt Schemes', 'Schemes DB', Icons.account_balance_rounded, const Color(0xFF388E3C), '/govt-schemes'),
+      _StudyTool('Bookmarks', 'Saved items', Icons.bookmark_rounded, const Color(0xFF0288D1), '/bookmarks'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Study Tools', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+        const SizedBox(height: 16),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.1,
+          ),
+          itemCount: tools.length,
+          itemBuilder: (context, i) {
+            final t = tools[i];
+            return _WebToolCard(tool: t, dark: dark);
+          },
+        ),
+      ],
+    );
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // HEADER (Mobile)
   // ═════════════════════════════════════════════════════════════════
 
   Widget _buildHeader(BuildContext context, String greeting, String name, DateTime now, bool dark) {
@@ -1319,4 +1799,146 @@ class _StatInfo {
   final String label;
   final List<Color> gradientColors;
   const _StatInfo(this.icon, this.value, this.label, this.gradientColors);
+}
+
+// ═════════════════════════════════════════════════════════════════
+// WEB-SPECIFIC WIDGETS
+// ═════════════════════════════════════════════════════════════════
+
+class _WebActionChip extends StatefulWidget {
+  final _QAction action;
+  final bool dark;
+  const _WebActionChip({required this.action, required this.dark});
+  @override
+  State<_WebActionChip> createState() => _WebActionChipState();
+}
+
+class _WebActionChipState extends State<_WebActionChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.action;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => Navigator.pushNamed(context, a.route),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? a.color.withValues(alpha: widget.dark ? 0.15 : 0.08)
+                : (widget.dark ? const Color(0xFF161B22) : Colors.white),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _hovered ? a.color.withValues(alpha: 0.3) : (widget.dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.06)),
+            ),
+            boxShadow: _hovered
+                ? [BoxShadow(color: a.color.withValues(alpha: 0.1), blurRadius: 16, offset: const Offset(0, 4))]
+                : [BoxShadow(color: Colors.black.withValues(alpha: widget.dark ? 0.1 : 0.02), blurRadius: 8)],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: a.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(a.icon, color: a.color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                a.label.replaceAll('\n', ' '),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _hovered ? a.color : AppTheme.textP(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WebToolCard extends StatefulWidget {
+  final _StudyTool tool;
+  final bool dark;
+  const _WebToolCard({required this.tool, required this.dark});
+  @override
+  State<_WebToolCard> createState() => _WebToolCardState();
+}
+
+class _WebToolCardState extends State<_WebToolCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.tool;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => Navigator.pushNamed(context, t.route),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          transform: _hovered ? (Matrix4.identity()..translate(0.0, -3.0)) : Matrix4.identity(),
+          decoration: BoxDecoration(
+            color: widget.dark ? const Color(0xFF161B22) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _hovered ? t.color.withValues(alpha: 0.3) : (widget.dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.05)),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _hovered ? t.color.withValues(alpha: 0.1) : Colors.black.withValues(alpha: widget.dark ? 0.08 : 0.03),
+                blurRadius: _hovered ? 16 : 8,
+                offset: Offset(0, _hovered ? 6 : 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: t.color.withValues(alpha: widget.dark ? 0.15 : 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(t.icon, color: t.color, size: 24),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  t.title,
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.2),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                t.subtitle,
+                style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context)),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

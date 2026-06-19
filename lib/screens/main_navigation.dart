@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/theme.dart';
@@ -7,10 +8,12 @@ import 'news/news_screen.dart';
 import 'quiz/quiz_screen.dart';
 import 'study/study_screen.dart';
 import 'profile/profile_screen.dart';
+import 'web/web_shell.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
-/// MainNavigation — Bottom tab bar with glassmorphic floating nav,
-/// gradient background, haptic feedback, and modern icon styling.
+/// MainNavigation — Adaptive layout:
+///   • Web: Sidebar navigation with wide content area (WebShell)
+///   • Mobile: Bottom tab bar with glassmorphic floating nav
 /// ──────────────────────────────────────────────────────────────────────────────
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -77,6 +80,21 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   Widget build(BuildContext context) {
+    // ── Web: Sidebar navigation layout ──
+    if (kIsWeb) {
+      return WebShell(
+        currentIndex: _currentIndex,
+        onIndexChanged: (i) => setState(() => _currentIndex = i),
+        screenBuilder: (context, index) {
+          if (_builtScreens.containsKey(index) || index == _currentIndex) {
+            return _getScreen(index);
+          }
+          return const SizedBox.shrink();
+        },
+      );
+    }
+
+    // ── Mobile: Bottom nav bar layout ──
     final dark = AppTheme.isDark(context);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
