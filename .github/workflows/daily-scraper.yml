@@ -1,0 +1,71 @@
+name: Daily UPSC Content Scraper
+
+on:
+  schedule:
+    # Runs 4 times daily (IST: 7 AM, 12 PM, 6 PM, 11:30 PM)
+    - cron: '30 1 * * *'   # 7:00 AM IST
+    - cron: '30 6 * * *'   # 12:00 PM IST
+    - cron: '30 12 * * *'  # 6:00 PM IST
+    - cron: '0 18 * * *'   # 11:30 PM IST
+  workflow_dispatch:        # Manual trigger from GitHub UI
+    inputs:
+      date:
+        description: 'Specific date to scrape (YYYY-MM-DD). Leave empty for today.'
+        required: false
+      days:
+        description: 'Number of past days to scrape (e.g., 3 for last 3 days)'
+        required: false
+        default: '1'
+      dry_run:
+        description: 'Dry run (no upload)'
+        type: boolean
+        default: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    # Skip Sundays (sites don't publish on Sundays)
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule != '' 
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/content-scraper/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend/content-scraper
+        run: npm ci || npm install
+
+      - name: Run scraper
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          ARGS=""
+          
+          # Handle manual trigger inputs
+          if [ "${{ github.event.inputs.date }}" != "" ]; then
+            ARGS="--date ${{ github.event.inputs.date }}"
+          elif [ "${{ github.event.inputs.days }}" != "" ] && [ "${{ github.event.inputs.days }}" != "1" ]; then
+            ARGS="--days ${{ github.event.inputs.days }}"
+          fi
+          
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          
+          node index.js $ARGS
+
+      - name: Log completion
+        if: success()
+        run: echo "✅ Content scraping completed successfully at $(date -u '+%Y-%m-%d %H:%M UTC')"
+        
+      - name: Notify on failure
+        if: failure()
+        run: echo "❌ Content scraping FAILED at $(date -u '+%Y-%m-%d %H:%M UTC')"
