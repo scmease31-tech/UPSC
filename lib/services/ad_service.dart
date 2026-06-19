@@ -11,7 +11,7 @@ class AdService {
 
   /// Initialize the Mobile Ads SDK. Call once at app start.
   static Future<void> initialize() async {
-    if (_initialized) return;
+    if (kIsWeb || _initialized) return;
     await MobileAds.instance.initialize();
     _initialized = true;
   }
@@ -19,6 +19,7 @@ class AdService {
   // ─── Test Ad Unit IDs (Google-provided, safe for dev) ───
   // TODO: Replace with your real AdMob ad unit IDs before publishing
   static String get bannerAdUnitId {
+    if (kIsWeb) return '';
     if (Platform.isAndroid) {
       return 'ca-app-pub-3940256099942544/6300978111'; // Android test banner
     } else if (Platform.isIOS) {
@@ -33,6 +34,7 @@ class AdService {
     required void Function(Ad) onAdLoaded,
     required void Function(Ad, LoadAdError) onAdFailedToLoad,
   }) {
+    if (kIsWeb) return null;
     final ad = BannerAd(
       adUnitId: bannerAdUnitId,
       size: size,

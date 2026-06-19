@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -18,6 +19,7 @@ class NotificationService {
   /// Initialize the notification plugin with tap handling.
   static Future<void> initialize(GlobalKey<NavigatorState> navKey) async {
     navigatorKey = navKey;
+    if (kIsWeb) return;
     tz.initializeTimeZones();
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -79,6 +81,7 @@ class NotificationService {
     String? articleTitle,
     String? articleId,
   }) async {
+    if (kIsWeb) return;
     const androidDetails = AndroidNotificationDetails(
       'daily_affairs',
       'Daily Current Affairs',
@@ -113,6 +116,7 @@ class NotificationService {
 
   /// Schedule a quiz reminder notification at 6:00 PM.
   static Future<void> scheduleQuizReminder() async {
+    if (kIsWeb) return;
     const androidDetails = AndroidNotificationDetails(
       'quiz_reminder',
       'Quiz Reminder',
@@ -143,6 +147,7 @@ class NotificationService {
     required String title,
     required String articleId,
   }) async {
+    if (kIsWeb) return;
     const androidDetails = AndroidNotificationDetails(
       'breaking_news',
       'Breaking News',
@@ -174,6 +179,7 @@ class NotificationService {
 
   /// Schedule a morning flashcard reminder at 7:30 AM.
   static Future<void> scheduleFlashcardReminder() async {
+    if (kIsWeb) return;
     const androidDetails = AndroidNotificationDetails(
       'flashcard_reminder',
       'Flashcard Reminder',
@@ -201,6 +207,7 @@ class NotificationService {
 
   /// Schedule an evening study reminder at 9:00 PM.
   static Future<void> scheduleStudyReminder() async {
+    if (kIsWeb) return;
     const androidDetails = AndroidNotificationDetails(
       'study_reminder',
       'Study Reminder',
@@ -228,6 +235,7 @@ class NotificationService {
 
   /// Schedule a streak warning notification at 8:00 PM — reminds user if streak is at risk.
   static Future<void> scheduleStreakReminder({required int currentStreak}) async {
+    if (kIsWeb) return;
     if (currentStreak < 2) return; // Only for users with active streaks
 
     const androidDetails = AndroidNotificationDetails(
@@ -266,6 +274,7 @@ class NotificationService {
 
   /// Cancel all scheduled notifications.
   static Future<void> cancelAll() async {
+    if (kIsWeb) return;
     await _plugin.cancelAll();
   }
 }
