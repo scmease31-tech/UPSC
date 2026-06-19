@@ -1,0 +1,75 @@
+name: Build & Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.0.0)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=v$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Rename APK
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}.apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "UPSC Daily Edge ${{ steps.version.outputs.tag }}"
+          body: |
+            ## UPSC Daily Edge - Android App
+
+            ### What's included:
+            - 📰 Daily Current Affairs from Drishti IAS & Insights on India
+            - 🧠 Smart Quizzes with XP tracking
+            - 📝 Flash Revision cards & mnemonics
+            - 📊 Progress tracking & streaks
+
+            ### Install:
+            1. Download the APK file below
+            2. Open it on your Android device
+            3. Allow installation from unknown sources if prompted
+            4. Done!
+          files: build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}.apk
+          draft: false
+          prerelease: false

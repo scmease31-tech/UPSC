@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../widgets/glass_widgets.dart';
+
+const _apkDownloadUrl = 'https://github.com/sohildobariya31-blip/UPSC/releases/latest';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// OnboardingScreen — 4-page premium intro with hero illustrations,
@@ -183,6 +186,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             ),
           ),
           const SizedBox(width: 12),
+          // Download App button
+          ElevatedButton.icon(
+            onPressed: () => launchUrl(Uri.parse(_apkDownloadUrl), mode: LaunchMode.externalApplication),
+            icon: const Icon(Icons.android_rounded, size: 18),
+            label: Text(
+              'Download App',
+              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF34A853),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              elevation: 0,
+            ),
+          ),
+          const SizedBox(width: 12),
           // Get Started button
           ElevatedButton(
             onPressed: () => Navigator.pushReplacementNamed(context, '/signup'),
@@ -349,6 +369,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               child: Text(
                 'I have an account',
                 style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => launchUrl(Uri.parse(_apkDownloadUrl), mode: LaunchMode.externalApplication),
+              icon: const Icon(Icons.download_rounded, size: 20),
+              label: Text('Download Android App', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF34A853),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 18),
+                elevation: 0,
               ),
             ),
           ],
