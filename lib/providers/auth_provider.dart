@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -47,21 +48,31 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        _isLoading = false;
-        notifyListeners();
-        return 'Sign in cancelled';
-      }
-
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
+      UserCredential userCredential;
       _isSigningUp = true;
-      final userCredential = await _auth.signInWithCredential(credential);
+
+      if (kIsWeb) {
+        // Web: Use Firebase popup auth (no client ID needed)
+        final provider = GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        userCredential = await _auth.signInWithPopup(provider);
+      } else {
+        // Mobile: Use google_sign_in package
+        final googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) {
+          _isLoading = false;
+          _isSigningUp = false;
+          notifyListeners();
+          return 'Sign in cancelled';
+        }
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        userCredential = await _auth.signInWithCredential(credential);
+      }
       final user = userCredential.user!;
 
       // Create or merge user profile in Firestore

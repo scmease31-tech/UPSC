@@ -127,9 +127,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   }
 
   Widget _buildWebNavBar(BuildContext context) {
+    final screenW = MediaQuery.of(context).size.width;
+    final isCompact = screenW < 700;
     return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 48),
+      height: 64,
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 48),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -144,8 +146,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         children: [
           // Logo
           Container(
-            width: 38,
-            height: 38,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF00BFA6), Color(0xFF00E5CC)],
@@ -153,56 +155,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Center(
-              child: Text('U', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+              child: Text('U', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            'UPSC Daily Edge',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
-              letterSpacing: -0.3,
+          if (!isCompact) ...[
+            const SizedBox(width: 12),
+            Text(
+              'UPSC Daily Edge',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.3,
+              ),
             ),
-          ),
+          ],
           const Spacer(),
-          // Nav links
-          _webNavLink('Features', () {}),
-          const SizedBox(width: 32),
-          _webNavLink('About', () {}),
-          const SizedBox(width: 32),
+          if (!isCompact) ...[
+            // Nav links
+            _webNavLink('Features', () {}),
+            const SizedBox(width: 24),
+            _webNavLink('About', () {}),
+            const SizedBox(width: 24),
+          ],
           // Login button
           OutlinedButton(
             onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: isCompact ? 14 : 24, vertical: 12),
             ),
             child: Text(
               'Log In',
-              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
             ),
           ),
-          const SizedBox(width: 12),
-          // Download App button
-          ElevatedButton.icon(
-            onPressed: () => launchUrl(Uri.parse(_apkDownloadUrl), mode: LaunchMode.externalApplication),
-            icon: const Icon(Icons.android_rounded, size: 18),
-            label: Text(
-              'Download App',
-              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF34A853),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              elevation: 0,
-            ),
-          ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           // Get Started button
           ElevatedButton(
             onPressed: () => Navigator.pushReplacementNamed(context, '/signup'),
@@ -210,12 +199,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: isCompact ? 14 : 24, vertical: 12),
               elevation: 0,
             ),
             child: Text(
               'Get Started',
-              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
         ],

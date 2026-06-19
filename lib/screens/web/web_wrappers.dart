@@ -11,6 +11,48 @@ class WebAuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = AppTheme.isDark(context);
+    final screenW = MediaQuery.of(context).size.width;
+    final isWide = screenW > 800;
+
+    final formPanel = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: isWide ? 40 : 24, vertical: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Back to landing
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      Navigator.pushReplacementNamed(context, '/onboarding');
+                    }
+                  },
+                  icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                  label: Text('Back', style: GoogleFonts.inter(fontSize: 14)),
+                  style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
+                ),
+              ),
+              const SizedBox(height: 16),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!isWide) {
+      // Narrow: just form centered, no branding panel
+      return Scaffold(
+        backgroundColor: dark ? const Color(0xFF0B0F19) : const Color(0xFFF7F8FC),
+        body: formPanel,
+      );
+    }
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF0B0F19) : const Color(0xFFF7F8FC),
@@ -99,37 +141,7 @@ class WebAuthScaffold extends StatelessWidget {
           // Right: Auth form
           Expanded(
             flex: 4,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Back to landing
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () {
-                            if (Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            } else {
-                              Navigator.pushReplacementNamed(context, '/onboarding');
-                            }
-                          },
-                          icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                          label: Text('Back', style: GoogleFonts.inter(fontSize: 14)),
-                          style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      child,
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            child: formPanel,
           ),
         ],
       ),
@@ -147,6 +159,8 @@ class WebFeatureScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = AppTheme.isDark(context);
+    final screenW = MediaQuery.of(context).size.width;
+    final isNarrow = screenW < 600;
 
     return Scaffold(
       backgroundColor: dark ? const Color(0xFF0B0F19) : const Color(0xFFF7F8FC),
@@ -154,8 +168,8 @@ class WebFeatureScaffold extends StatelessWidget {
         children: [
           // Top header bar
           Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            height: 56,
+            padding: EdgeInsets.symmetric(horizontal: isNarrow ? 12 : 32),
             decoration: BoxDecoration(
               color: dark ? const Color(0xFF0D1117) : Colors.white,
               border: Border(
@@ -178,7 +192,7 @@ class WebFeatureScaffold extends StatelessWidget {
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: EdgeInsets.symmetric(horizontal: isNarrow ? 8 : 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: dark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF1F3F9),
                         borderRadius: BorderRadius.circular(10),
@@ -188,17 +202,20 @@ class WebFeatureScaffold extends StatelessWidget {
                         children: [
                           Icon(Icons.arrow_back_rounded, size: 18,
                             color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
-                          const SizedBox(width: 8),
-                          Text('Back to Dashboard', style: GoogleFonts.inter(
-                            fontSize: 13, fontWeight: FontWeight.w600,
-                            color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
-                          )),
+                          if (!isNarrow) ...[
+                            const SizedBox(width: 8),
+                            Text('Back to Dashboard', style: GoogleFonts.inter(
+                              fontSize: 13, fontWeight: FontWeight.w600,
+                              color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
+                            )),
+                          ],
                         ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 12),
+                if (!isNarrow) ...[
                 // Logo
                 Container(
                   width: 32, height: 32,
@@ -215,6 +232,7 @@ class WebFeatureScaffold extends StatelessWidget {
                   fontSize: 16, fontWeight: FontWeight.w800,
                   color: dark ? Colors.white : AppTheme.textPrimary,
                 )),
+                ],
                 if (title.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -234,8 +252,11 @@ class WebFeatureScaffold extends StatelessWidget {
           Expanded(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1100),
-                child: child,
+                constraints: BoxConstraints(maxWidth: isNarrow ? double.infinity : 1100),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: isNarrow ? 8 : 0),
+                  child: child,
+                ),
               ),
             ),
           ),
