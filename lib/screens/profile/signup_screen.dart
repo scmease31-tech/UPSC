@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,149 +49,159 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
+    final formContent = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (!kIsWeb) ...[
+          Container(
+            width: 100, height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: AppTheme.accentViolet.withValues(alpha: 0.2), blurRadius: 25, spreadRadius: 5),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
+                  child: const Icon(Icons.person_add_rounded, size: 40, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text('Create Account', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+          const SizedBox(height: 4),
+          Text('Start your UPSC journey', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
+          const SizedBox(height: 28),
+        ],
+
+        kIsWeb
+            ? _buildFormBody(auth)
+            : GlassCard(
+                padding: const EdgeInsets.all(24),
+                child: _buildFormBody(auth),
+              ),
+
+        const SizedBox(height: 20),
+
+        // Google
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: OutlinedButton.icon(
+            onPressed: auth.isLoading ? null : _googleSignIn,
+            icon: const Text('G', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
+            label: Text('Sign up with Google', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.textP(context),
+              side: BorderSide(color: AppTheme.textS(context).withValues(alpha: 0.2)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Already have an account? ', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            GestureDetector(
+              onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+              child: Text('Sign In', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+
+    if (kIsWeb) return formContent;
+
     return GradientScaffold(
       child: SafeArea(
         child: FadeTransition(
           opacity: _fadeCurve,
           child: Center(
             child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 100, height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: AppTheme.accentViolet.withValues(alpha: 0.2), blurRadius: 25, spreadRadius: 5),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
-                        child: const Icon(Icons.person_add_rounded, size: 40, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text('Create Account', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
-                const SizedBox(height: 4),
-                Text('Start your UPSC journey', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
-                const SizedBox(height: 28),
-
-                GlassCard(
-                  padding: const EdgeInsets.all(24),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Name
-                        TextFormField(
-                          controller: _nameCtrl,
-                          decoration: _inputDec('Full Name', Icons.person_rounded),
-                          validator: (v) => v != null && v.trim().isNotEmpty ? null : 'Enter your name',
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Email
-                        TextFormField(
-                          controller: _emailCtrl,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: _inputDec('Email', Icons.email_rounded),
-                          validator: (v) => v != null && v.contains('@') ? null : 'Enter a valid email',
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Password
-                        TextFormField(
-                          controller: _passwordCtrl,
-                          obscureText: _obscure,
-                          decoration: _inputDec('Password', Icons.lock_rounded).copyWith(
-                            suffixIcon: IconButton(
-                              icon: Icon(_obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20),
-                              onPressed: () => setState(() => _obscure = !_obscure),
-                            ),
-                          ),
-                          validator: (v) => v != null && v.length >= 6 ? null : 'At least 6 characters',
-                        ),
-
-                        if (_error != null) ...[
-                          const SizedBox(height: 12),
-                          Text(_error!, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.errorRed), textAlign: TextAlign.center),
-                        ],
-
-                        const SizedBox(height: 20),
-
-                        SizedBox(
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: auth.isLoading ? null : _signUp,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              elevation: 0,
-                            ),
-                            child: auth.isLoading
-                                ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.person_add_rounded, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text('Create Account', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Google
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: OutlinedButton.icon(
-                    onPressed: auth.isLoading ? null : _googleSignIn,
-                    icon: const Text('G', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
-                    label: Text('Sign up with Google', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.textP(context),
-                      side: BorderSide(color: AppTheme.textS(context).withValues(alpha: 0.2)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Already have an account? ', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
-                    GestureDetector(
-                      onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-                      child: Text('Sign In', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-              ],
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: formContent,
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFormBody(AuthProvider auth) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (kIsWeb) ...[
+            Text('Create Account', style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+            const SizedBox(height: 4),
+            Text('Start your UPSC journey', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
+            const SizedBox(height: 24),
+          ],
+          TextFormField(
+            controller: _nameCtrl,
+            decoration: _inputDec('Full Name', Icons.person_rounded),
+            validator: (v) => v != null && v.trim().isNotEmpty ? null : 'Enter your name',
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            decoration: _inputDec('Email', Icons.email_rounded),
+            validator: (v) => v != null && v.contains('@') ? null : 'Enter a valid email',
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: _passwordCtrl,
+            obscureText: _obscure,
+            decoration: _inputDec('Password', Icons.lock_rounded).copyWith(
+              suffixIcon: IconButton(
+                icon: Icon(_obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+            validator: (v) => v != null && v.length >= 6 ? null : 'At least 6 characters',
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(_error!, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.errorRed), textAlign: TextAlign.center),
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: auth.isLoading ? null : _signUp,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: auth.isLoading
+                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.person_add_rounded, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Create Account', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

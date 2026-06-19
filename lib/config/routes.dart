@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../screens/splash_screen.dart';
 import '../screens/main_navigation.dart';
@@ -27,6 +28,7 @@ import '../screens/features/vocabulary_screen.dart';
 import '../screens/features/mock_test_screen.dart';
 import '../screens/features/govt_schemes_screen.dart';
 import '../screens/search/ai_search_screen.dart';
+import '../screens/web/web_wrappers.dart';
 
 /// Centralized route configuration.
 class AppRoutes {
@@ -61,36 +63,50 @@ class AppRoutes {
   static const String govtSchemes = '/govt-schemes';
   static const String aiSearch = '/ai-search';
 
+  /// Wraps auth screens with web-friendly split layout on web.
+  static Widget _authWrap(Widget child) {
+    if (!kIsWeb) return child;
+    return WebAuthScaffold(child: child);
+  }
+
+  /// Wraps feature screens with web header and constrained layout on web.
+  static Widget _featureWrap(Widget child, [String title = '']) {
+    if (!kIsWeb) return child;
+    return WebFeatureScaffold(title: title, child: child);
+  }
+
   static Map<String, WidgetBuilder> get routes {
     return {
       splash: (_) => const SplashScreen(),
       main: (_) => const MainNavigation(),
       onboarding: (_) => const OnboardingScreen(),
-      articleDetail: (_) => const ArticleDetailScreen(),
-      quizPlay: (_) => const QuizPlayScreen(),
-      quizResult: (_) => const QuizResultScreen(),
-      subjectDetail: (_) => const SubjectDetailScreen(),
-      magazine: (_) => const MagazineScreen(),
-      login: (_) => const LoginScreen(),
-      signup: (_) => const SignupScreen(),
-      dailyPractice: (_) => const DailyPracticeScreen(),
-      explore: (_) => const ExploreScreen(),
-      dailyChallenge: (_) => const DailyChallengeScreen(),
-      revision: (_) => const RevisionScreen(),
-      upscMustKnow: (_) => const UpscMustKnowScreen(),
-      weeklyProgress: (_) => const WeeklyProgressScreen(),
-      flashcards: (_) => const FlashcardScreen(),
-      contentTracker: (_) => const ContentTrackerScreen(),
-      pyq: (_) => const PYQScreen(),
-      studyTimer: (_) => const StudyTimerScreen(),
-      quickRevision: (_) => const QuickRevisionScreen(),
-      answerWriting: (_) => const AnswerWritingScreen(),
-      currentAffairs: (_) => const CurrentAffairsScreen(),
-      syllabusTracker: (_) => const SyllabusTrackerScreen(),
-      vocabulary: (_) => const VocabularyBuilderScreen(),
-      mockTest: (_) => const MockTestScreen(),
-      govtSchemes: (_) => const GovtSchemesScreen(),
-      aiSearch: (_) => const AiSearchScreen(),
+      // Auth — web split layout
+      login: (_) => _authWrap(const LoginScreen()),
+      signup: (_) => _authWrap(const SignupScreen()),
+      // Content — web header + constrained
+      articleDetail: (_) => _featureWrap(const ArticleDetailScreen(), 'Article'),
+      quizPlay: (_) => _featureWrap(const QuizPlayScreen(), 'Quiz'),
+      quizResult: (_) => _featureWrap(const QuizResultScreen(), 'Results'),
+      subjectDetail: (_) => _featureWrap(const SubjectDetailScreen(), 'Subject'),
+      magazine: (_) => _featureWrap(const MagazineScreen(), 'Magazine'),
+      dailyPractice: (_) => _featureWrap(const DailyPracticeScreen(), 'Daily Practice'),
+      explore: (_) => _featureWrap(const ExploreScreen(), 'Explore'),
+      dailyChallenge: (_) => _featureWrap(const DailyChallengeScreen(), 'Daily Challenge'),
+      revision: (_) => _featureWrap(const RevisionScreen(), 'Revision'),
+      upscMustKnow: (_) => _featureWrap(const UpscMustKnowScreen(), 'Must Know'),
+      weeklyProgress: (_) => _featureWrap(const WeeklyProgressScreen(), 'Weekly Progress'),
+      flashcards: (_) => _featureWrap(const FlashcardScreen(), 'Flashcards'),
+      contentTracker: (_) => _featureWrap(const ContentTrackerScreen(), 'Content Tracker'),
+      pyq: (_) => _featureWrap(const PYQScreen(), 'Previous Year Questions'),
+      studyTimer: (_) => _featureWrap(const StudyTimerScreen(), 'Study Timer'),
+      quickRevision: (_) => _featureWrap(const QuickRevisionScreen(), 'Quick Revision'),
+      answerWriting: (_) => _featureWrap(const AnswerWritingScreen(), 'Answer Writing'),
+      currentAffairs: (_) => _featureWrap(const CurrentAffairsScreen(), 'Current Affairs'),
+      syllabusTracker: (_) => _featureWrap(const SyllabusTrackerScreen(), 'Syllabus Tracker'),
+      vocabulary: (_) => _featureWrap(const VocabularyBuilderScreen(), 'Vocabulary'),
+      mockTest: (_) => _featureWrap(const MockTestScreen(), 'Mock Test'),
+      govtSchemes: (_) => _featureWrap(const GovtSchemesScreen(), 'Govt Schemes'),
+      aiSearch: (_) => _featureWrap(const AiSearchScreen(), 'AI Search'),
     };
   }
 }
