@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "787232499240",
+    "project_id": "upsc-app-e2475",
+    "storage_bucket": "upsc-app-e2475.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787232499240:android:1f8f5a1308feb26e2af71d",
+        "android_client_info": {
+          "package_name": "com.upsc.upsc_daily_edge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbOuNUCnM5j81IXWd41vOV1lfsjMYwygE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

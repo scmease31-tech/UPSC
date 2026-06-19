@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read access for articles, quizQuestions, subjects, weeklyMagazines
+    match /articles/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /quizQuestions/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /subjects/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /weeklyMagazines/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /flashcards/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /dailyFacts/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /currentAffairs/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /mockTests/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /vocabulary/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /govtSchemes/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /revisionNotes/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /books/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /book_chapters/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    // Users can only read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

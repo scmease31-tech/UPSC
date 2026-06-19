@@ -1,0 +1,1 @@
+{"firestore":{"rules":"firestore.rules"},"flutter":{"platforms":{"android":{"default":{"projectId":"upsc-app-e2475","appId":"1:787232499240:android:1f8f5a1308feb26e2af71d","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"upsc-app-e2475","configurations":{"android":"1:787232499240:android:1f8f5a1308feb26e2af71d"}}}}}}

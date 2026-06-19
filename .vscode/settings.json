@@ -1,0 +1,24 @@
+{
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/.dart_tool/**": true,
+    "**/.pub-cache/**": true,
+    "**/android/app/build/**": true,
+    "**/android/build/**": true,
+    "**/ios/Pods/**": true,
+    "**/.cxx/**": true
+  },
+  "files.exclude": {
+    "**/build": true,
+    "**/.dart_tool": true,
+    "**/.pub-cache": true
+  },
+  "search.exclude": {
+    "**/build/**": true,
+    "**/.dart_tool/**": true,
+    "**/android/app/build/**": true,
+    "**/.cxx/**": true
+  },
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "cmake.sourceDirectory": "C:/Users/Lenovo/Desktop/new game/linux"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "apps_script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "pdf-parse": "^1.1.1",
+    "pdf2json": "^4.0.2",
+    "pdfjs-dist": "^4.0.379",
+    "tesseract.js": "^5.1.1",
+    "unpdf": "^1.4.0"
+  }
+}
