@@ -35,7 +35,7 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --split-per-abi
 
       - name: Determine version
         id: version
@@ -50,8 +50,9 @@ jobs:
 
       - name: Rename APK
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk
-          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}-arm64.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}-arm32.apk
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -68,12 +69,15 @@ jobs:
             - 📊 Progress tracking & streaks
 
             ### Install:
-            1. Download the APK file below
+            1. Download **UPSC-Daily-Edge.apk** (recommended, works on most devices)
             2. Open it on your Android device
             3. Allow installation from unknown sources if prompted
             4. Done!
+
+            > If the main APK doesn't work on your device, try the arm32 variant.
           files: |
             build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk
-            build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}.apk
+            build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}-arm64.apk
+            build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}-arm32.apk
           draft: false
           prerelease: false
