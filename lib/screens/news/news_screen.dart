@@ -582,229 +582,50 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
   Widget _buildSourceSection(String source, List<Article> articles, bool dark) {
     final accent = _sourceAccentColor(source);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      decoration: BoxDecoration(
-        color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.grey.withValues(alpha: 0.12),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? 0.15 : 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Source header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.06),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 3,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Icon(_sourceIcon(source), size: 15, color: accent),
-                const SizedBox(width: 6),
-                Text(
-                  source,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: accent,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${articles.length} ${articles.length == 1 ? 'article' : 'articles'}',
-                  style: GoogleFonts.inter(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                    color: accent.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Articles
-          for (int i = 0; i < articles.length; i++) ...[
-            _buildCompactArticleRow(articles[i], dark, accent),
-            if (i < articles.length - 1)
-              Divider(
-                height: 1,
-                indent: 14,
-                endIndent: 14,
-                color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.grey.withValues(alpha: 0.1),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactArticleRow(Article article, bool dark, Color accent) {
-    final categoryColors = {
-      'Polity': Colors.blue.shade700,
-      'Economy': Colors.green.shade700,
-      'International Relations': Colors.purple.shade700,
-      'Environment': Colors.teal.shade700,
-      'Science & Technology': Colors.orange.shade700,
-      'History': Colors.brown.shade600,
-      'Geography': Colors.cyan.shade700,
-      'Society': Colors.pink.shade700,
-      'Governance': Colors.indigo.shade700,
-      'Security': Colors.red.shade700,
-      'Ethics': Colors.deepPurple.shade600,
-    };
-
-    final mainCategory = article.categoryTags.isNotEmpty ? article.categoryTags.first : '';
-    final catColor = categoryColors[mainCategory] ?? Colors.blueGrey;
-
-    // Time ago
-    final diff = DateTime.now().difference(article.publishedDate);
-    String timeAgo;
-    if (diff.inMinutes < 60) {
-      timeAgo = '${diff.inMinutes}m ago';
-    } else if (diff.inHours < 24) {
-      timeAgo = '${diff.inHours}h ago';
-    } else {
-      timeAgo = '${diff.inDays}d ago';
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          Navigator.pushNamed(context, '/article-detail', arguments: article);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Source header
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
             children: [
-              // Title
-              Text(
-                article.title,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textP(context),
-                  height: 1.35,
+              Container(
+                width: 3,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-
-              // Summary
-              if (article.summary.isNotEmpty) ...[
-                const SizedBox(height: 3),
-                Text(
-                  article.summary,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppTheme.textS(context),
-                    height: 1.4,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 10),
+              Icon(_sourceIcon(source), size: 15, color: accent),
+              const SizedBox(width: 6),
+              Text(
+                source,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: accent,
                 ),
-              ],
-
-              // Tags row
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  // Category tag
-                  if (mainCategory.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: catColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        mainCategory,
-                        style: GoogleFonts.inter(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w600,
-                          color: catColor,
-                        ),
-                      ),
-                    ),
-
-                  // UPSC Paper tag
-                  if (article.upscPaper.isNotEmpty) ...[
-                    const SizedBox(width: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        article.upscPaper,
-                        style: GoogleFonts.inter(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.amber.shade800,
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  // Exam relevance
-                  if (article.examRelevance.isNotEmpty) ...[
-                    const SizedBox(width: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        article.examRelevance,
-                        style: GoogleFonts.inter(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w600,
-                          color: accent,
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  const Spacer(),
-
-                  // Time ago
-                  Text(
-                    timeAgo,
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: AppTheme.textT(context),
-                    ),
-                  ),
-                ],
+              ),
+              const Spacer(),
+              Text(
+                '${articles.length} ${articles.length == 1 ? 'article' : 'articles'}',
+                style: GoogleFonts.inter(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
+                  color: accent.withValues(alpha: 0.7),
+                ),
               ),
             ],
           ),
         ),
-      ),
+
+        // Articles using original ArticleCard
+        for (final article in articles)
+          ArticleCard(article: article),
+      ],
     );
   }
 
