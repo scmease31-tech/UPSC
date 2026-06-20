@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Ethics — Detailed balance scale with gavel and scroll -->
+  <!-- Background radiance -->
+  <circle cx="32" cy="28" r="20" fill="#FFF8E1" opacity="0.5"/>
+  <!-- Scale post -->
+  <rect x="30.5" y="14" width="3" height="30" rx="1" fill="#5D4037"/>
+  <rect x="28" y="42" width="8" height="3" rx="1" fill="#5D4037"/>
+  <!-- Base -->
+  <rect x="22" y="45" width="20" height="3" rx="1.5" fill="#795548"/>
+  <rect x="25" y="48" width="14" height="2" rx="1" fill="#6D4C41"/>
+  <!-- Beam -->
+  <rect x="10" y="13" width="44" height="2.5" rx="1" fill="#8D6E63"/>
+  <!-- Fulcrum triangle -->
+  <polygon points="32,10 29,14 35,14" fill="#A1887F"/>
+  <!-- Left chain -->
+  <line x1="14" y1="15.5" x2="14" y2="24" stroke="#8D6E63" stroke-width="1.2"/>
+  <circle cx="14" cy="18" r="1" fill="none" stroke="#8D6E63" stroke-width="0.8"/>
+  <circle cx="14" cy="21" r="1" fill="none" stroke="#8D6E63" stroke-width="0.8"/>
+  <!-- Left pan -->
+  <path d="M6,24 Q14,28 22,24" stroke="#795548" stroke-width="1.5" fill="#D7CCC8"/>
+  <line x1="6" y1="24" x2="14" y2="24" stroke="#795548" stroke-width="0.5"/>
+  <line x1="14" y1="24" x2="22" y2="24" stroke="#795548" stroke-width="0.5"/>
+  <!-- Left pan — heart (morality) -->
+  <path d="M12,22 C11,20 8,20 9,22 L12,25 L15,22 C16,20 13,20 12,22 Z" fill="#EF5350" opacity="0.8"/>
+  <!-- Right chain -->
+  <line x1="50" y1="15.5" x2="50" y2="26" stroke="#8D6E63" stroke-width="1.2"/>
+  <circle cx="50" cy="18" r="1" fill="none" stroke="#8D6E63" stroke-width="0.8"/>
+  <circle cx="50" cy="21" r="1" fill="none" stroke="#8D6E63" stroke-width="0.8"/>
+  <circle cx="50" cy="24" r="1" fill="none" stroke="#8D6E63" stroke-width="0.8"/>
+  <!-- Right pan (lower — heavier) -->
+  <path d="M42,26 Q50,30 58,26" stroke="#795548" stroke-width="1.5" fill="#D7CCC8"/>
+  <line x1="42" y1="26" x2="50" y2="26" stroke="#795548" stroke-width="0.5"/>
+  <line x1="50" y1="26" x2="58" y2="26" stroke="#795548" stroke-width="0.5"/>
+  <!-- Right pan — book (law/duty) -->
+  <rect x="47" y="21" width="6" height="5" rx="0.5" fill="#7C4DFF" opacity="0.8"/>
+  <line x1="48" y1="23" x2="52" y2="23" stroke="white" stroke-width="0.5"/>
+  <line x1="48" y1="24.5" x2="51" y2="24.5" stroke="white" stroke-width="0.5"/>
+  <!-- Small gavel bottom-left -->
+  <rect x="4" y="52" width="10" height="3" rx="1" fill="#795548"/>
+  <rect x="7.5" y="48" width="3" height="5" rx="1" fill="#8D6E63"/>
+  <circle cx="9" cy="47" r="3" fill="#A1887F"/>
+  <circle cx="9" cy="47" r="1.5" fill="#8D6E63"/>
+  <!-- Small scroll bottom-right -->
+  <rect x="48" y="54" width="12" height="6" rx="2" fill="#FFECB3"/>
+  <rect x="48" y="54" width="12" height="1" rx="0.5" fill="#FFD54F"/>
+  <rect x="48" y="59" width="12" height="1" rx="0.5" fill="#FFD54F"/>
+  <line x1="50" y1="56" x2="58" y2="56" stroke="#BCA36E" stroke-width="0.5"/>
+  <line x1="50" y1="57.5" x2="56" y2="57.5" stroke="#BCA36E" stroke-width="0.5"/>
+  <!-- Star of justice top -->
+  <polygon points="32,4 33,7 36,7 34,9 35,12 32,10 29,12 30,9 28,7 31,7" fill="#FFD54F"/>
+</svg>

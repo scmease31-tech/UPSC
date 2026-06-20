@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Mixed / General Knowledge — Puzzle pieces + lightbulb -->
+  <!-- Lightbulb -->
+  <path d="M32,4 C22,4 14,12 14,22 C14,30 20,34 22,38 L22,44 L42,44 L42,38 C44,34 50,30 50,22 C50,12 42,4 32,4Z" fill="#FFE082" stroke="#FF8F00" stroke-width="1.2"/>
+  <!-- Glass highlight -->
+  <path d="M24,14 Q28,8 36,14" stroke="#FFF9C4" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Filament -->
+  <path d="M28,28 Q30,22 32,28 Q34,22 36,28" stroke="#FF8F00" stroke-width="1" fill="none"/>
+  <line x1="32" y1="28" x2="32" y2="38" stroke="#FF8F00" stroke-width="0.8"/>
+  <!-- Bulb base screw lines -->
+  <rect x="24" y="44" width="16" height="3" rx="1" fill="#FFB74D"/>
+  <rect x="25" y="47" width="14" height="2" rx="1" fill="#FFA726"/>
+  <rect x="26" y="49" width="12" height="2" rx="1" fill="#FF9800"/>
+  <rect x="28" y="51" width="8" height="2" rx="1" fill="#F57C00"/>
+  <!-- Light rays -->
+  <line x1="32" y1="0" x2="32" y2="2" stroke="#FFD54F" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="54" y1="22" x2="56" y2="22" stroke="#FFD54F" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="8" y1="22" x2="10" y2="22" stroke="#FFD54F" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="48" y1="8" x2="50" y2="6" stroke="#FFD54F" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="14" y1="6" x2="16" y2="8" stroke="#FFD54F" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="48" y1="36" x2="50" y2="38" stroke="#FFD54F" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="14" y1="38" x2="16" y2="36" stroke="#FFD54F" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Small puzzle pieces to indicate mixed/variety -->
+  <rect x="2" y="54" width="8" height="8" rx="1" fill="#EF5350" opacity="0.7"/>
+  <circle cx="6" cy="54" r="2.5" fill="#EF5350" opacity="0.7"/>
+  <rect x="12" y="54" width="8" height="8" rx="1" fill="#42A5F5" opacity="0.7"/>
+  <circle cx="12" cy="58" r="2.5" fill="#42A5F5" opacity="0.7"/>
+  <rect x="22" y="54" width="8" height="8" rx="1" fill="#66BB6A" opacity="0.7"/>
+  <circle cx="26" cy="54" r="2.5" fill="#66BB6A" opacity="0.7"/>
+  <rect x="32" y="54" width="8" height="8" rx="1" fill="#FFA726" opacity="0.7"/>
+  <circle cx="40" cy="58" r="2.5" fill="#FFA726" opacity="0.7"/>
+</svg>
