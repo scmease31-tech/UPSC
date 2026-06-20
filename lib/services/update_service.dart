@@ -1,12 +1,15 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 
-/// Checks GitHub Releases for a newer version and prompts the user to update.
+/// Checks GitHub Releases for a newer version, downloads in-app, and installs.
 class UpdateService {
   static const _owner = 'sohildobariya31-blip';
   static const _repo = 'UPSC';
@@ -14,11 +17,11 @@ class UpdateService {
 
   /// Call once after login / main navigation mounts.
   static Future<void> checkForUpdate(BuildContext context) async {
-    if (kIsWeb) return; // web always gets latest on reload
+    if (kIsWeb) return;
 
     try {
       final info = await PackageInfo.fromPlatform();
-      final current = info.version; // e.g. "1.0.0"
+      final current = info.version;
 
       final uri = Uri.parse(
           'https://api.github.com/repos/$_owner/$_repo/releases/latest');
@@ -29,15 +32,25 @@ class UpdateService {
       final tag = (data['tag_name'] as String? ?? '').replaceFirst('v', '');
       if (tag.isEmpty) return;
 
+      // Find the actual download URL from assets
+      String? downloadUrl;
+      final assets = data['assets'] as List<dynamic>? ?? [];
+      for (final asset in assets) {
+        if (asset is Map<String, dynamic> && asset['name'] == _apkAsset) {
+          downloadUrl = asset['browser_download_url'] as String?;
+          break;
+        }
+      }
+      downloadUrl ??= 'https://github.com/$_owner/$_repo/releases/latest/download/$_apkAsset';
+
       if (_isNewer(tag, current) && context.mounted) {
-        _showUpdateDialog(context, tag, data['body'] as String? ?? '');
+        _showUpdateDialog(context, tag, data['body'] as String? ?? '', downloadUrl);
       }
     } catch (_) {
       // Silently fail — update check is best-effort
     }
   }
 
-  /// Compare semver strings. Returns true if [remote] > [local].
   static bool _isNewer(String remote, String local) {
     final r = remote.split('.').map((s) => int.tryParse(s) ?? 0).toList();
     final l = local.split('.').map((s) => int.tryParse(s) ?? 0).toList();
@@ -50,7 +63,7 @@ class UpdateService {
     return false;
   }
 
-  static void _showUpdateDialog(BuildContext context, String version, String notes) {
+  static void _showUpdateDialog(BuildContext context, String version, String notes, String downloadUrl) {
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -104,8 +117,7 @@ class UpdateService {
           FilledButton.icon(
             onPressed: () {
               Navigator.pop(ctx);
-              final url = 'https://github.com/$_owner/$_repo/releases/latest/download/$_apkAsset';
-              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+              _downloadAndInstall(context, downloadUrl);
             },
             icon: const Icon(Icons.download_rounded, size: 18),
             label: Text('Update Now', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
@@ -117,5 +129,134 @@ class UpdateService {
         ],
       ),
     );
+  }
+
+  /// Downloads the APK in-app with a progress dialog, then triggers install.
+  static Future<void> _downloadAndInstall(BuildContext context, String url) async {
+    final progress = ValueNotifier<double>(0);
+    final status = ValueNotifier<String>('Connecting...');
+    final cancelToken = CancelToken();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const SizedBox(
+                width: 22, height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF00BFA6)),
+              ),
+              const SizedBox(width: 14),
+              Text('Downloading Update',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ValueListenableBuilder<double>(
+                valueListenable: progress,
+                builder: (_, val, __) => Column(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: val > 0 ? val : null,
+                        minHeight: 8,
+                        backgroundColor: Colors.grey.withValues(alpha: 0.15),
+                        color: const Color(0xFF00BFA6),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text('${(val * 100).toStringAsFixed(0)}%',
+                        style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: const Color(0xFF00BFA6))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              ValueListenableBuilder<String>(
+                valueListenable: status,
+                builder: (_, msg, __) => Text(msg,
+                    style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600])),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                cancelToken.cancel('User cancelled');
+                Navigator.pop(ctx);
+              },
+              child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final dir = await getTemporaryDirectory();
+      final savePath = '${dir.path}/$_apkAsset';
+
+      // Delete old file if exists
+      final old = File(savePath);
+      if (await old.exists()) await old.delete();
+
+      final dio = Dio();
+      dio.options.followRedirects = true;
+      dio.options.maxRedirects = 5;
+      dio.options.receiveTimeout = const Duration(minutes: 10);
+
+      await dio.download(
+        url,
+        savePath,
+        cancelToken: cancelToken,
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            progress.value = received / total;
+            final mb = (received / 1024 / 1024).toStringAsFixed(1);
+            final totalMb = (total / 1024 / 1024).toStringAsFixed(1);
+            status.value = '$mb / $totalMb MB';
+          } else {
+            final mb = (received / 1024 / 1024).toStringAsFixed(1);
+            status.value = '$mb MB downloaded';
+          }
+        },
+      );
+
+      progress.value = 1.0;
+      status.value = 'Installing...';
+
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+
+      // Trigger APK install
+      final result = await OpenFilex.open(savePath, type: 'application/vnd.android.package-archive');
+      if (result.type != ResultType.done && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open installer: ${result.message}')),
+        );
+      }
+    } on DioException catch (e) {
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (e.type != DioExceptionType.cancel && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: ${e.message ?? "Network error"}')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e')),
+        );
+      }
+    } finally {
+      progress.dispose();
+      status.dispose();
+    }
   }
 }
