@@ -228,9 +228,7 @@ class UpdateService {
       // Trigger APK install
       final result = await OpenFilex.open(savePath, type: 'application/vnd.android.package-archive');
       if (result.type != ResultType.done && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open installer: ${result.message}')),
-        );
+        _showInstallHelpDialog(context, savePath);
       }
     } on DioException catch (e) {
       if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
@@ -250,5 +248,57 @@ class UpdateService {
       progress.dispose();
       status.dispose();
     }
+  }
+
+  static void _showInstallHelpDialog(BuildContext context, String apkPath) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Installation Help',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+        content: Text(
+          'If you see "Package conflict" or "App not installed":\n\n'
+          '1. Uninstall the current app\n'
+          '2. Tap "Retry Install" below\n\n'
+          'This is a one-time step due to a signing key change. '
+          'Future updates will install normally.',
+          style: GoogleFonts.inter(fontSize: 13.5, height: 1.6),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Dismiss', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              OpenFilex.open(apkPath, type: 'application/vnd.android.package-archive');
+            },
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: Text('Retry Install', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
