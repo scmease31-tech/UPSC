@@ -596,11 +596,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: sortedDates.map((date) {
                       final articles = grouped[date]!;
-                      // Sub-group by source
-                      final drishti = articles.where((d) =>
-                        (d.data() as Map<String, dynamic>)['newspaper'] == 'Drishti IAS').toList();
-                      final insights = articles.where((d) =>
-                        (d.data() as Map<String, dynamic>)['newspaper'] == 'Insights on India').toList();
+                      // Group by source dynamically
+                      final bySource = <String, List<QueryDocumentSnapshot>>{};
+                      for (final doc in articles) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final source = (data['newspaper'] as String?)?.isNotEmpty == true
+                            ? data['newspaper'] as String
+                            : (data['scrapedFrom'] as String?) ?? 'Editorial';
+                        bySource.putIfAbsent(source, () => []).add(doc);
+                      }
 
                       String dateLabel;
                       try {
@@ -635,12 +639,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                             ),
                             const SizedBox(height: 16),
                             // Source sections
-                            if (drishti.isNotEmpty)
-                              _buildSourceGroup('Drishti IAS', const Color(0xFF00BFA6), drishti, isWide),
-                            if (insights.isNotEmpty) ...[
-                              if (drishti.isNotEmpty) const SizedBox(height: 16),
-                              _buildSourceGroup('Insights on India', const Color(0xFF7C4DFF), insights, isWide),
-                            ],
+                            ...bySource.entries.map((entry) {
+                              final color = entry.key.contains('Drishti')
+                                  ? const Color(0xFF00BFA6)
+                                  : entry.key.contains('Insights')
+                                      ? const Color(0xFF7C4DFF)
+                                      : const Color(0xFF448AFF);
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildSourceGroup(entry.key, color, entry.value, isWide),
+                              );
+                            }),
                           ],
                         ),
                       );
