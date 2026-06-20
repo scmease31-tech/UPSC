@@ -81,3 +81,14 @@ jobs:
             build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}-arm32.apk
           draft: false
           prerelease: false
+
+      - name: Deploy APK to GitHub Pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git checkout gh-pages
+          cp build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk UPSC-Daily-Edge.apk
+          git add UPSC-Daily-Edge.apk
+          git commit -m "Update APK to ${{ steps.version.outputs.tag }}" || true
+          git push origin gh-pages

@@ -32,16 +32,8 @@ class UpdateService {
       final tag = (data['tag_name'] as String? ?? '').replaceFirst('v', '');
       if (tag.isEmpty) return;
 
-      // Find the actual download URL from assets
-      String? downloadUrl;
-      final assets = data['assets'] as List<dynamic>? ?? [];
-      for (final asset in assets) {
-        if (asset is Map<String, dynamic> && asset['name'] == _apkAsset) {
-          downloadUrl = asset['browser_download_url'] as String?;
-          break;
-        }
-      }
-      downloadUrl ??= 'https://github.com/$_owner/$_repo/releases/latest/download/$_apkAsset';
+      // Use GitHub Pages URL for reliable direct download (no redirect chain)
+      const downloadUrl = 'https://sohildobariya31-blip.github.io/UPSC/$_apkAsset';
 
       if (_isNewer(tag, current) && context.mounted) {
         _showUpdateDialog(context, tag, data['body'] as String? ?? '', downloadUrl);
