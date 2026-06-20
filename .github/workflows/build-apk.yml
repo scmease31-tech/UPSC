@@ -84,11 +84,13 @@ jobs:
 
       - name: Deploy APK to GitHub Pages
         run: |
+          cp build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk /tmp/UPSC-Daily-Edge.apk
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git stash --include-untracked
           git fetch origin gh-pages
           git checkout gh-pages
-          cp build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk UPSC-Daily-Edge.apk
+          cp /tmp/UPSC-Daily-Edge.apk UPSC-Daily-Edge.apk
           git add UPSC-Daily-Edge.apk
           git commit -m "Update APK to ${{ steps.version.outputs.tag }}" || true
           git push origin gh-pages
