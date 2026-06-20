@@ -69,7 +69,12 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
               children: [
                 _buildTopBar(context, dark, auth),
                 Expanded(
-                  child: widget.screenBuilder(context, widget.currentIndex),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1400),
+                      child: widget.screenBuilder(context, widget.currentIndex),
+                    ),
+                  ),
                 ),
               ],
             ),

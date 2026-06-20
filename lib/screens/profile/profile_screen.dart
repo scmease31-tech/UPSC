@@ -1,4 +1,5 @@
 ﻿import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -39,18 +40,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = auth.userProfile;
     final dark = theme.isDark;
 
-    return SafeArea(
-      bottom: false,
-      child: CustomScrollView(
+    Widget content = CustomScrollView(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-              child: Text('Profile', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+          if (!kIsWeb)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+                child: Text('Profile', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+              ),
             ),
-          ),
 
           // Profile card
           SliverToBoxAdapter(child: _buildProfileCard(context, auth, user)),
@@ -76,9 +76,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
-      ),
+      );
 
-    );
+    return kIsWeb ? content : SafeArea(bottom: false, child: content);
   }
 
   Widget _buildProfileCard(BuildContext context, AuthProvider auth, dynamic user) {

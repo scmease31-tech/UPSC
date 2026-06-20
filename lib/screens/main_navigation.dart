@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../config/theme.dart';
+import '../services/update_service.dart';
 import 'home/home_screen.dart';
 import 'news/news_screen.dart';
 import 'quiz/quiz_screen.dart';
@@ -70,6 +71,10 @@ class _MainNavigationState extends State<MainNavigation>
       vsync: this,
       duration: AppTheme.durationMedium,
     );
+    // Check for app updates after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) UpdateService.checkForUpdate(context);
+    });
   }
 
   @override

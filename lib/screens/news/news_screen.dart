@@ -1,4 +1,5 @@
 ﻿import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -126,21 +127,20 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
 
     final categories = ['All', 'Polity', 'Economy', 'Environment', 'Science & Technology', 'International Relations', 'Social Issues', 'Geography', 'History', 'Governance'];
 
-    return SafeArea(
-      bottom: false,
-      child: FadeTransition(
+    Widget content = FadeTransition(
         opacity: _fadeAnim,
         child: Column(
           children: [
             // ── STICKY HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+              padding: EdgeInsets.fromLTRB(kIsWeb ? 28 : 20, kIsWeb ? 12 : 16, kIsWeb ? 28 : 20, 6),
               child: Row(
                 children: [
-                  Text(
-                    'Current Affairs',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context)),
-                  ),
+                  if (!kIsWeb)
+                    Text(
+                      'Current Affairs',
+                      style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context)),
+                    ),
                   const Spacer(),
                   _iconBtn(
                     icon: Icons.tune_rounded,
@@ -463,9 +463,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
             ),
           ],
         ),
-      ),
+      );
 
-    );
+    return kIsWeb ? content : SafeArea(bottom: false, child: content);
   }
 
   Widget _iconBtn({required IconData icon, required Color color, required VoidCallback onTap}) {

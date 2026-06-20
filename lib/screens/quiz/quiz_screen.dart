@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
@@ -65,21 +66,20 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
       _QuizTopic('Mixed', '${_ib}target_mixed.png', AppTheme.warningOrange, null),
     ];
 
-    return SafeArea(
-      bottom: false,
-      child: FadeTransition(
+    Widget content = FadeTransition(
         opacity: _fadeCurve,
         child: CustomScrollView(
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
             // Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text('Quiz Arena', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+            if (!kIsWeb)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Text('Quiz Arena', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+                ),
               ),
-            ),
 
             // Score Hero Card
             SliverToBoxAdapter(child: _buildScoreCard(context, progress, dark)),
@@ -102,8 +102,9 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
-      ),
-    );
+      );
+
+    return kIsWeb ? content : SafeArea(bottom: false, child: content);
   }
 
   Widget _buildScoreCard(BuildContext context, DailyProgressProvider p, bool dark) {

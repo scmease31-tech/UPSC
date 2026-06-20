@@ -1,4 +1,5 @@
 ﻿import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -80,20 +81,19 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
     final w = MediaQuery.of(context).size.width;
     final hp = _hPad(w);
 
-    return SafeArea(
-      bottom: false,
-      child: FadeTransition(
+    Widget content = FadeTransition(
         opacity: _fadeCurve,
         child: CustomScrollView(
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(hp, 16, hp, 4),
-                child: Text('Study Hub', style: GoogleFonts.plusJakartaSans(fontSize: _scaledFont(w, 26), fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+            if (!kIsWeb)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(hp, 16, hp, 4),
+                  child: Text('Study Hub', style: GoogleFonts.plusJakartaSans(fontSize: _scaledFont(w, 26), fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+                ),
               ),
-            ),
 
             // Study time card
             SliverToBoxAdapter(child: _buildStudyTime(context, progress, w)),
@@ -117,8 +117,9 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
-      ),
-    );
+      );
+
+    return kIsWeb ? content : SafeArea(bottom: false, child: content);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
