@@ -1,6 +1,6 @@
 @echo off
 set PATH=C:\flutter\bin;%PATH%
-cd /d "c:\Users\sohil.d\Downloads\Hehe\new game"
+cd /d "c:\Users\sohil.d\Downloads\UPSC"
 
 echo === Deploying to GitHub Pages ===
 
@@ -15,7 +15,7 @@ git init
 git checkout -b gh-pages
 git add -A
 git commit -m "Deploy with web compatibility fixes"
-git remote add origin https://github.com/sohildobariya31-blip/UPSC.git
+git remote add origin https://github.com/scmease31-tech/UPSC.git
 git push origin gh-pages --force
 
 echo === Deploy complete ===

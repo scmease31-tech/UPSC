@@ -10,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../widgets/glass_widgets.dart';
 
-const _apkDownloadUrl = 'https://sohildobariya31-blip.github.io/UPSC/UPSC-Daily-Edge.apk';
+const _apkDownloadUrl = 'https://scmease31-tech.github.io/UPSC/UPSC-Daily-Edge.apk';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// OnboardingScreen — 4-page premium intro with hero illustrations,

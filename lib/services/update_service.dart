@@ -11,7 +11,7 @@ import 'package:path_provider/path_provider.dart';
 
 /// Checks GitHub Releases for a newer version, downloads in-app, and installs.
 class UpdateService {
-  static const _owner = 'sohildobariya31-blip';
+  static const _owner = 'scmease31-tech';
   static const _repo = 'UPSC';
   static const _apkAsset = 'UPSC-Daily-Edge.apk';
 
@@ -33,7 +33,7 @@ class UpdateService {
       if (tag.isEmpty) return;
 
       // Use GitHub Pages URL for reliable direct download (no redirect chain)
-      const downloadUrl = 'https://sohildobariya31-blip.github.io/UPSC/$_apkAsset';
+      const downloadUrl = 'https://scmease31-tech.github.io/UPSC/$_apkAsset';
 
       if (_isNewer(tag, current) && context.mounted) {
         _showUpdateDialog(context, tag, data['body'] as String? ?? '', downloadUrl);
