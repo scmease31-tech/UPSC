@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/glass_widgets.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// SignupScreen — Registration form with glassmorphic card.
@@ -94,7 +95,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
           height: 50,
           child: OutlinedButton.icon(
             onPressed: auth.isLoading ? null : _googleSignIn,
-            icon: const Text('G', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
+            icon: SvgPicture.asset('assets/icons/google_logo.svg', width: 22, height: 22),
             label: Text('Sign up with Google', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.textP(context),

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/glass_widgets.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// LoginScreen — Glassmorphic auth with Google + email/password sign-in.
@@ -105,9 +106,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           height: 52,
           child: OutlinedButton.icon(
             onPressed: auth.isLoading ? null : _googleSignIn,
-            icon: Image.asset('assets/images/logo.png', width: 22, height: 22,
-              errorBuilder: (_, __, ___) => const Text('G', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
-            ),
+            icon: SvgPicture.asset('assets/icons/google_logo.svg', width: 22, height: 22),
             label: Text('Continue with Google', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.textP(context),
