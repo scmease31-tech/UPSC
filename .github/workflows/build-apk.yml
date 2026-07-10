@@ -36,13 +36,27 @@ jobs:
 
       - name: Setup signing keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.p12
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/upload.p12
+          # Import PKCS12 into JKS, let keytool auto-assign alias
+          keytool -importkeystore \
+            -srckeystore /tmp/upload.p12 \
+            -srcstoretype PKCS12 \
+            -srcstorepass android \
+            -destkeystore android/app/upload-keystore.jks \
+            -deststoretype JKS \
+            -deststorepass android \
+            -destkeypass android \
+            -noprompt
+          # Find the alias that was imported
+          ALIAS=$(keytool -list -keystore android/app/upload-keystore.jks -storepass android | grep "PrivateKeyEntry\|privatekey\|key entry" | head -1 | cut -d',' -f1)
+          echo "Detected alias: $ALIAS"
           cat > android/key.properties << EOF
           storePassword=android
           keyPassword=android
-          keyAlias=1
-          storeFile=upload-keystore.p12
+          keyAlias=$ALIAS
+          storeFile=upload-keystore.jks
           EOF
+          cat android/key.properties
 
       - name: Build APK
         run: flutter build apk --release --no-tree-shake-icons --split-per-abi
