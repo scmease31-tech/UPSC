@@ -40,14 +40,17 @@ android {
 
     signingConfigs {
         if (useUploadSigning) {
-            val props = java.util.Properties().apply {
-                load(keyPropertiesFile.inputStream())
-            }
             create("upload") {
-                storeFile = file(props.getProperty("storeFile"))
-                storePassword = props.getProperty("storePassword")
-                keyAlias = props.getProperty("keyAlias")
-                keyPassword = props.getProperty("keyPassword")
+                val lines = keyPropertiesFile.readLines()
+                val props = mutableMapOf<String, String>()
+                for (line in lines) {
+                    val parts = line.split("=", limit = 2)
+                    if (parts.size == 2) props[parts[0].trim()] = parts[1].trim()
+                }
+                storeFile = file(props["storeFile"] ?: "")
+                storePassword = props["storePassword"] ?: ""
+                keyAlias = props["keyAlias"] ?: ""
+                keyPassword = props["keyPassword"] ?: ""
             }
         }
     }
