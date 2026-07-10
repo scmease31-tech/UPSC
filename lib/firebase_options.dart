@@ -50,11 +50,11 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDbOuNUCnM5j81IXWd41vOV1lfsjMYwygE',
-    appId: '1:787232499240:android:1f8f5a1308feb26e2af71d',
-    messagingSenderId: '787232499240',
-    projectId: 'upsc-app-e2475',
-    storageBucket: 'upsc-app-e2475.firebasestorage.app',
+    apiKey: 'AIzaSyDgTUysddSs22iwBc-zjGxeaDwpODzBt8U',
+    appId: '1:906645524405:android:838f1c73e83ff7a0dc53fc',
+    messagingSenderId: '906645524405',
+    projectId: 'upsc-app-e2475-e5c95',
+    storageBucket: 'upsc-app-e2475-e5c95.firebasestorage.app',
   );
 
   static const FirebaseOptions web = FirebaseOptions(

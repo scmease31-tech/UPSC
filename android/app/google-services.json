@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "787232499240",
-    "project_id": "upsc-app-e2475",
-    "storage_bucket": "upsc-app-e2475.firebasestorage.app"
+    "project_number": "906645524405",
+    "project_id": "upsc-app-e2475-e5c95",
+    "storage_bucket": "upsc-app-e2475-e5c95.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:787232499240:android:1f8f5a1308feb26e2af71d",
+        "mobilesdk_app_id": "1:906645524405:android:838f1c73e83ff7a0dc53fc",
         "android_client_info": {
           "package_name": "com.upsc.upsc_daily_edge"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "906645524405-gkbqd7t0logs2di5tope5rjege4lmlgk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.upsc.upsc_daily_edge",
+            "certificate_hash": "a4af45f97ece12866cd2d6432b27fd6dbad74685"
+          }
+        },
+        {
+          "client_id": "906645524405-ifrp69c4lq4m2e5umjlpk428d099nn0h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDbOuNUCnM5j81IXWd41vOV1lfsjMYwygE"
+          "current_key": "AIzaSyDgTUysddSs22iwBc-zjGxeaDwpODzBt8U"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "906645524405-ifrp69c4lq4m2e5umjlpk428d099nn0h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
