@@ -34,6 +34,16 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Setup signing keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.p12
+          cat > android/key.properties << EOF
+          storePassword=android
+          keyPassword=android
+          keyAlias=1
+          storeFile=upload-keystore.p12
+          EOF
+
       - name: Build APK
         run: flutter build apk --release --no-tree-shake-icons --split-per-abi
 
