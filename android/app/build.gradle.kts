@@ -36,25 +36,25 @@ android {
 
     // Load signing properties if available (CI or local)
     val keyPropertiesFile = rootProject.file("key.properties")
-    val keyProperties = java.util.Properties()
-    if (keyPropertiesFile.exists()) {
-        keyProperties.load(java.io.FileInputStream(keyPropertiesFile))
-    }
+    val useUploadSigning = keyPropertiesFile.exists()
 
     signingConfigs {
-        create("upload") {
-            if (keyPropertiesFile.exists()) {
-                storeFile = file(keyProperties["storeFile"] as String)
-                storePassword = keyProperties["storePassword"] as String
-                keyAlias = keyProperties["keyAlias"] as String
-                keyPassword = keyProperties["keyPassword"] as String
+        if (useUploadSigning) {
+            val props = java.util.Properties().apply {
+                load(keyPropertiesFile.inputStream())
+            }
+            create("upload") {
+                storeFile = file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = if (keyPropertiesFile.exists()) {
+            signingConfig = if (useUploadSigning) {
                 signingConfigs.getByName("upload")
             } else {
                 signingConfigs.getByName("debug")
