@@ -14,8 +14,18 @@ REM ============================================================================
 
 setlocal
 
-if "%GOOGLE_APPLICATION_CREDENTIALS%"=="" (
-  set "GOOGLE_APPLICATION_CREDENTIALS=%USERPROFILE%\Downloads\upsc-app-e2475-e5c95-firebase-adminsdk-fbsvc-9c95feba9c.json"
+REM Auto-detect the newest Firebase Admin key in Downloads if not already set.
+if not defined GOOGLE_APPLICATION_CREDENTIALS (
+  for /f "delims=" %%F in ('dir /b /a-d /o-d "%USERPROFILE%\Downloads\*firebase-adminsdk*.json" 2^>nul') do (
+    if not defined GOOGLE_APPLICATION_CREDENTIALS set "GOOGLE_APPLICATION_CREDENTIALS=%USERPROFILE%\Downloads\%%F"
+  )
+)
+
+if not defined GOOGLE_APPLICATION_CREDENTIALS (
+  echo [ERROR] No Firebase Admin service-account JSON found in %USERPROFILE%\Downloads.
+  echo Download one from Firebase Console ^> Project Settings ^> Service accounts,
+  echo or set GOOGLE_APPLICATION_CREDENTIALS to its path, then retry.
+  exit /b 1
 )
 
 if not exist "%GOOGLE_APPLICATION_CREDENTIALS%" (
