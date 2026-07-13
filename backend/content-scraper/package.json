@@ -12,6 +12,7 @@
     "pdf:vocab": "node pdf-ingest.js --type vocabulary",
     "pdf:newspaper": "node pdf-ingest.js --type newspaper",
     "pdf:editorial": "node pdf-ingest.js --type editorial",
+    "daily": "node daily-ingest.js",
     "test": "node index.js --dry-run"
   },
   "dependencies": {

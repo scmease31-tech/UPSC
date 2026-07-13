@@ -23,6 +23,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { pathToFileURL } from 'url';
 // Import the library file directly to skip pdf-parse's debug wrapper, which
 // otherwise tries to read a bundled test PDF and crashes under ESM.
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
@@ -457,6 +458,104 @@ function parseArticles(text, source, dateStr, minBody) {
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Ingest a single PDF: extract text, parse by type, and upload to Firestore.
+ * Reusable by both the CLI (main) and the daily batch runner. When uploading
+ * (dryRun=false), the caller must have called initFirebase() first.
+ *
+ * @returns {Promise<Object>} Summary of what was parsed/uploaded.
+ */
+export async function ingestFile({
+  file,
+  type = 'vocabulary',
+  source = null,
+  date = null,
+  dryRun = false,
+  articles = false,
+  dump = null,
+  json = null,
+}) {
+  const base = path.basename(file);
+  const dateStr = date || dateFromName(base) || todayIST();
+
+  const buffer = fs.readFileSync(file);
+  const parsed = await pdfParse(buffer);
+  const pages = parsed.numpages || 0;
+  const fullText = normalizeText(parsed.text || '');
+  const chars = fullText.length;
+  console.log(`  [read] ${base}: ${chars} chars, ${pages} page(s), type=${type}, date=${dateStr}`);
+
+  if (dump) {
+    fs.writeFileSync(dump, fullText, 'utf-8');
+    console.log(`  [dump] wrote raw text to ${dump}`);
+    return { file: base, type, dumped: true };
+  }
+
+  if (chars < 50) {
+    console.warn(`  [warn] ${base}: almost no text (likely scanned images; needs OCR). Skipping.`);
+    return { file: base, type, error: 'no-text' };
+  }
+
+  if (type === 'vocabulary') {
+    const vocab = parseVocabulary(fullText, dateStr);
+    console.log(`  [parse] ${vocab.length} vocabulary word(s)`);
+    if (json) {
+      fs.writeFileSync(json, JSON.stringify(vocab, null, 2), 'utf-8');
+      console.log(`  [json] wrote parsed docs to ${json}`);
+      return { file: base, type, parsed: vocab.length };
+    }
+    const s = await uploadVocabulary(vocab, dryRun);
+    console.log(`  [done] vocabulary: +${s.uploaded} added, ${s.skipped} existing, ${s.errors} errors`);
+    return { file: base, type, vocabulary: s };
+  }
+
+  if (type === 'newspaper' || type === 'editorial') {
+    const src = source || (type === 'editorial' ? 'Editorials' : base.replace(/\.pdf$/i, ''));
+
+    // Government schemes are reliably detectable even from multi-column layouts,
+    // because scheme names are distinctive proper nouns. Run detection over the
+    // whole document as a single pseudo-article.
+    const pseudo = [{
+      title: src,
+      summary: '',
+      content: fullText,
+      publishedDate: dateStr,
+      categoryTags: ['Current Affairs'],
+      keyTerms: {},
+    }];
+    const schemes = generateSchemes(pseudo);
+    console.log(`  [parse] ${schemes.length} government scheme(s)`);
+
+    // Article/flashcard reconstruction from these layouts is unreliable
+    // (columns get interleaved), so it is opt-in via `articles`.
+    let articleDocs = [];
+    if (articles) {
+      const minBody = type === 'editorial' ? 400 : 250;
+      articleDocs = parseArticles(fullText, src, dateStr, minBody);
+      console.log(`  [parse] ${articleDocs.length} article block(s) [articles opt-in]`);
+    }
+
+    if (json) {
+      fs.writeFileSync(json, JSON.stringify({ schemes, articles: articleDocs }, null, 2), 'utf-8');
+      console.log(`  [json] wrote parsed docs to ${json}`);
+      return { file: base, type, schemes: schemes.length, articles: articleDocs.length };
+    }
+
+    const sStats = await uploadSchemes(schemes, dryRun);
+    let aStats = { uploaded: 0, skipped: 0, errors: 0 };
+    let fStats = { uploaded: 0, skipped: 0, errors: 0 };
+    if (articles && articleDocs.length) {
+      aStats = await uploadArticles(articleDocs, dryRun);
+      const derived = generateAll(articleDocs);
+      fStats = await uploadFlashcards(derived.flashcards, dryRun);
+    }
+    console.log(`  [done] schemes: +${sStats.uploaded} added, ${sStats.skipped} existing, ${sStats.errors} errors`);
+    return { file: base, type, schemes: sStats, articles: aStats, flashcards: fStats };
+  }
+
+  throw new Error(`Unknown type "${type}". Use vocabulary | newspaper | editorial.`);
+}
+
 async function main() {
   const opts = parseArgs();
 
@@ -471,6 +570,8 @@ Options:
   --dry-run   Parse only; do not upload
   --articles  (newspaper/editorial) also extract article fragments (best-effort)
   --json PATH Write parsed docs to a JSON file instead of uploading (no creds)
+
+Tip: to upload all of today's PDFs at once, use daily-ingest.js instead.
 `);
     process.exit(1);
   }
@@ -480,101 +581,17 @@ Options:
     process.exit(1);
   }
 
-  const base = path.basename(opts.file);
-  const dateStr = opts.date || dateFromName(base) || todayIST();
+  if (!opts.dryRun && !opts.json && !opts.dump) initFirebase();
 
-  console.log(`Reading PDF: ${base}`);
-  const buffer = fs.readFileSync(opts.file);
-  const parsed = await pdfParse(buffer);
-  const pages = parsed.numpages || 0;
-  const fullText = normalizeText(parsed.text || '');
-  const chars = fullText.length;
-  console.log(`Extracted ${chars} chars from ${pages} page(s). Type=${opts.type} Date=${dateStr}`);
-
-  // Debug aid: write the raw extracted text to a file for layout inspection.
-  if (opts.dump) {
-    fs.writeFileSync(opts.dump, fullText, 'utf-8');
-    console.log(`Dumped raw text to ${opts.dump}`);
-    return;
+  try {
+    await ingestFile(opts);
+  } catch (e) {
+    console.error('Fatal error:', e.message);
+    process.exit(1);
   }
-
-  if (chars < 50) {
-    console.error('Almost no text extracted. The PDF is likely scanned images (needs OCR).');
-    process.exit(2);
-  }
-
-  if (!opts.dryRun && !opts.json) initFirebase();
-
-  if (opts.type === 'vocabulary') {
-    const vocab = parseVocabulary(fullText, dateStr);
-    console.log(`Parsed ${vocab.length} vocabulary words.`);
-    if (opts.json) {
-      fs.writeFileSync(opts.json, JSON.stringify(vocab, null, 2), 'utf-8');
-      console.log(`Wrote parsed docs to ${opts.json}`);
-      return;
-    }
-    const s = await uploadVocabulary(vocab, opts.dryRun);
-    console.log(`Vocabulary: uploaded=${s.uploaded} skipped=${s.skipped} errors=${s.errors}`);
-    return;
-  }
-
-  if (opts.type === 'newspaper' || opts.type === 'editorial') {
-    const source = opts.source || (opts.type === 'editorial' ? 'Editorials' : base.replace(/\.pdf$/i, ''));
-
-    // Government schemes are reliably detectable even from multi-column layouts,
-    // because scheme names are distinctive proper nouns. Run detection over the
-    // whole document as a single pseudo-article.
-    const pseudo = [{
-      title: source,
-      summary: '',
-      content: fullText,
-      publishedDate: dateStr,
-      categoryTags: ['Current Affairs'],
-      keyTerms: {},
-    }];
-    const schemes = generateSchemes(pseudo);
-    console.log(`Detected ${schemes.length} government scheme(s).`);
-
-    // Article/flashcard reconstruction from these layouts is unreliable
-    // (columns get interleaved), so it is opt-in via --articles.
-    let articleDocs = [];
-    if (opts.articles) {
-      const minBody = opts.type === 'editorial' ? 400 : 250;
-      articleDocs = parseArticles(fullText, source, dateStr, minBody);
-      console.log(`Parsed ${articleDocs.length} article block(s) [--articles opt-in].`);
-    } else {
-      console.log('Note: article extraction skipped (newspaper layouts do not split reliably). Pass --articles to force it.');
-    }
-
-    if (opts.json) {
-      fs.writeFileSync(opts.json, JSON.stringify({ schemes, articles: articleDocs }, null, 2), 'utf-8');
-      console.log(`Wrote parsed docs to ${opts.json}`);
-      return;
-    }
-
-    const sStats = await uploadSchemes(schemes, opts.dryRun);
-
-    let aStats = { uploaded: 0, skipped: 0, errors: 0 };
-    let fStats = { uploaded: 0, skipped: 0, errors: 0 };
-    if (opts.articles && articleDocs.length) {
-      aStats = await uploadArticles(articleDocs, opts.dryRun);
-      const derived = generateAll(articleDocs);
-      fStats = await uploadFlashcards(derived.flashcards, opts.dryRun);
-    }
-
-    console.log(
-      `Done: schemes(+${sStats.uploaded}/~${sStats.skipped}) ` +
-      `articles(+${aStats.uploaded}/~${aStats.skipped}) ` +
-      `flashcards(+${fStats.uploaded}/~${fStats.skipped})`
-    );
-    return;
-  }
-
-  console.error(`Unknown --type "${opts.type}". Use vocabulary | newspaper | editorial.`);
-  process.exit(1);
 }
 
-main().catch((e) => {
-  console.error('Fatal error:', e.message);
-  process.exit(1);
-});
+// Run the CLI only when this file is executed directly, not when imported.
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  main();
+}
