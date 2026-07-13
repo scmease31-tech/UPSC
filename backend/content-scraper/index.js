@@ -19,7 +19,14 @@
 
 import { scrapeDrishti, scrapeInsights } from './scrapers.js';
 import { deduplicateAndMerge } from './deduplicator.js';
-import { initFirebase, uploadArticles, markTopNews } from './uploader.js';
+import {
+  initFirebase,
+  uploadArticles,
+  uploadVocabulary,
+  uploadFlashcards,
+  uploadSchemes,
+} from './uploader.js';
+import { generateAll } from './generators.js';
 
 function getDateStr(date) {
   const y = date.getFullYear();
@@ -104,12 +111,36 @@ async function scrapeForDate(dateStr, dryRun) {
     mergedArticles[i].isTopNews = true;
   }
 
-  // 3. Upload to Firestore
+  // 3. Upload articles to Firestore
   console.log(`\n[Upload] Uploading ${mergedArticles.length} articles to Firestore...`);
   const stats = await uploadArticles(mergedArticles, dryRun);
 
-  console.log(`\n[Done] ${dateStr}: Uploaded=${stats.uploaded} Skipped=${stats.skipped} Errors=${stats.errors}`);
-  return stats;
+  // 4. Derive supplementary study content from the same articles and upload it.
+  //    This builds the vocabulary / flashcards / schemes libraries over time.
+  console.log('\n[Generate] Deriving vocabulary, flashcards, and schemes...');
+  const derived = generateAll(mergedArticles);
+  console.log(
+    `[Generate] vocabulary=${derived.vocabulary.length} ` +
+    `flashcards=${derived.flashcards.length} schemes=${derived.schemes.length}`
+  );
+
+  const vocabStats = await uploadVocabulary(derived.vocabulary, dryRun);
+  const flashStats = await uploadFlashcards(derived.flashcards, dryRun);
+  const schemeStats = await uploadSchemes(derived.schemes, dryRun);
+
+  console.log(
+    `\n[Done] ${dateStr}: ` +
+    `articles(+${stats.uploaded}/~${stats.skipped}) ` +
+    `vocab(+${vocabStats.uploaded}/~${vocabStats.skipped}) ` +
+    `flashcards(+${flashStats.uploaded}/~${flashStats.skipped}) ` +
+    `schemes(+${schemeStats.uploaded}/~${schemeStats.skipped})`
+  );
+
+  return {
+    uploaded: stats.uploaded + vocabStats.uploaded + flashStats.uploaded + schemeStats.uploaded,
+    skipped: stats.skipped + vocabStats.skipped + flashStats.skipped + schemeStats.skipped,
+    errors: stats.errors + vocabStats.errors + flashStats.errors + schemeStats.errors,
+  };
 }
 
 async function main() {

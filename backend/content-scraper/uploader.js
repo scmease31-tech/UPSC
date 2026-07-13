@@ -122,6 +122,92 @@ export async function uploadArticles(articles, dryRun = false) {
 }
 
 /**
+ * Generic dedup-aware upload for a Firestore collection.
+ * Skips documents whose id already exists (no overwrite), batches writes,
+ * and stamps a server timestamp. Used for vocabulary / flashcards / govtSchemes.
+ *
+ * @param {string} collectionName - Target Firestore collection
+ * @param {Array<Object>} docs - Docs to write; each MUST have a stable `id`
+ * @param {boolean} dryRun - If true, only logs
+ * @param {string} labelField - Field used for human-readable log lines
+ * @returns {Object} Stats: { uploaded, skipped, errors }
+ */
+export async function uploadToCollection(collectionName, docs, dryRun = false, labelField = 'title') {
+  const stats = { uploaded: 0, skipped: 0, errors: 0 };
+
+  if (!docs || docs.length === 0) {
+    console.log(`  [${collectionName}] Nothing to upload`);
+    return stats;
+  }
+
+  if (dryRun) {
+    console.log(`[DryRun] Would upload ${docs.length} docs to '${collectionName}':`);
+    for (const d of docs.slice(0, 20)) {
+      console.log(`  - ${String(d[labelField] || d.id).slice(0, 70)}`);
+    }
+    if (docs.length > 20) console.log(`  ...and ${docs.length - 20} more`);
+    stats.uploaded = docs.length;
+    return stats;
+  }
+
+  if (!db) initFirebase();
+  const collection = db.collection(collectionName);
+  const BATCH_SIZE = 400;
+
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const chunk = docs.slice(i, i + BATCH_SIZE);
+    const batch = db.batch();
+
+    for (const doc of chunk) {
+      if (!doc.id) {
+        console.error(`  [err] ${collectionName}: doc missing id`);
+        stats.errors++;
+        continue;
+      }
+      const docRef = collection.doc(doc.id);
+      try {
+        const existing = await docRef.get();
+        if (existing.exists) {
+          stats.skipped++;
+          continue;
+        }
+        const { id, ...data } = doc;
+        batch.set(docRef, { ...data, createdAt: FieldValue.serverTimestamp() });
+        stats.uploaded++;
+        console.log(`  [add] ${collectionName}: ${String(doc[labelField] || id).slice(0, 60)}`);
+      } catch (e) {
+        console.error(`  [err] ${collectionName}/${doc.id}: ${e.message}`);
+        stats.errors++;
+      }
+    }
+
+    try {
+      await batch.commit();
+    } catch (e) {
+      console.error(`[Firebase] Batch commit failed for ${collectionName}: ${e.message}`);
+      stats.errors += chunk.length;
+    }
+  }
+
+  return stats;
+}
+
+/** Upload derived vocabulary docs to the `vocabulary` collection. */
+export function uploadVocabulary(docs, dryRun = false) {
+  return uploadToCollection('vocabulary', docs, dryRun, 'word');
+}
+
+/** Upload derived flashcard docs to the `flashcards` collection. */
+export function uploadFlashcards(docs, dryRun = false) {
+  return uploadToCollection('flashcards', docs, dryRun, 'front');
+}
+
+/** Upload derived scheme docs to the `govtSchemes` collection. */
+export function uploadSchemes(docs, dryRun = false) {
+  return uploadToCollection('govtSchemes', docs, dryRun, 'name');
+}
+
+/**
  * Mark today's top articles (most recent, first from each source).
  */
 export async function markTopNews(dateStr, count = 3) {

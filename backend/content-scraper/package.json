@@ -8,11 +8,16 @@
     "scrape:today": "node index.js --today",
     "scrape:date": "node index.js --date",
     "newspaper": "node newspaper-upload.js",
+    "pdf": "node pdf-ingest.js",
+    "pdf:vocab": "node pdf-ingest.js --type vocabulary",
+    "pdf:newspaper": "node pdf-ingest.js --type newspaper",
+    "pdf:editorial": "node pdf-ingest.js --type editorial",
     "test": "node index.js --dry-run"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
     "firebase-admin": "^12.0.0",
+    "pdf-parse": "^1.1.1",
     "string-similarity": "^4.0.4"
   },
   "engines": {
