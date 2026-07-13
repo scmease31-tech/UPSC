@@ -1,0 +1,43 @@
+name: Backfill Derived Content
+
+# Derives vocabulary, flashcards, and government schemes from the articles
+# already stored in Firestore. Run manually after enabling the generators, or
+# any time you want to (re)derive content from the full article history.
+# Dedup-safe: existing docs are skipped.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no upload)'
+        type: boolean
+        default: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/content-scraper/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend/content-scraper
+        run: npm ci || npm install
+
+      - name: Run backfill
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            node backfill.js --dry-run
+          else
+            node backfill.js
+          fi

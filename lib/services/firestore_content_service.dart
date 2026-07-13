@@ -23,15 +23,57 @@ class FirestoreContentService {
 
   static Future<List<Map<String, dynamic>>> getCurrentAffairs() async {
     if (_currentAffairs != null) return _currentAffairs!;
-    _currentAffairs = await _fetchWithCache('currentAffairs');
+    var data = await _fetchWithCache('currentAffairs');
+    // The dedicated `currentAffairs` collection is usually empty — the daily
+    // scraper writes news into `articles`. Fall back to that so the Week/Month/
+    // Important tabs show real, recent current affairs.
+    if (data.isEmpty) {
+      data = await _articlesAsCurrentAffairs();
+    }
+    _currentAffairs = data;
     return _currentAffairs ?? [];
   }
 
+  /// Map the scraped `articles` collection into the current-affairs card shape,
+  /// tagging each with how many days old it is for the Week/Month filters.
+  static Future<List<Map<String, dynamic>>> _articlesAsCurrentAffairs() async {
+    try {
+      final snap = await _firestore
+          .collection('articles')
+          .orderBy('publishedDate', descending: true)
+          .limit(200)
+          .get();
+      final now = DateTime.now();
+      return snap.docs.map((d) {
+        final a = d.data();
+        final tags = (a['categoryTags'] as List?) ?? const [];
+        final category = tags.isNotEmpty ? tags.first.toString() : 'General';
+        final dateStr = (a['publishedDate'] ?? '').toString();
+        final pd = DateTime.tryParse(dateStr);
+        final daysAgo = pd == null ? 9999 : now.difference(pd).inDays;
+        return <String, dynamic>{
+          'title': a['title'] ?? '',
+          'summary': a['summary'] ?? '',
+          'detail': (a['content'] ?? a['summary'] ?? '').toString(),
+          'keyPoints': (a['keyPoints'] as List?)?.map((e) => e.toString()).toList() ?? <String>[],
+          'category': category,
+          'date': dateStr,
+          'important': a['isTopNews'] == true,
+          'daysAgo': daysAgo,
+          'upscRelevance': (a['syllabusMapping'] ?? a['examRelevance'] ?? '').toString(),
+          'colorHex': '',
+        };
+      }).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   static List<Map<String, dynamic>> getWeeklyAffairs(List<Map<String, dynamic>> all) =>
-      all.where((a) => a['period'] == 'weekly').toList();
+      all.where((a) => a['period'] == 'weekly' || (a['daysAgo'] is int && a['daysAgo'] <= 7)).toList();
 
   static List<Map<String, dynamic>> getMonthlyAffairs(List<Map<String, dynamic>> all) =>
-      all.where((a) => a['period'] == 'monthly').toList();
+      all.where((a) => a['period'] == 'monthly' || (a['daysAgo'] is int && a['daysAgo'] <= 31)).toList();
 
   static List<Map<String, dynamic>> getImportantAffairs(List<Map<String, dynamic>> all) =>
       all.where((a) => a['important'] == true).toList();
