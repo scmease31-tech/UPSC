@@ -208,6 +208,69 @@ export function uploadSchemes(docs, dryRun = false) {
 }
 
 /**
+ * Delete docs in a collection matching newspaper + publishedDate, so a re-ingest
+ * cleanly REPLACES that day's content for that source instead of leaving stale
+ * (e.g. previously-garbled) docs behind when their ids change. Requires the
+ * collection's docs to carry `newspaper` and `publishedDate` fields.
+ * @returns {Promise<number>} number of docs deleted
+ */
+export async function deleteBySourceDate(collectionName, newspaper, dateStr, dryRun = false) {
+  if (dryRun || !newspaper || !dateStr) return 0;
+  if (!db) initFirebase();
+  const snap = await db.collection(collectionName)
+    .where('newspaper', '==', newspaper)
+    .where('publishedDate', '==', dateStr)
+    .get();
+  if (snap.empty) return 0;
+  let deleted = 0;
+  const docs = snap.docs;
+  for (let i = 0; i < docs.length; i += 400) {
+    const batch = db.batch();
+    for (const d of docs.slice(i, i + 400)) { batch.delete(d.ref); deleted++; }
+    await batch.commit();
+  }
+  console.log(`  [clean] removed ${deleted} stale '${newspaper}' doc(s) from ${collectionName} for ${dateStr}`);
+  return deleted;
+}
+
+/**
+ * One-time maintenance: scan a collection and delete docs whose text fields
+ * still contain extraction garbage — stray control bytes, running page ids
+ * (e2145468...), or common dropped-ligature forms (ination, ocials, decit...).
+ * Safe for the fully-derived `articles`/`flashcards` collections.
+ * @returns {Promise<number>} number of docs deleted
+ */
+const BROKEN_RE = /[\u0001-\u0008\u000e-\u001f\u0080-\u009f]|e\d{7,}|\b(?:ination|inations|ocials?|ocers?|decits?|dierent|dierences?|claried|conrm|conrmed|conrmation|signicant|signicantly|reects?|conicts?|eective|dicult|diculty|staer|armation)\b/i;
+
+export async function sweepBrokenDocs(collectionName, textFields, dryRun = false) {
+  if (!db) initFirebase();
+  const snap = await db.collection(collectionName).get();
+  const toDelete = [];
+  snap.forEach((doc) => {
+    const data = doc.data();
+    const text = textFields.map((f) => String(data[f] || '')).join(' \u0001 ');
+    // Reset lastIndex not needed (no /g); test each field's combined text.
+    if (BROKEN_RE.test(text)) toDelete.push(doc.ref);
+  });
+  if (toDelete.length === 0) {
+    console.log(`  [sweep] ${collectionName}: no broken docs found`);
+    return 0;
+  }
+  if (dryRun) {
+    console.log(`  [sweep] ${collectionName}: would delete ${toDelete.length} broken doc(s)`);
+    return toDelete.length;
+  }
+  let deleted = 0;
+  for (let i = 0; i < toDelete.length; i += 400) {
+    const batch = db.batch();
+    for (const ref of toDelete.slice(i, i + 400)) { batch.delete(ref); deleted++; }
+    await batch.commit();
+  }
+  console.log(`  [sweep] ${collectionName}: deleted ${deleted} broken doc(s)`);
+  return deleted;
+}
+
+/**
  * Mark today's top articles (most recent, first from each source).
  */
 export async function markTopNews(dateStr, count = 3) {

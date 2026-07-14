@@ -34,6 +34,7 @@ import {
   uploadVocabulary,
   uploadFlashcards,
   uploadSchemes,
+  deleteBySourceDate,
 } from './uploader.js';
 import { generateAll, generateSchemes } from './generators.js';
 
@@ -82,50 +83,120 @@ function clean(s) {
   return (s || '').replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ').trim();
 }
 
-// Some newspaper fonts DROP the fi/fl/ff/ffi/ffl ligatures entirely on text
-// extraction (e.g. "inflation" -> "ination", "first" -> "rst"). This maps the
-// resulting broken tokens back to real words. Only forms that are NOT valid
-// English words are included, so there are no false positives.
-// ONLY forms that are (a) not real English words and (b) not a suffix/fragment
-// of any common word — so they can never corrupt real text even if a word gets
-// split across a line. Risky short forms (nal, aws, ame, oor...) and real words
-// (e.g. "tracking") are deliberately excluded. Ambiguous cases like "ination"
-// (a fragment of determination/examination) are also excluded.
-const _LIG_FIX = {
-  signicant: 'significant', signicantly: 'significantly', signicance: 'significance',
-  specic: 'specific', specically: 'specifically', specics: 'specifics',
-  claried: 'clarified', clarication: 'clarification', claries: 'clarifies',
-  conrmed: 'confirmed', conrm: 'confirm', conrms: 'confirms', conrmation: 'confirmation',
-  benet: 'benefit', benets: 'benefits', beneted: 'benefited', beneting: 'benefiting',
-  beneciary: 'beneficiary', beneciaries: 'beneficiaries',
-  dicult: 'difficult', diculty: 'difficulty', diculties: 'difficulties',
-  ecient: 'efficient', eciency: 'efficiency', eciently: 'efficiently',
-  sucient: 'sufficient', suciently: 'sufficiently',
-  conict: 'conflict', conicts: 'conflicts', conicting: 'conflicting',
-  ocial: 'official', ocially: 'officially', ocials: 'officials',
-  ocer: 'officer', ocers: 'officers',
-  armation: 'affirmation', armative: 'affirmative',
-  reect: 'reflect', reects: 'reflects', reected: 'reflected', reection: 'reflection',
-  protable: 'profitable', protability: 'profitability',
-  dierent: 'different', dierence: 'difference', dierences: 'differences',
-  classication: 'classification', notication: 'notification', ratication: 'ratification',
-};
+// Many newspaper/editorial PDFs DROP the f-ligatures (ff, fi, fl, ffi, ffl)
+// entirely during text extraction — e.g. "inflation" -> "ination",
+// "first" -> "rst", "official" -> "ocial", "affirmation" -> "armation".
+// We repair this by starting from a list of REAL words that contain those
+// clusters, computing the broken form each collapses to, and mapping it back.
+// This is safe: we only replace a whole token that exactly equals a known
+// broken form. Broken forms shorter than 3 chars, forms that are real English
+// words (see LIG_BLOCK), and ambiguous forms (two words collapse to the same
+// thing) are all excluded, so real text can never be corrupted.
+const LIG_WORDS = [
+  // ── fl / infl- / refl- / confl- / -flu- ─────────────────────────────────
+  'inflation','inflationary','deflation','reflation','inflection','inflected',
+  'reflect','reflects','reflected','reflecting','reflection','reflections',
+  'conflict','conflicts','conflicting','flaws','flagged','flagging','unflagging',
+  'flexible','flexibility','inflexible','fleet','fleets','flourish','flourished','flourishing',
+  'flooding','flooded','floods','inflow','outflow','overflow','overflowing',
+  'fluid','fluids','fluent','fluently','fluency','affluent',
+  'influence','influences','influenced','influential','influx','flux','reflux',
+  // ── fi / fig / fin / fir / fis / fix / -fic- / -fied / -fication ─────────
+  'first','firsthand','fifth','fifteen','fifteenth','fifty','fifties',
+  'field','fields','battlefield','midfield','figure','figures','figured','figuring','figment',
+  'fight','fights','fighting','fighter','fighters',
+  'final','finals','finally','finalize','finalized','finalised','finalising',
+  'finding','findings','finish','finished','finishing','finishes','unfinished',
+  'finger','fingers','fingerprint','fiction','fictional','nonfiction','fiscal','fiscally',
+  'fibre','fibres','fiber','fierce','fiercely','fiery','filter','filters','filtered','filtration',
+  'finite','infinite','infinity','definite','definitely','definition','definitions','indefinite','indefinitely',
+  'defiance','defiant','defiantly','fixed','fixes','fixing','fixture','fixtures',
+  'financial','financially','finance','finances','financed','financing','refinance',
+  'confident','confidence','confidential','confidentiality','confidently',
+  'deficit','deficits','proficient','proficiency','coefficient','coefficients',
+  'certificate','certificates','certification','certified','artificial','artificially',
+  'sacrifice','sacrifices','sacrificed','sacrificing','magnificent','magnificence',
+  'scientific','scientifically','pacific','terrific','horrific','horrifying','terrified','horrified',
+  'unified','unify','unification','testified','testifies','testify','satisfied','dissatisfied','satisfies','gratified',
+  'notification','notifications','notified','notify','notifies',
+  'classification','classifications','classified','ratification','ratified','ratify',
+  'justification','justified','justify','justifies','identification','identified','identify','identifies',
+  'qualification','qualifications','qualified','qualify','modification','modifications','modified','modify',
+  'verification','verified','verify','verifies','amplification','amplified','amplify',
+  'simplification','simplified','simplify','diversified','diversification','intensified','intensify',
+  'clarified','clarifies','clarification','clarifications',
+  'profit','profits','profitable','profitability','profited','nonprofit',
+  // ── ff / a-ff / e-ff / o-ff / su-ff / -ffi- ──────────────────────────────
+  'affirmation','affirmations','reaffirmation','affirmative','affair','affairs',
+  'affect','affects','affected','affecting','unaffected','affliction','afflicted',
+  'afford','affordable','affordability','affiliate','affiliated','affiliation',
+  'offer','offers','offered','offering','offerings','offset','offshore','offspring','offside',
+  'offence','offense','offensive','suffer','suffered','suffering','suffers','suffice',
+  'sufficient','sufficiently','insufficient','buffer','buffers','buffered',
+  'differ','differed','differing','different','difference','differences','differently','differentiate',
+  'diffuse','diffusion','traffic','scaffold','scaffolding','coffee','proffer',
+  'effect','effects','effected','effective','effectively','effectiveness','ineffective','efficacy',
+  'effort','efforts','effortless','effortlessly','efficient','efficiency','efficiently','inefficient',
+  'office','offices','official','officials','officially','officer','officers','unofficial',
+  'difficult','difficulty','difficulties',
+  'confirm','confirms','confirmed','confirming','confirmation',
+  'significant','significantly','significance','insignificant',
+  'specific','specifically','specifics','specification','specifications',
+  'benefit','benefits','benefited','benefiting','beneficial','beneficiary','beneficiaries',
+  'staffer','staffers','rifle','rifles','prefix','suffix','suffixes',
+  // ── extra high-frequency news / legal / economy words ────────────────────
+  'ceasefire','gunfire','wildfire','backfire','crossfire','bonfire','misfire',
+  'unfit','fitness','outfit','outfits','fitted','fitting',
+  'confine','confinement','define','defined','defines','defining','definable',
+  'refine','refined','refinery','refineries','refining',
+  'reshuffle','reshuffled','reshuffles','shuffle','shuffled',
+  'affidavit','affidavits','plaintiff','plaintiffs','sheriff',
+];
+// Real English words a broken form could collide with — never map these back.
+const LIG_BLOCK = new Set([
+  'arm','arms','armed','arming','re','ame','ag','ags','our','ours','at','ash','are','ares',
+  'led','it','its','in','ins','ne','le','les','sh','ed','ow','ows','oat','ort','ore',
+  'prole','proles','rearm','utter','tracking','lament','owing','owed','seminal','seminals',
+]);
+// Build brokenForm -> correctWord, skipping short/blocked/ambiguous forms.
+const _LIG_MAP = (() => {
+  const map = new Map();
+  const ambiguous = new Set();
+  for (const w of LIG_WORDS) {
+    const broken = w.replace(/ffl|ffi|ff|fi|fl/g, '');
+    if (broken === w || broken.length < 3 || LIG_BLOCK.has(broken)) continue;
+    if (map.has(broken) && map.get(broken) !== w) { ambiguous.add(broken); continue; }
+    map.set(broken, w);
+  }
+  for (const a of ambiguous) map.delete(a);
+  return map;
+})();
+
+/** Restore the original word's casing (all-caps, Title, or lower) onto a fix. */
+function applyCase(fix, sample) {
+  if (sample.length > 1 && sample === sample.toUpperCase()) return fix.toUpperCase();
+  if (/^[A-Z]/.test(sample)) return fix[0].toUpperCase() + fix.slice(1);
+  return fix;
+}
 
 function repairDroppedLigatures(text) {
-  return text.replace(/\b([A-Za-z]{5,})\b/g, (word) => {
-    const fix = _LIG_FIX[word.toLowerCase()];
-    if (!fix) return word;
-    return /^[A-Z]/.test(word) ? fix[0].toUpperCase() + fix.slice(1) : fix;
+  return String(text).replace(/\b([A-Za-z]{3,})\b/g, (word) => {
+    const fix = _LIG_MAP.get(word.toLowerCase());
+    return fix ? applyCase(fix, word) : word;
   });
 }
 
 /** Fix common PDF text artifacts: ligatures, smart quotes, replacement chars. */
 function normalizeText(t) {
   const normalized = String(t || '')
-    // Strip zero-width / soft-hyphen artifacts first — a dropped ligature often
-    // leaves one of these mid-word (e.g. "in<zwsp>ation"), which would otherwise
-    // split the token and defeat the ligature repair below.
+    // Strip zero-width / soft-hyphen artifacts.
     .replace(/[\u00AD\u200B\u200C\u200D\u2060\uFEFF]/g, '')
+    // This font extracts DROPPED f-ligatures (ff/fi/fl/ffi/ffl) as stray C0/C1
+    // control bytes sitting mid-word, e.g. "in<0x8f>ation", "a<0x81>rm",
+    // "clari<0x8d>ed". Remove them so the word collapses to its dropped form
+    // ("ination"), which repairDroppedLigatures then restores ("inflation").
+    // Tab/newline/CR are preserved.
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u0080-\u009F]/g, '')
     .replace(/\uFB00/g, 'ff').replace(/\uFB01/g, 'fi').replace(/\uFB02/g, 'fl')
     .replace(/\uFB03/g, 'ffi').replace(/\uFB04/g, 'ffl')
     .replace(/[\u2018\u2019\u02BC]/g, "'")
@@ -134,7 +205,9 @@ function normalizeText(t) {
     .replace(/\u2026/g, '...')
     .replace(/\uFFFD/g, '')
     .replace(/\u00a0/g, ' ');
-  return repairDroppedLigatures(normalized);
+  // De-hyphenate line-break splits BEFORE repairing ligatures, so a word split
+  // as "Tribu-\nnal" becomes "Tribunal" (not "Tribu"+"nal" -> "Tribufinal").
+  return repairDroppedLigatures(deHyphenate(normalized));
 }
 
 function hashId(prefix, ...parts) {
@@ -463,6 +536,24 @@ function isNewspaperBoilerplate(l) {
 }
 
 /**
+ * Reject "titles" that are really page furniture: running page IDs, date/city
+ * headers, section timetables, e-mail footers, disclaimers, etc.
+ */
+function isJunkTitle(t) {
+  if (!t) return true;
+  const s = t.trim();
+  if (/^[a-z]/.test(s)) return true;                                     // starts mid-sentence -> fragment, not a headline
+  if (/e\d{6,}/i.test(s)) return true;                                   // running page id, e.g. e2145468
+  if (/\b\d{1,2}\s+(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\b/i.test(s)) return true;
+  if (/\b(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,?\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(s)) return true;
+  if (/(DISCLAIMER|Readers are requested|City Timings|Classifieds?|Advertisement|Daily page|To subscribe|missed call|scan QR)/i.test(s)) return true;
+  if (/[\w.+-]+@[\w.-]+\.[a-z]{2,}/i.test(s)) return true;                // e-mail in title => footer
+  if (s.replace(/[^A-Za-z]/g, '').length < 12) return true;              // too few letters for a headline
+  if (s.replace(/[^0-9]/g, '').length / s.length > 0.25) return true;    // mostly numbers (timetables/results)
+  return false;
+}
+
+/**
  * Parse a newspaper/editorial PDF (as flattened by pdf-parse, which preserves
  * a mostly column-correct reading order) into readable article documents.
  * Articles are delimited by the byline→dateline cluster that ends each story.
@@ -470,7 +561,9 @@ function isNewspaperBoilerplate(l) {
  * is de-hyphenated and reflowed into running paragraphs.
  */
 function parseArticles(text, source, dateStr, minBody) {
-  const lines = deHyphenate(text).split(/\r?\n/).map((l) => clean(l));
+  // De-hyphenate first (joins "infla-\ntion" -> "ination"), then repair
+  // ligatures again so words that were split across a line break are fixed too.
+  const lines = repairDroppedLigatures(deHyphenate(text)).split(/\r?\n/).map((l) => clean(l));
   const articles = [];
   let buf = [];
 
@@ -503,7 +596,7 @@ function parseArticles(text, source, dateStr, minBody) {
       const first = body.split(/(?<=[.!?])\s+/).find((s) => s.split(/\s+/).length >= 6 && /[a-z]/.test(s)) || body;
       title = clean(first).slice(0, 110).replace(/\s+\S*$/, '');
     }
-    if (title.length < 12) return;
+    if (title.length < 12 || isJunkTitle(title)) return;
 
     const sentences = body.split(/(?<=[.!?])\s+/);
     const keyPoints = sentences
@@ -638,6 +731,13 @@ export async function ingestFile({
       const minBody = type === 'editorial' ? 400 : 250;
       articleDocs = parseArticles(fullText, src, dateStr, minBody);
       console.log(`  [parse] ${articleDocs.length} article block(s) [articles opt-in]`);
+      if (articleDocs.length === 0) {
+        const alnum = fullText.replace(/[^A-Za-z0-9]/g, '').length;
+        const perPage = pages > 0 ? Math.round(alnum / pages) : alnum;
+        if (perPage < 1500) {
+          console.warn(`  [warn] ${base}: only ~${perPage} readable chars/page — this looks like an image-only/scanned PDF (no real text layer). Article text can't be extracted without OCR.`);
+        }
+      }
     }
 
     if (json) {
@@ -650,8 +750,13 @@ export async function ingestFile({
     let aStats = { uploaded: 0, skipped: 0, errors: 0 };
     let fStats = { uploaded: 0, skipped: 0, errors: 0 };
     if (articles && articleDocs.length) {
+      // Replace this source's articles/flashcards for the day, so re-ingesting
+      // cleanly overwrites older (e.g. previously-garbled) versions instead of
+      // leaving duplicates behind when titles/ids change.
+      await deleteBySourceDate('articles', src, dateStr, dryRun);
       aStats = await uploadArticles(articleDocs, dryRun);
       const derived = generateAll(articleDocs);
+      await deleteBySourceDate('flashcards', src, dateStr, dryRun);
       fStats = await uploadFlashcards(derived.flashcards, dryRun);
     }
     console.log(`  [done] schemes: +${sStats.uploaded} added, ${sStats.skipped} existing, ${sStats.errors} errors`);

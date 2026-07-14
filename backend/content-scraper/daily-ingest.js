@@ -2,9 +2,10 @@
 /**
  * Daily Batch Ingest
  *
- * Scans a folder (default: ~/Downloads) for the day's UPSC PDFs, infers each
- * file's type from its name, and uploads them all to Firestore in one run.
- * This is the "one command / one double-click" daily workflow.
+ * Scans a folder (default: ~/Downloads) AND its immediate subfolders (e.g.
+ * ~/Downloads/News) for the day's UPSC PDFs, infers each file's type from its
+ * name, and uploads them all to Firestore in one run. This is the "one command
+ * / one double-click" daily workflow.
  *
  * Recognised filenames:
  *   *vocab*                         -> vocabulary
@@ -66,41 +67,81 @@ function fmt(stats) {
   return `+${stats.uploaded} added, ${stats.skipped} existing`;
 }
 
+/**
+ * Collect matching UPSC PDF jobs from a folder AND its immediate subfolders,
+ * so files kept in e.g. Downloads\News are found without needing --dir.
+ */
+function collectJobs(baseDir, { respectDate, now, windowMs }) {
+  const dirs = [baseDir];
+  try {
+    for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        dirs.push(path.join(baseDir, entry.name));
+      }
+    }
+  } catch { /* ignore unreadable base dir */ }
+
+  const jobs = [];
+  const seen = new Set();
+  for (const d of dirs) {
+    let entries;
+    try { entries = fs.readdirSync(d); } catch { continue; }
+    for (const f of entries) {
+      if (!f.toLowerCase().endsWith('.pdf')) continue;
+      const full = path.join(d, f);
+      if (seen.has(full)) continue;
+      let stat;
+      try { stat = fs.statSync(full); } catch { continue; }
+      if (!stat.isFile()) continue;
+      if (respectDate && now - stat.mtimeMs > windowMs) continue;
+      const cls = classify(f);
+      if (!cls) continue; // skip unrelated PDFs
+      seen.add(full);
+      jobs.push({ file: full, ...cls });
+    }
+  }
+  return jobs;
+}
+
 async function main() {
   const opts = parseArgs();
-  const dir = opts.dir || path.join(os.homedir(), 'Downloads');
+  const baseDir = opts.dir || path.join(os.homedir(), 'Downloads');
 
-  if (!fs.existsSync(dir)) {
-    console.error(`Folder not found: ${dir}`);
+  if (!fs.existsSync(baseDir)) {
+    console.error(`Folder not found: ${baseDir}`);
     process.exit(1);
   }
 
   const now = Date.now();
   const windowMs = opts.since * 24 * 60 * 60 * 1000;
 
-  const jobs = [];
-  for (const f of fs.readdirSync(dir)) {
-    if (!f.toLowerCase().endsWith('.pdf')) continue;
-    const full = path.join(dir, f);
-    let stat;
-    try { stat = fs.statSync(full); } catch { continue; }
-    if (!stat.isFile()) continue;
-    if (!opts.all && now - stat.mtimeMs > windowMs) continue;
-    const cls = classify(f);
-    if (!cls) continue; // skip unrelated PDFs
-    jobs.push({ file: full, ...cls });
+  // Scan the folder and its immediate subfolders (e.g. Downloads\News).
+  let jobs = collectJobs(baseDir, { respectDate: !opts.all, now, windowMs });
+
+  // If nothing matched the recency window but there ARE UPSC PDFs in the
+  // folder(s), use them anyway (uploads are de-duplicated). This keeps the
+  // double-click reliable even when the files are a few days old.
+  let usedDateFallback = false;
+  if (jobs.length === 0 && !opts.all) {
+    const anyJobs = collectJobs(baseDir, { respectDate: false, now, windowMs });
+    if (anyJobs.length > 0) { jobs = anyJobs; usedDateFallback = true; }
   }
 
   console.log('='.repeat(64));
   console.log(`  UPSC Daily PDF Ingest`);
-  console.log(`  Folder: ${dir}`);
-  console.log(`  Filter: ${opts.all ? 'all files' : `modified in last ${opts.since} day(s)`}`);
+  console.log(`  Folder: ${baseDir}  (incl. subfolders)`);
+  console.log(`  Filter: ${opts.all || usedDateFallback ? 'all files' : `modified in last ${opts.since} day(s)`}`);
   console.log(`  Mode:   ${opts.dryRun ? 'DRY RUN (no upload)' : 'LIVE'}`);
   console.log('='.repeat(64));
 
+  if (usedDateFallback) {
+    console.log(`\n(Nothing modified in the last ${opts.since} day(s); using all UPSC PDFs found instead.)`);
+  }
+
   if (jobs.length === 0) {
     console.log('\nNo matching UPSC PDFs found.');
-    console.log('Make sure the files are in the folder above and named like');
+    console.log('Looked in the folder above and its subfolders (e.g. "News").');
+    console.log('Make sure the files are named like');
     console.log('"Daily Vocabulary ...", "... Editorials ...", "IE Delhi ...", "TH Delhi ...".');
     return;
   }
@@ -119,8 +160,10 @@ async function main() {
       results.push(await ingestFile({
         ...j,
         dryRun: opts.dryRun,
-        // Newspapers/editorials: extract article text (not just schemes) by default.
-        articles: opts.articles || j.type === 'newspaper' || j.type === 'editorial',
+        // Newspapers extract full article text; editorials are schemes-only by
+        // default (editorial compilation PDFs interleave multiple papers, so
+        // their article segmentation is unreliable). Pass --articles to force.
+        articles: opts.articles || j.type === 'newspaper',
       }));
     } catch (e) {
       console.error(`  [err] ${path.basename(j.file)}: ${e.message}`);

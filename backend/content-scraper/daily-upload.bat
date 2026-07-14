@@ -2,11 +2,12 @@
 REM ============================================================================
 REM  UPSC Daily Upload - double-click this file
 REM
-REM  Put the day's PDFs in your Downloads folder (named as usual, e.g.
+REM  Put the day's PDFs in your Downloads folder OR a subfolder like
+REM  Downloads\News (named as usual, e.g.
 REM  "Daily Vocabulary 14-07-2026.pdf", "IE Delhi 14-07-2026.pdf",
 REM  "TH Delhi 14-07-2026.pdf", "All English Editorials 14-7.pdf"),
-REM  then double-click this file. It finds them, uploads the content, and
-REM  shows a summary.
+REM  then double-click this file. It scans Downloads and its subfolders,
+REM  uploads the content, and shows a summary.
 REM
 REM  To scan a different folder, run from a terminal:
 REM     daily-upload.bat --dir "D:\path\to\pdfs"
@@ -35,7 +36,14 @@ if not defined GOOGLE_APPLICATION_CREDENTIALS (
 echo Using credentials: %GOOGLE_APPLICATION_CREDENTIALS%
 echo.
 
-node "%~dp0daily-ingest.js" %*
+REM The desktop shortcut has no arguments. In that case, explicitly scan the
+REM dedicated Downloads\News folder so there is no ambiguity about where the
+REM PDFs must be placed. Explicit command-line arguments still override this.
+if "%~1"=="" (
+  node "%~dp0daily-ingest.js" --dir "%USERPROFILE%\Downloads\News"
+) else (
+  node "%~dp0daily-ingest.js" %*
+)
 
 echo.
 echo ----------------------------------------------------------------

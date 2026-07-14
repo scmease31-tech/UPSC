@@ -57,10 +57,25 @@ serviceAccount*.json
 *.class
 *.log
 *.pyc
+__pycache__/
 .buildlog/
 .history
 migrate_working_dir/
 node_modules/
+
+# ─── OCR / Python venv ───────────────────────────────────────────────
+**/.ocr-venv/
+**/.ocr-cache/
+
+# ─── Temporary probe/debug files ─────────────────────────────────────
+_*.cmd
+_*.txt
+_*.ps1
+_*.jpg
+_*.json
+_ocr_probe.py
+_layout_probe.py
+_render_probe.py
 
 # ─── Figma Code Connect (design tool artifacts) ──────────────────────
 *.figma.js

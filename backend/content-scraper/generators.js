@@ -138,6 +138,8 @@ export function generateFlashcards(articles) {
           front,
           back,
           category,
+          newspaper: article.newspaper || '',
+          publishedDate: article.publishedDate || '',
         });
       }
     }
@@ -154,6 +156,8 @@ export function generateFlashcards(articles) {
           front,
           back: summary.slice(0, 400),
           category,
+          newspaper: article.newspaper || '',
+          publishedDate: article.publishedDate || '',
         });
       }
     }
