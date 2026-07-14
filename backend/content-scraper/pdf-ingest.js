@@ -82,9 +82,50 @@ function clean(s) {
   return (s || '').replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ').trim();
 }
 
+// Some newspaper fonts DROP the fi/fl/ff/ffi/ffl ligatures entirely on text
+// extraction (e.g. "inflation" -> "ination", "first" -> "rst"). This maps the
+// resulting broken tokens back to real words. Only forms that are NOT valid
+// English words are included, so there are no false positives.
+// ONLY forms that are (a) not real English words and (b) not a suffix/fragment
+// of any common word — so they can never corrupt real text even if a word gets
+// split across a line. Risky short forms (nal, aws, ame, oor...) and real words
+// (e.g. "tracking") are deliberately excluded. Ambiguous cases like "ination"
+// (a fragment of determination/examination) are also excluded.
+const _LIG_FIX = {
+  signicant: 'significant', signicantly: 'significantly', signicance: 'significance',
+  specic: 'specific', specically: 'specifically', specics: 'specifics',
+  claried: 'clarified', clarication: 'clarification', claries: 'clarifies',
+  conrmed: 'confirmed', conrm: 'confirm', conrms: 'confirms', conrmation: 'confirmation',
+  benet: 'benefit', benets: 'benefits', beneted: 'benefited', beneting: 'benefiting',
+  beneciary: 'beneficiary', beneciaries: 'beneficiaries',
+  dicult: 'difficult', diculty: 'difficulty', diculties: 'difficulties',
+  ecient: 'efficient', eciency: 'efficiency', eciently: 'efficiently',
+  sucient: 'sufficient', suciently: 'sufficiently',
+  conict: 'conflict', conicts: 'conflicts', conicting: 'conflicting',
+  ocial: 'official', ocially: 'officially', ocials: 'officials',
+  ocer: 'officer', ocers: 'officers',
+  armation: 'affirmation', armative: 'affirmative',
+  reect: 'reflect', reects: 'reflects', reected: 'reflected', reection: 'reflection',
+  protable: 'profitable', protability: 'profitability',
+  dierent: 'different', dierence: 'difference', dierences: 'differences',
+  classication: 'classification', notication: 'notification', ratication: 'ratification',
+};
+
+function repairDroppedLigatures(text) {
+  return text.replace(/\b([A-Za-z]{5,})\b/g, (word) => {
+    const fix = _LIG_FIX[word.toLowerCase()];
+    if (!fix) return word;
+    return /^[A-Z]/.test(word) ? fix[0].toUpperCase() + fix.slice(1) : fix;
+  });
+}
+
 /** Fix common PDF text artifacts: ligatures, smart quotes, replacement chars. */
 function normalizeText(t) {
-  return String(t || '')
+  const normalized = String(t || '')
+    // Strip zero-width / soft-hyphen artifacts first — a dropped ligature often
+    // leaves one of these mid-word (e.g. "in<zwsp>ation"), which would otherwise
+    // split the token and defeat the ligature repair below.
+    .replace(/[\u00AD\u200B\u200C\u200D\u2060\uFEFF]/g, '')
     .replace(/\uFB00/g, 'ff').replace(/\uFB01/g, 'fi').replace(/\uFB02/g, 'fl')
     .replace(/\uFB03/g, 'ffi').replace(/\uFB04/g, 'ffl')
     .replace(/[\u2018\u2019\u02BC]/g, "'")
@@ -93,6 +134,7 @@ function normalizeText(t) {
     .replace(/\u2026/g, '...')
     .replace(/\uFFFD/g, '')
     .replace(/\u00a0/g, ' ');
+  return repairDroppedLigatures(normalized);
 }
 
 function hashId(prefix, ...parts) {
@@ -386,59 +428,93 @@ function splitList(s) {
 // Article parser (newspapers + editorials)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Join words hyphenated across a line break: "determina-\ntion" -> "determination". */
+function deHyphenate(text) {
+  return String(text || '').replace(/([A-Za-z])[-‐]\n([a-z])/g, '$1$2');
+}
+
+const NEWS_AGENCY_RE = /^(the hindu bureau|the hindu|special correspondent|staff reporter|staff reporters|press trust of india|agence france-presse|associated press|our bureau|reuters|bloomberg|pti|ani|ians)$/i;
+
+/** A byline is a person's name (e.g. "T.C.A. Sharad Raghavan") or a news agency. */
+function looksLikeByline(s) {
+  if (NEWS_AGENCY_RE.test(s)) return true;
+  if (s.length < 5 || s.length > 32) return false;
+  const toks = s.split(/\s+/);
+  if (toks.length < 2 || toks.length > 4) return false;
+  return toks.every((t) => /^[A-Z][a-z'’.-]+$/.test(t) || /^(?:[A-Z]\.){1,3}$/.test(t));
+}
+
+/** A dateline is an ALL-CAPS place (e.g. "NEW DELHI", "WASHINGTON"). */
+function looksLikeDateline(s) {
+  if (s.length < 3 || s.length > 26) return false;
+  if (!/^[A-Z][A-Z .'’-]+$/.test(s)) return false;
+  if (/^(CM|YK|IN BRIEF|NEWS|WORLD|SPORT|SPORTS|BUSINESS|EDITORIAL|OPINION|PAGE|FULL|CONTINUED|CITY|AND|THE)/.test(s)) return false;
+  return true;
+}
+
+/** Masthead / navigation / boilerplate lines to drop. */
+function isNewspaperBoilerplate(l) {
+  if (!l) return true;
+  if (l === '»') return true;
+  if (/^»?\s*PAGE\s*\d+/i.test(l)) return true;
+  if (/(CONTINUED ON|FULL REPORT ON|www\.|to subscribe|missed call|scan QR|city edition|regd\.|RNI No\.|^Vol\.|^No\.\s*\d+|printed at|^\d+\s*Pages|^Chennai$|^Bengaluru$|^Hyderabad$)/i.test(l)) return true;
+  if (/^[A-Z]{2,3}$/.test(l)) return true; // print registration marks: CM, YK, AND-NDE
+  return false;
+}
+
 /**
- * Best-effort split of raw PDF text into article-like blocks using headline
- * heuristics. Short Title-Case / ALL-CAPS lines with no terminal punctuation
- * act as boundaries; everything until the next boundary is the body.
+ * Parse a newspaper/editorial PDF (as flattened by pdf-parse, which preserves
+ * a mostly column-correct reading order) into readable article documents.
+ * Articles are delimited by the byline→dateline cluster that ends each story.
+ * The lead sentence is used as the title (reliable and sensible), and the text
+ * is de-hyphenated and reflowed into running paragraphs.
  */
 function parseArticles(text, source, dateStr, minBody) {
-  const rawLines = text.split(/\r?\n/).map((l) => l.replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ').trimEnd());
-  const blocks = [];
-  let title = null;
-  let body = [];
+  const lines = deHyphenate(text).split(/\r?\n/).map((l) => clean(l));
+  const articles = [];
+  let buf = [];
 
-  const isHeadline = (l) => {
-    const t = l.trim();
-    if (t.length < 8 || t.length > 100) return false;
-    if (/[.:;,]$/.test(t)) return false;
-    const words = t.split(/\s+/);
-    if (words.length < 2 || words.length > 14) return false;
-    // Mostly capitalised words, or an ALL-CAPS banner.
-    const capWords = words.filter((w) => /^[A-Z0-9]/.test(w)).length;
-    const allCaps = /^[A-Z0-9 &'’.\-]+$/.test(t) && /[A-Z]{3,}/.test(t);
-    return allCaps || capWords / words.length >= 0.6;
-  };
+  // Drop ALL-CAPS teaser/section labels ("IN BRIEF", "WORLD", "TRAGIC PARTY").
+  const stripLabels = (arr) =>
+    arr.filter((l) => !(/^[^a-z]*$/.test(l) && l.replace(/[^A-Za-z]/g, '').length >= 2 && l.length <= 34));
 
-  const push = () => {
-    const text = clean(body.join(' '));
-    if (title && text.length >= minBody) {
-      blocks.push({ title: clean(title), body: text });
+  const emit = (rawBuf) => {
+    const lines = stripLabels(rawBuf.map(clean).filter(Boolean));
+    if (lines.length === 0) return;
+
+    // Newspapers put the headline AFTER the body in reading order:
+    // [body...][headline][subhead][byline]. Peel the trailing headline off.
+    let k = lines.length;
+    while (k > 0 && (lines[k - 1].length > 78 || /[;,]$/.test(lines[k - 1]))) k--; // skip subhead
+    const head = [];
+    while (
+      k > 0 && head.length < 3 &&
+      lines[k - 1].length <= 78 && !/[.!?]["']?$/.test(lines[k - 1]) && /[A-Za-z]/.test(lines[k - 1])
+    ) {
+      head.unshift(lines[k - 1]); k--;
     }
-    title = null;
-    body = [];
-  };
 
-  for (const line of rawLines) {
-    if (isHeadline(line)) {
-      push();
-      title = line.trim();
-    } else if (line.trim()) {
-      body.push(line);
+    const body = clean(lines.slice(0, k).join(' ')) || clean(lines.join(' '));
+    if (body.length < minBody) return;
+
+    let title = clean(head.join(' '));
+    // Fallback: first substantial sentence of the body.
+    if (title.length < 12 || title.length > 130 || /[.]$/.test(title)) {
+      const first = body.split(/(?<=[.!?])\s+/).find((s) => s.split(/\s+/).length >= 6 && /[a-z]/.test(s)) || body;
+      title = clean(first).slice(0, 110).replace(/\s+\S*$/, '');
     }
-  }
-  push();
+    if (title.length < 12) return;
 
-  return blocks.map((b) => {
-    const keyPoints = b.body
-      .split(/(?<=[.!?])\s+/)
+    const sentences = body.split(/(?<=[.!?])\s+/);
+    const keyPoints = sentences
       .filter((s) => s.length > 40 && s.length < 220)
       .slice(0, 6)
       .map(clean);
-    return {
-      id: hashId('art', b.title, dateStr),
-      title: b.title,
-      summary: b.body.slice(0, 300).replace(/\s+\S*$/, '') + '…',
-      content: b.body.slice(0, 6000),
+    articles.push({
+      id: hashId('art', title, dateStr),
+      title,
+      summary: body.slice(0, 300).replace(/\s+\S*$/, '') + '…',
+      content: body.slice(0, 6000),
       keyPoints,
       examRelevance: 'Both',
       categoryTags: ['Current Affairs'],
@@ -450,7 +526,36 @@ function parseArticles(text, source, dateStr, minBody) {
       upscPaper: '',
       relatedTopics: [],
       keyTerms: {},
-    };
+    });
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (isNewspaperBoilerplate(l)) continue;
+
+    // A byline immediately (ignoring boilerplate) followed by a dateline marks
+    // the end of an article. Everything accumulated is that article's text.
+    if (looksLikeByline(l)) {
+      let j = i + 1;
+      while (j < lines.length && isNewspaperBoilerplate(lines[j])) j++;
+      if (j < lines.length && looksLikeDateline(lines[j])) {
+        emit(buf);
+        buf = [];
+        i = j; // consume the dateline too
+        continue;
+      }
+    }
+    buf.push(l);
+  }
+  emit(buf);
+
+  // De-dupe by title.
+  const seen = new Set();
+  return articles.filter((a) => {
+    const k = a.title.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
   });
 }
 

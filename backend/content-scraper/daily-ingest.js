@@ -116,7 +116,12 @@ async function main() {
   const results = [];
   for (const j of jobs) {
     try {
-      results.push(await ingestFile({ ...j, dryRun: opts.dryRun, articles: opts.articles }));
+      results.push(await ingestFile({
+        ...j,
+        dryRun: opts.dryRun,
+        // Newspapers/editorials: extract article text (not just schemes) by default.
+        articles: opts.articles || j.type === 'newspaper' || j.type === 'editorial',
+      }));
     } catch (e) {
       console.error(`  [err] ${path.basename(j.file)}: ${e.message}`);
       results.push({ file: path.basename(j.file), type: j.type, error: e.message });
