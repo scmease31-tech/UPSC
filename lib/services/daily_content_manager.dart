@@ -73,11 +73,11 @@ class DailyContentManager {
         _cachedFirestoreFlashcards = snapshot.docs.map((doc) {
           final data = doc.data();
           return <String, String>{
-            'front': (data['front'] ?? '') as String,
-            'back': (data['back'] ?? '') as String,
-            'category': (data['category'] ?? '') as String,
+            'front': (data['front'] ?? '').toString(),
+            'back': (data['back'] ?? '').toString(),
+            'category': (data['category'] ?? '').toString(),
           };
-        }).toList();
+        }).where((c) => c['front']!.isNotEmpty && c['back']!.isNotEmpty).toList();
       }
     } catch (_) {
       // Silently fall back to local data

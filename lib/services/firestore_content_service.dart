@@ -135,20 +135,30 @@ class FirestoreContentService {
     final now = DateTime.now().millisecondsSinceEpoch;
 
     if (cachedJson != null && (now - cachedTs) < _cacheTTL.inMilliseconds) {
-      return (jsonDecode(cachedJson) as List)
-          .cast<Map<String, dynamic>>();
+      try {
+        return (jsonDecode(cachedJson) as List).cast<Map<String, dynamic>>();
+      } catch (_) {
+        // Corrupt cache — ignore and refetch.
+      }
     }
 
     // Fetch from Firestore
     try {
       final snapshot = await _firestore.collection(collection).get();
       final docs = snapshot.docs
-          .map((d) => <String, dynamic>{'docId': d.id, ...d.data()})
+          .map((d) => <String, dynamic>{'docId': d.id, ..._jsonSafe(d.data())})
           .toList();
 
       if (docs.isNotEmpty) {
-        await prefs.setString(cacheKey, jsonEncode(docs));
-        await prefs.setInt(tsKey, now);
+        // Caching must NEVER block returning the data. Firestore values such as
+        // Timestamps are not JSON-serializable; _jsonSafe converts them, but we
+        // still guard the write so no edge case can blank out a real result.
+        try {
+          await prefs.setString(cacheKey, jsonEncode(docs));
+          await prefs.setInt(tsKey, now);
+        } catch (_) {
+          // Skip caching this time; the data is still returned below.
+        }
         return docs;
       }
     } catch (_) {
@@ -157,10 +167,36 @@ class FirestoreContentService {
 
     // Return expired cache if Firestore failed
     if (cachedJson != null) {
-      return (jsonDecode(cachedJson) as List)
-          .cast<Map<String, dynamic>>();
+      try {
+        return (jsonDecode(cachedJson) as List).cast<Map<String, dynamic>>();
+      } catch (_) {
+        // Corrupt cache — nothing usable.
+      }
     }
     return [];
+  }
+
+  /// Convert Firestore-specific types (Timestamp, GeoPoint, DocumentReference)
+  /// into JSON-serializable values so documents can be cached and safely used
+  /// by the UI. Without this, a single Timestamp field (e.g. the `createdAt`
+  /// the scraper/uploader writes) makes jsonEncode throw and the whole
+  /// collection silently returns empty — the bug that hid vocabulary & schemes.
+  static Map<String, dynamic> _jsonSafe(Map<String, dynamic> data) {
+    final out = <String, dynamic>{};
+    data.forEach((key, value) => out[key] = _safeValue(value));
+    return out;
+  }
+
+  static dynamic _safeValue(dynamic v) {
+    if (v is Timestamp) return v.toDate().toIso8601String();
+    if (v is DateTime) return v.toIso8601String();
+    if (v is GeoPoint) return {'lat': v.latitude, 'lng': v.longitude};
+    if (v is DocumentReference) return v.path;
+    if (v is Map) {
+      return v.map((k, val) => MapEntry(k.toString(), _safeValue(val)));
+    }
+    if (v is List) return v.map(_safeValue).toList();
+    return v;
   }
 
   /// Force-refresh a collection (bypasses cache).
