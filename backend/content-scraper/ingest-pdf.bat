@@ -1,37 +1,25 @@
 @echo off
 REM ============================================================================
-REM  UPSC PDF Ingest - Windows runner
+REM  UPSC PDF Ingest - Windows runner (single file)
 REM
 REM  Usage:
-REM    ingest-pdf.bat "C:\path\to\Daily Vocabulary 13-07-2026.pdf" vocabulary
-REM    ingest-pdf.bat "C:\path\to\IE Delhi 13-07-2026.pdf" newspaper "Indian Express"
+REM    ingest-pdf.bat "C:\path\to\Daily Vocabulary 14-07-2026.pdf" vocabulary
+REM    ingest-pdf.bat "C:\path\to\IE Delhi 14-07-2026.pdf" newspaper "Indian Express"
 REM    ingest-pdf.bat "C:\path\to\editorials.pdf" editorial
 REM
-REM  Credentials: point GOOGLE_APPLICATION_CREDENTIALS at your Firebase Admin
-REM  service-account JSON. If it is already set in your environment, that value
-REM  is used. Otherwise the default path below is used - edit if yours differs.
+REM  Credentials: auto-detected from Downloads / the project folder, or set
+REM  GOOGLE_APPLICATION_CREDENTIALS to your Firebase Admin JSON path.
 REM ============================================================================
 
 setlocal
 
-REM Auto-detect the newest Firebase Admin key in Downloads if not already set.
-if not defined GOOGLE_APPLICATION_CREDENTIALS (
-  for /f "delims=" %%F in ('dir /b /a-d /o-d "%USERPROFILE%\Downloads\*firebase-adminsdk*.json" 2^>nul') do (
-    if not defined GOOGLE_APPLICATION_CREDENTIALS set "GOOGLE_APPLICATION_CREDENTIALS=%USERPROFILE%\Downloads\%%F"
-  )
-)
+if not defined GOOGLE_APPLICATION_CREDENTIALS call :findkey "%USERPROFILE%\Downloads"
+if not defined GOOGLE_APPLICATION_CREDENTIALS call :findkey "%~dp0..\.."
+if not defined GOOGLE_APPLICATION_CREDENTIALS call :findkey "%~dp0."
 
 if not defined GOOGLE_APPLICATION_CREDENTIALS (
-  echo [ERROR] No Firebase Admin service-account JSON found in %USERPROFILE%\Downloads.
-  echo Download one from Firebase Console ^> Project Settings ^> Service accounts,
-  echo or set GOOGLE_APPLICATION_CREDENTIALS to its path, then retry.
-  exit /b 1
-)
-
-if not exist "%GOOGLE_APPLICATION_CREDENTIALS%" (
-  echo [ERROR] Service account key not found at:
-  echo         %GOOGLE_APPLICATION_CREDENTIALS%
-  echo Set GOOGLE_APPLICATION_CREDENTIALS to your Firebase Admin JSON and retry.
+  echo [ERROR] No Firebase Admin service-account JSON found in Downloads or the project folder.
+  echo Put your Firebase Admin JSON in Downloads, or set GOOGLE_APPLICATION_CREDENTIALS, then retry.
   exit /b 1
 )
 
@@ -51,3 +39,10 @@ echo Using credentials: %GOOGLE_APPLICATION_CREDENTIALS%
 node "%~dp0pdf-ingest.js" "%PDF%" --type %TYPE% %SOURCE_ARG%
 
 endlocal
+exit /b 0
+
+:findkey
+for /f "delims=" %%F in ('dir /b /a-d /o-d "%~1\*firebase-adminsdk*.json" 2^>nul') do (
+  if not defined GOOGLE_APPLICATION_CREDENTIALS set "GOOGLE_APPLICATION_CREDENTIALS=%~1\%%F"
+)
+goto :eof
