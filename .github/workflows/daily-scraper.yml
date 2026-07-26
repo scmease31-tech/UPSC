@@ -42,6 +42,10 @@ jobs:
         working-directory: backend/content-scraper
         run: npm ci || npm install
 
+      - name: Test parsers
+        working-directory: backend/content-scraper
+        run: npm test
+
       - name: Run scraper
         working-directory: backend/content-scraper
         env:

@@ -13,6 +13,45 @@ A premium Flutter app for UPSC exam preparation — daily current affairs, quizz
 - **Responsive** — Adaptive layouts for mobile and web (sidebar nav on wide screens)
 - **Dark Mode** — Full glassmorphic dark theme with persistence
 
+## Adding a newspaper — upload and it's in the app
+
+Drop any newspaper PDF into the [`inbox/`](inbox/) folder on GitHub (Add file →
+Upload files → Commit). The **Newspaper Inbox** workflow extracts the articles —
+running OCR when the PDF is a scan with no text layer — uploads them to
+Firestore, clears the file and logs the result in `inbox/PROCESSED.md`. Pull to
+refresh in the app.
+
+Works from a phone browser, needs no local setup, and runs entirely on the free
+GitHub Actions and Firebase tiers. Full instructions: [`inbox/README.md`](inbox/README.md).
+
+## Content pipeline
+
+| Source | How it runs | Lands in |
+| --- | --- | --- |
+| Drishti IAS + Insights on India | `daily-scraper.yml`, 4×/day | `articles`, `pyqs`, `flashcards`, `vocabulary`, `govtSchemes` |
+| Newspaper or question paper you upload | `newspaper-inbox.yml`, on upload | `articles`, `pyqs`, `flashcards`, `vocabulary`, `govtSchemes` |
+| Official UPSC papers from upsc.gov.in | `upsc-papers.yml`, manual | `pyqs` |
+| PDFs on your own machine | `node backend/content-scraper/daily-ingest.js` | same as above |
+
+The Drishti scraper reads each article's own page rather than the daily index,
+which is what supplies real headline artwork, the section structure used by the
+reader view, and the verbatim previous-year questions that grow the PYQ tab.
+
+**Article artwork.** Sources sometimes publish with no image. The pipeline then
+looks for an openly-licensed topic image (Wikipedia / Wikimedia Commons) and
+stores it with its attribution. A match is only accepted when it is
+demonstrably about the same subject — a wrong-but-pretty photo is worse than the
+app's own generated cover, which is what an article falls back to.
+
+**Daily vocabulary** is mined from the day's articles: uncommon editorial-register
+words, filtered against a common-word list and their inflections, then defined via
+the free Dictionary API and shown with the sentence they appeared in.
+
+**Official papers.** UPSC publishes Civil Services papers as image-only scans with
+no answer keys, so `upsc-papers.js` OCRs them (English + Hindi, so the Hindi half
+can be recognised and stripped) and stores questions unkeyed. Anything OCR renders
+too noisily is dropped rather than published.
+
 ## Architecture
 
 ```

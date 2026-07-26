@@ -7,9 +7,11 @@
 library;
 
 export 'article_card.dart';
+export 'article_thumbnail.dart';
 export 'category_chip.dart';
 export 'glass_widgets.dart';
 export 'network_image_widget.dart';
 export 'quiz_option_tile.dart';
 export 'scroll_to_top_fab.dart';
 export 'section_header.dart';
+export 'update_banner.dart';

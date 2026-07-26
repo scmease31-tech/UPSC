@@ -8,6 +8,12 @@ class Article {
   final String examRelevance; // 'Prelims', 'Mains', 'Both'
   final List<String> categoryTags;
   final String imageUrl;
+
+  /// Attribution for artwork sourced from an open licence (Wikipedia/Commons).
+  /// Empty when the image came from the publisher itself.
+  final String imageCredit;
+  final String imageCreditUrl;
+
   final DateTime publishedDate;
   final bool isTopNews;
 
@@ -27,6 +33,7 @@ class Article {
   final String constitutionalBasis;    // Constitutional/legal framework reference
   final String governmentScheme;       // Related govt scheme details if applicable
   final String sourceUrl;              // Original source URL or reference link
+  final String sourcePaper;            // Newspaper the analysis was drawn from
   final Map<String, String> keyTerms;  // Important terms with definitions
   final String answerFramework;        // Mains answer writing framework (Intro-Body-Conclusion)
 
@@ -39,6 +46,8 @@ class Article {
     required this.examRelevance,
     required this.categoryTags,
     required this.imageUrl,
+    this.imageCredit = '',
+    this.imageCreditUrl = '',
     required this.publishedDate,
     this.isTopNews = false,
     this.shortNotes = const [],
@@ -54,6 +63,7 @@ class Article {
     this.constitutionalBasis = '',
     this.governmentScheme = '',
     this.sourceUrl = '',
+    this.sourcePaper = '',
     this.keyTerms = const {},
     this.answerFramework = '',
   });
@@ -69,6 +79,8 @@ class Article {
       examRelevance: map['examRelevance'] ?? 'Both',
       categoryTags: List<String>.from(map['categoryTags'] ?? []),
       imageUrl: map['imageUrl'] ?? '',
+      imageCredit: map['imageCredit'] ?? '',
+      imageCreditUrl: map['imageCreditUrl'] ?? '',
       publishedDate: DateTime.tryParse(map['publishedDate'] ?? '') ?? DateTime.now(),
       isTopNews: map['isTopNews'] ?? false,
       shortNotes: List<String>.from(map['shortNotes'] ?? []),
@@ -84,6 +96,7 @@ class Article {
       constitutionalBasis: map['constitutionalBasis'] ?? '',
       governmentScheme: map['governmentScheme'] ?? '',
       sourceUrl: map['sourceUrl'] ?? '',
+      sourcePaper: map['sourcePaper'] ?? '',
       keyTerms: Map<String, String>.from(map['keyTerms'] ?? {}),
       answerFramework: map['answerFramework'] ?? '',
     );
@@ -98,6 +111,8 @@ class Article {
       'examRelevance': examRelevance,
       'categoryTags': categoryTags,
       'imageUrl': imageUrl,
+      'imageCredit': imageCredit,
+      'imageCreditUrl': imageCreditUrl,
       'publishedDate': publishedDate.toIso8601String(),
       'isTopNews': isTopNews,
       'shortNotes': shortNotes,
@@ -113,6 +128,7 @@ class Article {
       'constitutionalBasis': constitutionalBasis,
       'governmentScheme': governmentScheme,
       'sourceUrl': sourceUrl,
+      'sourcePaper': sourcePaper,
       'keyTerms': keyTerms,
       'answerFramework': answerFramework,
     };

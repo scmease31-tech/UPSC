@@ -9,38 +9,97 @@ import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// A newer release than the one installed.
+class UpdateInfo {
+  final String version;
+  final String notes;
+  final String downloadUrl;
+
+  const UpdateInfo({required this.version, required this.notes, required this.downloadUrl});
+}
+
 /// Checks GitHub Releases for a newer version, downloads in-app, and installs.
 class UpdateService {
   static const _owner = 'scmease31-tech';
   static const _repo = 'UPSC';
   static const _apkAsset = 'UPSC-Daily-Edge.apk';
 
-  /// Call once after login / main navigation mounts.
-  static Future<void> checkForUpdate(BuildContext context) async {
-    if (kIsWeb) return;
+  /// The pending update, once one has been found.
+  ///
+  /// Held as a notifier rather than only shown in a start-up dialog: a user who
+  /// dismisses that dialog — or who never sees it because the check finished
+  /// after they navigated away — still gets a persistent Update button in the
+  /// Profile tab.
+  static final ValueNotifier<UpdateInfo?> available = ValueNotifier<UpdateInfo?>(null);
+
+  static bool _checkedThisSession = false;
+
+  /// Fetch the latest release and compare it with the installed build.
+  /// Returns null when up to date, offline, or on web.
+  static Future<UpdateInfo?> fetchLatest() async {
+    if (kIsWeb) return null;
 
     try {
       final info = await PackageInfo.fromPlatform();
       final current = info.version;
 
-      final uri = Uri.parse(
-          'https://api.github.com/repos/$_owner/$_repo/releases/latest');
-      final res = await http.get(uri, headers: {'Accept': 'application/vnd.github.v3+json'});
-      if (res.statusCode != 200) return;
+      final uri = Uri.parse('https://api.github.com/repos/$_owner/$_repo/releases/latest');
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/vnd.github.v3+json'})
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode != 200) return null;
 
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final tag = (data['tag_name'] as String? ?? '').replaceFirst('v', '');
-      if (tag.isEmpty) return;
-
-      // Use GitHub Pages URL for reliable direct download (no redirect chain)
-      const downloadUrl = 'https://scmease31-tech.github.io/UPSC/$_apkAsset';
-
-      if (_isNewer(tag, current) && context.mounted) {
-        _showUpdateDialog(context, tag, data['body'] as String? ?? '', downloadUrl);
+      if (tag.isEmpty || !_isNewer(tag, current)) {
+        available.value = null;
+        return null;
       }
+
+      // GitHub Pages URL gives a direct download with no redirect chain.
+      final update = UpdateInfo(
+        version: tag,
+        notes: data['body'] as String? ?? '',
+        downloadUrl: 'https://$_owner.github.io/$_repo/$_apkAsset',
+      );
+      available.value = update;
+      return update;
     } catch (_) {
-      // Silently fail — update check is best-effort
+      // Best-effort: an update check must never break app start-up.
+      return null;
     }
+  }
+
+  /// Called once after main navigation mounts. Surfaces the dialog the first
+  /// time an update is seen in a session; the banner keeps it reachable after.
+  static Future<void> checkForUpdate(BuildContext context) async {
+    final update = await fetchLatest();
+    if (update == null || _checkedThisSession) return;
+    _checkedThisSession = true;
+    if (!context.mounted) return;
+    promptUpdate(context, update);
+  }
+
+  /// Show the update dialog for an already-discovered update.
+  static void promptUpdate(BuildContext context, UpdateInfo update) {
+    _showUpdateDialog(context, update.version, update.notes, update.downloadUrl);
+  }
+
+  /// Manual "Check for updates" — always reports an outcome to the user.
+  static Future<void> checkNow(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final update = await fetchLatest();
+    if (!context.mounted) return;
+
+    if (update == null) {
+      final info = await PackageInfo.fromPlatform();
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('You are on the latest version (${info.version}).')),
+      );
+      return;
+    }
+    promptUpdate(context, update);
   }
 
   static bool _isNewer(String remote, String local) {

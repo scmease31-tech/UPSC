@@ -25,6 +25,7 @@ service cloud.firestore {
     match /revisionNotes/{doc}    { allow read: if true; allow write: if false; }
     match /dailyFacts/{doc}       { allow read: if true; allow write: if false; }
     match /pyqBank/{doc}          { allow read: if true; allow write: if false; }
+    match /pyqs/{doc}             { allow read: if true; allow write: if false; }
     match /studyNotes/{doc}       { allow read: if true; allow write: if false; }
     match /weeklyMagazines/{doc}  { allow read: if true; allow write: if false; }
     match /syllabus/{doc}         { allow read: if true; allow write: if false; }

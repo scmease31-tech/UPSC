@@ -4,17 +4,17 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../config/category_style.dart';
 import '../../config/theme.dart';
-import '../../config/app_images.dart';
 import '../../models/article.dart';
 import '../../providers/bookmarks_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/articles_provider.dart';
 import '../../providers/daily_progress_provider.dart';
+import '../../widgets/article_thumbnail.dart';
 import '../../widgets/glass_widgets.dart';
+import '../../widgets/rich_article_content.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// ArticleDetailScreen — Full article view with glassmorphic header,
@@ -30,6 +30,7 @@ class ArticleDetailScreen extends StatefulWidget {
 class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   late ScrollController _scrollCtrl;
   bool _markedRead = false;
+  double _textScale = 1.0;
   final ValueNotifier<double> _readProgress = ValueNotifier(0.0);
 
   @override
@@ -229,30 +230,13 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Hero image
-                    CachedNetworkImage(
-                      imageUrl: article.imageUrl.isNotEmpty
-                          ? article.imageUrl
-                          : AppImages.categoryImage(article.categoryTags.isNotEmpty ? article.categoryTags.first : null),
-                      fit: BoxFit.cover,
-                      memCacheWidth: 600,
-                      placeholder: (_, __) => Shimmer.fromColors(
-                        baseColor: dark ? Colors.grey.shade800 : Colors.grey.shade200,
-                        highlightColor: dark ? Colors.grey.shade700 : Colors.grey.shade100,
-                        child: Container(color: Colors.white),
-                      ),
-                      errorWidget: (_, __, ___) => Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              _categoryColor(article.categoryTags.isNotEmpty ? article.categoryTags.first : 'General'),
-                              _categoryColor(article.categoryTags.isNotEmpty ? article.categoryTags.first : 'General').withValues(alpha: 0.3),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                      ),
+                    // Hero image — falls back to generated subject artwork when
+                    // the source ships no photo, so the header never looks broken.
+                    ArticleThumbnail(
+                      imageUrl: article.imageUrl,
+                      title: article.title,
+                      category: article.categoryTags.isNotEmpty ? article.categoryTags.first : '',
+                      footnote: article.newspaper,
                     ),
                     // Gradient overlay for readability
                     Container(
@@ -318,6 +302,42 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                     if (article.upscPaper.isNotEmpty || article.examRelevance.isNotEmpty)
                       _infoBar(article, dark),
 
+                    // Attribution for openly-licensed artwork we sourced
+                    // ourselves (the publisher shipped none).
+                    if (article.imageCredit.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: article.imageCreditUrl.isEmpty
+                            ? null
+                            : () async {
+                                final uri = Uri.tryParse(article.imageCreditUrl);
+                                if (uri != null && await canLaunchUrl(uri)) {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                }
+                              },
+                        child: Row(
+                          children: [
+                            Icon(Icons.photo_camera_outlined, size: 13, color: AppTheme.textT(context)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Image: ${article.imageCredit}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: AppTheme.textT(context),
+                                  decoration: article.imageCreditUrl.isEmpty
+                                      ? null
+                                      : TextDecoration.underline,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     // Source URL button
                     if (article.sourceUrl.isNotEmpty) ...[
                       const SizedBox(height: 12),
@@ -364,16 +384,22 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                       const SizedBox(height: 20),
                     ],
 
-                    // Content
+                    // Content — rendered as a real reading layout (headings,
+                    // bullets, paragraphs) instead of one undifferentiated block.
                     if (article.content.isNotEmpty) ...[
-                      _sectionTitle('Full Analysis'),
-                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(child: _sectionTitle('Full Analysis')),
+                          _ReaderSizeControl(
+                            scale: _textScale,
+                            onChanged: (v) => setState(() => _textScale = v),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
                       GlassCard(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          article.content,
-                          style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textP(context), height: 1.7),
-                        ),
+                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                        child: RichArticleContent(content: article.content, scale: _textScale),
                       ),
                       const SizedBox(height: 20),
                     ],
@@ -668,22 +694,13 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             child: Row(
                               children: [
                                 // Thumbnail
-                                ClipRRect(
+                                ArticleThumbnail(
+                                  imageUrl: a.imageUrl,
+                                  title: a.title,
+                                  category: a.categoryTags.isNotEmpty ? a.categoryTags.first : '',
+                                  width: 56,
+                                  height: 56,
                                   borderRadius: BorderRadius.circular(10),
-                                  child: SizedBox(
-                                    width: 56, height: 56,
-                                    child: CachedNetworkImage(
-                                      imageUrl: a.imageUrl.isNotEmpty
-                                          ? a.imageUrl
-                                          : AppImages.categoryImage(a.categoryTags.isNotEmpty ? a.categoryTags.first : null),
-                                      fit: BoxFit.cover,
-                                      placeholder: (_, __) => Container(color: Colors.grey.shade200),
-                                      errorWidget: (_, __, ___) => Container(
-                                        color: _categoryColor(a.categoryTags.isNotEmpty ? a.categoryTags.first : 'General').withValues(alpha: 0.1),
-                                        child: Icon(Icons.article_rounded, size: 18, color: _categoryColor(a.categoryTags.isNotEmpty ? a.categoryTags.first : 'General')),
-                                      ),
-                                    ),
-                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -844,14 +861,71 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     );
   }
 
-  Color _categoryColor(String? category) {
-    switch (category?.toLowerCase()) {
-      case 'polity': return AppTheme.accentViolet;
-      case 'economy': return AppTheme.primaryColor;
-      case 'environment': return AppTheme.successGreen;
-      case 'science': return const Color(0xFF448AFF);
-      case 'international': return const Color(0xFFFF6B6B);
-      default: return AppTheme.accentViolet;
-    }
+  Color _categoryColor(String? category) => CategoryStyle.of(category).color;
+}
+
+/// A− / A+ reader control for the article body.
+class _ReaderSizeControl extends StatelessWidget {
+  final double scale;
+  final ValueChanged<double> onChanged;
+
+  const _ReaderSizeControl({required this.scale, required this.onChanged});
+
+  static const _steps = [0.9, 1.0, 1.15, 1.3];
+
+  void _step(int direction) {
+    var i = _steps.indexWhere((s) => (s - scale).abs() < 0.01);
+    if (i < 0) i = 1;
+    final next = (i + direction).clamp(0, _steps.length - 1);
+    if (next != i) onChanged(_steps[next]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final atMin = (scale - _steps.first).abs() < 0.01;
+    final atMax = (scale - _steps.last).abs() < 0.01;
+
+    return Container(
+      decoration: AppTheme.insetSurface(context, radius: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _btn(context, Icons.remove_rounded, atMin ? null : () => _step(-1)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(
+              'A',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textS(context),
+              ),
+            ),
+          ),
+          _btn(context, Icons.add_rounded, atMax ? null : () => _step(1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _btn(BuildContext context, IconData icon, VoidCallback? onTap) {
+    return InkWell(
+      onTap: onTap == null
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          icon,
+          size: 16,
+          color: onTap == null ? AppTheme.textT(context).withValues(alpha: 0.4) : AppTheme.primaryColor,
+        ),
+      ),
+    );
   }
 }

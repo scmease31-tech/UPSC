@@ -7,6 +7,7 @@ import '../../config/theme.dart';
 import '../../services/firestore_content_service.dart';
 import '../../services/news_api_service.dart';
 import '../../widgets/glass_widgets.dart';
+import '../../widgets/rich_article_content.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// CurrentAffairsScreen — Weekly & Monthly current affairs compilation
@@ -635,7 +636,9 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
               const SizedBox(height: 6),
               Text(item['date'] ?? '', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
               const SizedBox(height: 16),
-              Text(item['detail'] ?? '', style: GoogleFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(ctx))),
+              // Scraped bodies carry section markers ("## ", "• "); render them
+              // as real sections rather than printing the markup.
+              RichArticleContent(content: item['detail'] ?? ''),
               const SizedBox(height: 20),
               if (keyPoints.isNotEmpty) ...[
                 Text('Key Points for UPSC:', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),

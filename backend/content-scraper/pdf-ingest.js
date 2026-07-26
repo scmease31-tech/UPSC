@@ -37,6 +37,14 @@ import {
   deleteBySourceDate,
 } from './uploader.js';
 import { generateAll, generateSchemes } from './generators.js';
+import { ocrAvailable, ocrPdf } from './ocr.js';
+import { extractDailyVocabulary } from './vocab-extract.js';
+
+/**
+ * Below this many alphanumeric characters per page a PDF is treated as
+ * image-only: a real newsprint page carries several thousand.
+ */
+const OCR_THRESHOLD_CHARS_PER_PAGE = 1200;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Args
@@ -44,7 +52,7 @@ import { generateAll, generateSchemes } from './generators.js';
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const opts = { file: null, type: 'vocabulary', source: null, date: null, dryRun: false, dump: null, json: null, articles: false };
+  const opts = { file: null, type: 'vocabulary', source: null, date: null, dryRun: false, dump: null, json: null, articles: false, ocr: false, ocrMaxPages: 12 };
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -55,6 +63,8 @@ function parseArgs() {
       case '--dump': opts.dump = args[++i] || null; break;
       case '--json': opts.json = args[++i] || null; break;
       case '--articles': opts.articles = true; break;
+      case '--ocr': opts.ocr = true; break;
+      case '--ocr-pages': opts.ocrMaxPages = parseInt(args[++i], 10) || 12; break;
       default: if (!args[i].startsWith('--')) opts.file = args[i];
     }
   }
@@ -672,6 +682,8 @@ export async function ingestFile({
   articles = false,
   dump = null,
   json = null,
+  ocr = false,
+  ocrMaxPages = 12,
 }) {
   const base = path.basename(file);
   const dateStr = date || dateFromName(base) || todayIST();
@@ -679,15 +691,78 @@ export async function ingestFile({
   const buffer = fs.readFileSync(file);
   const parsed = await pdfParse(buffer);
   const pages = parsed.numpages || 0;
-  const fullText = normalizeText(parsed.text || '');
-  const chars = fullText.length;
+  let fullText = normalizeText(parsed.text || '');
+  let chars = fullText.length;
   console.log(`  [read] ${base}: ${chars} chars, ${pages} page(s), type=${type}, date=${dateStr}`);
+
+  // Scanned e-papers have no text layer. Rasterise + OCR them rather than
+  // silently ingesting nothing.
+  const alnumPerPage = pages > 0
+    ? Math.round(fullText.replace(/[^A-Za-z0-9]/g, '').length / pages)
+    : chars;
+  if (ocr && alnumPerPage < OCR_THRESHOLD_CHARS_PER_PAGE) {
+    if (!ocrAvailable()) {
+      console.warn(`  [warn] ${base}: looks scanned (~${alnumPerPage} chars/page) but OCR tools are unavailable. Install poppler-utils and tesseract-ocr.`);
+    } else {
+      console.log(`  [ocr ] ${base}: only ~${alnumPerPage} chars/page — running OCR over up to ${ocrMaxPages} page(s)…`);
+      try {
+        const ocrText = normalizeText(ocrPdf(file, { maxPages: ocrMaxPages }));
+        if (ocrText.length > chars) {
+          fullText = ocrText;
+          chars = ocrText.length;
+          console.log(`  [ocr ] recovered ${chars} chars`);
+        } else {
+          console.warn('  [ocr ] produced no additional text; keeping the original text layer');
+        }
+      } catch (e) {
+        console.warn(`  [ocr ] failed: ${e.message}`);
+      }
+    }
+  }
 
   if (dump) {
     fs.writeFileSync(dump, fullText, 'utf-8');
     console.log(`  [dump] wrote raw text to ${dump}`);
     return { file: base, type, dumped: true };
   }
+
+  return ingestText({
+    text: fullText,
+    name: base,
+    type,
+    source,
+    date: dateStr,
+    dryRun,
+    articles,
+    json,
+    pages,
+  });
+}
+
+/**
+ * Parse + upload already-extracted text.
+ *
+ * Split out of [ingestFile] so the same pipeline serves PDFs, OCR'd scans and
+ * photographs of a page — the parsing and upload logic must not diverge between
+ * those routes.
+ *
+ * @returns {Promise<Object>} Summary of what was parsed/uploaded.
+ */
+export async function ingestText({
+  text,
+  name = 'upload',
+  type = 'newspaper',
+  source = null,
+  date = null,
+  dryRun = false,
+  articles = false,
+  json = null,
+  pages = 0,
+}) {
+  const base = name;
+  const dateStr = date || dateFromName(base) || todayIST();
+  const fullText = text || '';
+  const chars = fullText.length;
 
   if (chars < 50) {
     console.warn(`  [warn] ${base}: almost no text (likely scanned images; needs OCR). Skipping.`);
@@ -708,7 +783,7 @@ export async function ingestFile({
   }
 
   if (type === 'newspaper' || type === 'editorial') {
-    const src = source || (type === 'editorial' ? 'Editorials' : base.replace(/\.pdf$/i, ''));
+    const src = source || (type === 'editorial' ? 'Editorials' : base.replace(/\.(pdf|png|jpe?g|webp|tiff?)$/i, ''));
 
     // Government schemes are reliably detectable even from multi-column layouts,
     // because scheme names are distinctive proper nouns. Run detection over the
@@ -749,6 +824,7 @@ export async function ingestFile({
     const sStats = await uploadSchemes(schemes, dryRun);
     let aStats = { uploaded: 0, skipped: 0, errors: 0 };
     let fStats = { uploaded: 0, skipped: 0, errors: 0 };
+    let vStats = { uploaded: 0, skipped: 0, errors: 0 };
     if (articles && articleDocs.length) {
       // Replace this source's articles/flashcards for the day, so re-ingesting
       // cleanly overwrites older (e.g. previously-garbled) versions instead of
@@ -758,9 +834,14 @@ export async function ingestFile({
       const derived = generateAll(articleDocs);
       await deleteBySourceDate('flashcards', src, dateStr, dryRun);
       fStats = await uploadFlashcards(derived.flashcards, dryRun);
+
+      // An uploaded newspaper is exactly the material a daily vocabulary list
+      // should come from, so mine it here too.
+      const vocab = await extractDailyVocabulary(articleDocs, { limit: 10 });
+      vStats = await uploadVocabulary(vocab, dryRun);
     }
     console.log(`  [done] schemes: +${sStats.uploaded} added, ${sStats.skipped} existing, ${sStats.errors} errors`);
-    return { file: base, type, schemes: sStats, articles: aStats, flashcards: fStats };
+    return { file: base, type, schemes: sStats, articles: aStats, flashcards: fStats, vocabulary: vStats };
   }
 
   throw new Error(`Unknown type "${type}". Use vocabulary | newspaper | editorial.`);
@@ -779,6 +860,8 @@ Options:
   --date      YYYY-MM-DD                            (default: from filename or today)
   --dry-run   Parse only; do not upload
   --articles  (newspaper/editorial) also extract article fragments (best-effort)
+  --ocr       Run OCR when the PDF has no usable text layer (scanned e-paper)
+  --ocr-pages N   Cap OCR at the first N pages (default 12)
   --json PATH Write parsed docs to a JSON file instead of uploading (no creds)
 
 Tip: to upload all of today's PDFs at once, use daily-ingest.js instead.

@@ -140,8 +140,8 @@ class AppTheme {
   ];
 
   static List<BoxShadow> get cardShadow => [
-    BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, 4)),
-    BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 1)),
+    BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.07), blurRadius: 24, offset: const Offset(0, 8)),
+    BoxShadow(color: const Color(0xFF0F172A).withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 1)),
   ];
 
   static List<BoxShadow> get elevatedShadow => [
@@ -217,6 +217,38 @@ class AppTheme {
         width: 1.2,
       ),
       boxShadow: dark ? darkCardShadow : cardShadow,
+    );
+  }
+
+  /// The app's primary content card: opaque surface, hairline border and a
+  /// two-stop shadow. Opaque (not translucent) so photographs and generated
+  /// covers inside it stay true-colour on the pastel gradient background.
+  static BoxDecoration premiumCard(BuildContext context, {
+    double radius = 22, Color? tint,
+  }) {
+    final dark = isDark(context);
+    return BoxDecoration(
+      color: tint ?? (dark ? darkCardBg : Colors.white),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: dark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFF0F172A).withValues(alpha: 0.05),
+      ),
+      boxShadow: dark ? darkCardShadow : cardShadow,
+    );
+  }
+
+  /// Subtle inset surface for rows nested *inside* a [premiumCard].
+  static BoxDecoration insetSurface(BuildContext context, {
+    double radius = 14, Color? accent,
+  }) {
+    final dark = isDark(context);
+    final base = accent ?? primaryColor;
+    return BoxDecoration(
+      color: dark ? Colors.white.withValues(alpha: 0.045) : base.withValues(alpha: 0.045),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: dark ? Colors.white.withValues(alpha: 0.06) : base.withValues(alpha: 0.10),
+      ),
     );
   }
 

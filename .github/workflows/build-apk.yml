@@ -34,6 +34,14 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Analyze
+        # Fail the release on real analyzer errors; the repo still carries a
+        # backlog of style lints, so warnings/infos must not block a build.
+        run: flutter analyze --no-pub 2>&1 | tee analyze.log; ! grep -qE '^\s*error' analyze.log
+
+      - name: Test
+        run: flutter test --no-pub
+
       - name: Setup signing keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/upload.p12

@@ -1,0 +1,89 @@
+name: UPSC Question Papers
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pulls Civil Services question papers straight from upsc.gov.in into the app's
+# `pyqs` collection, so the Previous Year Questions tab carries what UPSC
+# actually asked.
+#
+# The papers are image-only scans, so this installs poppler + tesseract (with
+# the Hindi pack — the pages are bilingual and the Hindi has to be recognised as
+# Hindi before it can be stripped) and OCRs them. Runs take several minutes per
+# paper, so this is manual rather than scheduled.
+#
+# Run it from Actions → UPSC Question Papers → Run workflow.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      exam:
+        description: 'CSP (Prelims) or CSM (Mains)'
+        type: choice
+        options: ['CSP', 'CSM']
+        default: 'CSP'
+      year:
+        description: 'Exam year (e.g. 2024). Leave empty to take the most recent.'
+        required: false
+      latest:
+        description: 'How many of the most recent papers to ingest'
+        default: '2'
+      list_only:
+        description: 'Only list what is available, do not ingest'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Parse only, do not upload'
+        type: boolean
+        default: false
+
+concurrency:
+  group: upsc-papers
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/content-scraper/package-lock.json
+
+      - name: Install OCR toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils tesseract-ocr tesseract-ocr-eng tesseract-ocr-hin
+          tesseract --list-langs
+
+      - name: Install dependencies
+        working-directory: backend/content-scraper
+        run: npm ci || npm install
+
+      - name: List available papers
+        working-directory: backend/content-scraper
+        run: node upsc-papers.js --list
+
+      - name: Ingest
+        if: github.event.inputs.list_only != 'true'
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          ARGS="--exam ${{ github.event.inputs.exam }}"
+          if [ -n "${{ github.event.inputs.year }}" ]; then
+            ARGS="$ARGS --year ${{ github.event.inputs.year }}"
+          else
+            ARGS="$ARGS --latest ${{ github.event.inputs.latest }}"
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          echo "Running: node upsc-papers.js $ARGS"
+          node upsc-papers.js $ARGS

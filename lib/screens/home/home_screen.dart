@@ -15,6 +15,7 @@ import '../../widgets/glass_widgets.dart';
 import '../../widgets/article_card.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/network_image_widget.dart';
+import '../../widgets/update_banner.dart';
 import '../../services/notification_service.dart';
 import '../main_navigation.dart';
 
@@ -89,6 +90,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           slivers: [
             // ── Header ──
             SliverToBoxAdapter(child: _buildHeader(context, greeting, firstName, now, dark)),
+
+            // ── Pending app update (renders nothing when up to date) ──
+            const SliverToBoxAdapter(child: UpdateBanner()),
 
             // ── Progress Hero Card ──
             SliverToBoxAdapter(child: _buildProgressHero(context, progress, dark)),
@@ -1233,7 +1237,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         if (topArticles.length > 1) ...[
           const SizedBox(height: 8),
           SizedBox(
-            height: 310,
+            // Tall enough for the card's cover + 2-line headline + 2-line deck
+            // + meta row, so the rail never clips its contents.
+            height: 336,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),

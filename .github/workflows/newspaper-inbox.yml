@@ -1,0 +1,106 @@
+name: Newspaper Inbox
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Drop a newspaper into the app.
+#
+#   Upload any PDF into the repo's `inbox/` folder (github.com → inbox → Add
+#   file → Upload files → Commit) and this workflow does the rest: it extracts
+#   the articles — running OCR when the PDF is a scan with no text layer —
+#   uploads them to Firestore, then clears the file and records the result in
+#   `inbox/PROCESSED.md`.
+#
+#   Open the app and pull to refresh. That is the whole workflow.
+#
+# Everything here runs on the free GitHub Actions tier and the Firebase free
+# (Spark) plan.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    paths:
+      - 'inbox/**'
+      # Do not re-trigger on this workflow's own bookkeeping commit.
+      - '!inbox/archive/**'
+      - '!inbox/PROCESSED.md'
+      - '!inbox/README.md'
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Optional: direct link to a PDF to fetch and ingest'
+        required: false
+      dry_run:
+        description: 'Parse only, do not upload'
+        type: boolean
+        default: false
+
+# Two uploads in quick succession must not race each other on the same commit.
+concurrency:
+  group: newspaper-inbox
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/content-scraper/package-lock.json
+
+      - name: Install OCR toolchain
+        # poppler-utils gives pdftoppm (PDF → PNG); tesseract-ocr reads the
+        # rasterised pages. Both are needed only for scanned e-papers.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils tesseract-ocr tesseract-ocr-eng
+
+      - name: Install dependencies
+        working-directory: backend/content-scraper
+        run: npm ci || npm install
+
+      - name: Test parsers
+        working-directory: backend/content-scraper
+        run: npm test
+
+      - name: Fetch PDF from URL
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.url != ''
+        run: |
+          mkdir -p inbox
+          NAME="$(basename "${{ github.event.inputs.url }}" | cut -d'?' -f1)"
+          case "$NAME" in *.pdf) ;; *) NAME="upload-$(date -u +%Y%m%d-%H%M%S).pdf" ;; esac
+          echo "Downloading into inbox/$NAME"
+          curl -fsSL --max-time 300 -o "inbox/$NAME" "${{ github.event.inputs.url }}"
+          ls -lh "inbox/$NAME"
+
+      - name: Ingest inbox
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node inbox-ingest.js --dry-run
+          else
+            node inbox-ingest.js
+          fi
+
+      - name: Record what was processed
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name  "upsc-content-bot"
+          git config user.email "actions@github.com"
+          git add -A inbox
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            # [skip ci] so this bookkeeping commit cannot re-trigger the workflow.
+            git commit -m "chore(inbox): process uploads [skip ci]"
+            git push
+          fi

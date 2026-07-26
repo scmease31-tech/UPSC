@@ -480,7 +480,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
         children: [
           for (int di = 0; di < sortedDates.length; di++) ...[
             if (di > 0) const SizedBox(height: 8),
-            _buildDateSection(sortedDates[di], grouped[sortedDates[di]]!, dark),
+            // The very first article of the newest day leads the feed as a
+            // full-bleed hero — the rest stay in the standard card rhythm.
+            _buildDateSection(sortedDates[di], grouped[sortedDates[di]]!, dark, hero: di == 0),
           ],
         ],
       ),
@@ -499,7 +501,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     return DateFormat('EEEE, d MMMM yyyy').format(date);
   }
 
-  Widget _buildDateSection(String dateKey, List<Article> articles, bool dark) {
+  Widget _buildDateSection(String dateKey, List<Article> articles, bool dark, {bool hero = false}) {
     // Sub-group by source
     final bySource = <String, List<Article>>{};
     for (final a in articles) {
@@ -519,67 +521,91 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── Date Header ──
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: dark ? const Color(0xFF1E1E30) : const Color(0xFFF0F2F8),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
           child: Row(
             children: [
-              Icon(Icons.calendar_today_rounded, size: 14,
-                  color: dark ? Colors.white70 : Colors.grey.shade700),
-              const SizedBox(width: 8),
-              Text(
-                _dateLabel(dateKey),
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: dark ? Colors.white.withValues(alpha: 0.9) : Colors.grey.shade800,
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  _dateLabel(dateKey),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                    color: AppTheme.textP(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '${articles.length}',
                   style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primaryColor,
+                    fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.primaryColor,
                   ),
                 ),
               ),
+              const Spacer(),
             ],
           ),
         ),
-        const SizedBox(height: 6),
 
         // ── Source Sections ──
         for (int si = 0; si < sourceOrder.length; si++) ...[
-          _buildSourceSection(sourceOrder[si], bySource[sourceOrder[si]]!, dark),
+          _buildSourceSection(sourceOrder[si], bySource[sourceOrder[si]]!, dark, hero: hero && si == 0),
           if (si < sourceOrder.length - 1) const SizedBox(height: 4),
         ],
       ],
     );
   }
 
+  /// Distinct accent per source, including the newspapers that arrive through
+  /// the PDF/inbox pipeline — so an uploaded paper reads as its own section
+  /// rather than an anonymous grey block.
   Color _sourceAccentColor(String source) {
-    if (source.contains('Drishti')) return const Color(0xFF0D9488); // teal
-    if (source.contains('Insights')) return const Color(0xFF7C3AED); // purple
-    return Colors.blueGrey;
+    final s = source.toLowerCase();
+    if (s.contains('drishti')) return const Color(0xFF0D9488); // teal
+    if (s.contains('insights')) return const Color(0xFF7C3AED); // purple
+    if (s.contains('hindu')) return const Color(0xFF1D4ED8); // deep blue
+    if (s.contains('express')) return const Color(0xFFB91C1C); // masthead red
+    if (s.contains('times of india') || s.contains('toi')) return const Color(0xFFC2410C);
+    if (s.contains('business standard')) return const Color(0xFF9A3412);
+    if (s.contains('mint')) return const Color(0xFF047857);
+    if (s.contains('economic times')) return const Color(0xFFBE185D);
+    if (s.contains('hindustan times')) return const Color(0xFF4338CA);
+    if (s.contains('pib')) return const Color(0xFF0F766E);
+    if (s.contains('editorial')) return const Color(0xFF6D28D9);
+    if (s.contains('yojana') || s.contains('kurukshetra')) return const Color(0xFF854D0E);
+    return AppTheme.primaryDark;
   }
 
   IconData _sourceIcon(String source) {
-    if (source.contains('Drishti')) return Icons.menu_book_rounded;
-    if (source.contains('Insights')) return Icons.lightbulb_rounded;
-    return Icons.article_rounded;
+    final s = source.toLowerCase();
+    if (s.contains('drishti')) return Icons.menu_book_rounded;
+    if (s.contains('insights')) return Icons.lightbulb_rounded;
+    if (s.contains('editorial')) return Icons.edit_note_rounded;
+    if (s.contains('pib')) return Icons.account_balance_rounded;
+    if (s.contains('yojana') || s.contains('kurukshetra')) return Icons.auto_stories_rounded;
+    return Icons.newspaper_rounded;
   }
 
-  Widget _buildSourceSection(String source, List<Article> articles, bool dark) {
+  Widget _buildSourceSection(String source, List<Article> articles, bool dark, {bool hero = false}) {
     final accent = _sourceAccentColor(source);
 
     return Column(
@@ -622,9 +648,9 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
           ),
         ),
 
-        // Articles using original ArticleCard
-        for (final article in articles)
-          ArticleCard(article: article),
+        // Articles using the shared ArticleCard
+        for (int i = 0; i < articles.length; i++)
+          ArticleCard(article: articles[i], featured: hero && i == 0),
       ],
     );
   }
@@ -643,17 +669,44 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     );
   }
 
+  /// Skeleton shaped like the real card (cover + headline + deck + meta) so the
+  /// layout does not jump when content arrives.
   Widget _buildShimmerCard(bool dark) {
+    Widget bar(double w, double h) => Container(
+          width: w,
+          height: h,
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+        );
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Shimmer.fromColors(
-        baseColor: dark ? Colors.grey.shade800 : Colors.grey.shade200,
-        highlightColor: dark ? Colors.grey.shade700 : Colors.grey.shade100,
-        child: Container(
-          height: 180,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+      child: Container(
+        decoration: AppTheme.premiumCard(context),
+        clipBehavior: Clip.antiAlias,
+        child: Shimmer.fromColors(
+          baseColor: dark ? const Color(0xFF1C2333) : const Color(0xFFEDEFF3),
+          highlightColor: dark ? const Color(0xFF2A3348) : const Color(0xFFF8FAFC),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(height: 152, width: double.infinity, color: Colors.white),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(15, 14, 15, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    bar(double.infinity, 14),
+                    bar(200, 14),
+                    const SizedBox(height: 4),
+                    bar(double.infinity, 10),
+                    bar(150, 10),
+                    const SizedBox(height: 6),
+                    Row(children: [bar(56, 16), const SizedBox(width: 8), bar(72, 16)]),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

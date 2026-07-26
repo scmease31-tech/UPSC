@@ -125,7 +125,9 @@ function mergeArticles(a, b) {
     constitutionalBasis: a.constitutionalBasis || b.constitutionalBasis,
     governmentScheme: a.governmentScheme || b.governmentScheme,
     sourceUrl: `${a.sourceUrl} | ${b.sourceUrl}`,
+    sourcePaper: a.sourcePaper || b.sourcePaper || '',
     keyTerms: { ...b.keyTerms, ...a.keyTerms },
     answerFramework: a.answerFramework || b.answerFramework,
+    _pyqs: [...(a._pyqs || []), ...(b._pyqs || [])],
   };
 }

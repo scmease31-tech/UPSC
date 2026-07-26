@@ -40,12 +40,12 @@ export function initFirebase() {
  * @returns {Object} Stats: { uploaded, skipped, errors }
  */
 export async function uploadArticles(articles, dryRun = false) {
-  const stats = { uploaded: 0, skipped: 0, errors: 0 };
+  const stats = { uploaded: 0, skipped: 0, errors: 0, upgraded: 0 };
 
   if (dryRun) {
     console.log(`[DryRun] Would upload ${articles.length} articles:`);
     for (const a of articles) {
-      console.log(`  - [${a.newspaper}] ${a.title} (${a.categoryTags.join(', ')})`);
+      console.log(`  - [${a.newspaper}] ${a.title} (${a.categoryTags.join(', ')})${a.imageUrl ? ' [img]' : ''}`);
     }
     stats.uploaded = articles.length;
     return stats;
@@ -66,8 +66,34 @@ export async function uploadArticles(articles, dryRun = false) {
         // Check if document already exists
         const existing = await docRef.get();
         if (existing.exists) {
-          console.log(`  [skip] Already exists: ${article.title.slice(0, 50)}`);
-          stats.skipped++;
+          // Re-scrapes now produce richer documents (real artwork, structured
+          // body, syllabus tags). Rather than skipping outright, upgrade the
+          // stored doc wherever the new version is strictly better — this is
+          // what backfills thumbnails onto articles saved by older runs.
+          const old = existing.data() || {};
+          const patch = {};
+          if (article.imageUrl && !old.imageUrl) {
+            patch.imageUrl = article.imageUrl;
+            patch.imageCredit = article.imageCredit || '';
+            patch.imageCreditUrl = article.imageCreditUrl || '';
+          }
+          if ((article.content || '').length > (old.content || '').length + 200) {
+            patch.content = article.content;
+            patch.summary = article.summary;
+            patch.keyPoints = article.keyPoints || [];
+            patch.shortNotes = article.shortNotes || [];
+          }
+          if (article.upscPaper && !old.upscPaper) patch.upscPaper = article.upscPaper;
+          if (article.sourcePaper && !old.sourcePaper) patch.sourcePaper = article.sourcePaper;
+          if (article.syllabusMapping && !old.syllabusMapping) patch.syllabusMapping = article.syllabusMapping;
+
+          if (Object.keys(patch).length > 0) {
+            batch.update(docRef, { ...patch, updatedAt: FieldValue.serverTimestamp() });
+            stats.upgraded++;
+            console.log(`  [upgrade] ${article.title.slice(0, 55)} (${Object.keys(patch).join(', ')})`);
+          } else {
+            stats.skipped++;
+          }
           continue;
         }
 
@@ -79,6 +105,10 @@ export async function uploadArticles(articles, dryRun = false) {
           examRelevance: article.examRelevance || 'Both',
           categoryTags: article.categoryTags || [],
           imageUrl: article.imageUrl || '',
+          // Set when the artwork came from an openly-licensed source rather
+          // than the publisher, so the app can attribute it.
+          imageCredit: article.imageCredit || '',
+          imageCreditUrl: article.imageCreditUrl || '',
           publishedDate: article.publishedDate, // ISO string 'YYYY-MM-DD'
           isTopNews: article.isTopNews || false,
           shortNotes: article.shortNotes || [],
@@ -94,6 +124,7 @@ export async function uploadArticles(articles, dryRun = false) {
           constitutionalBasis: article.constitutionalBasis || '',
           governmentScheme: article.governmentScheme || '',
           sourceUrl: article.sourceUrl || '',
+          sourcePaper: article.sourcePaper || '',
           keyTerms: article.keyTerms || {},
           answerFramework: article.answerFramework || '',
           // Metadata
@@ -205,6 +236,15 @@ export function uploadFlashcards(docs, dryRun = false) {
 /** Upload derived scheme docs to the `govtSchemes` collection. */
 export function uploadSchemes(docs, dryRun = false) {
   return uploadToCollection('govtSchemes', docs, dryRun, 'name');
+}
+
+/**
+ * Upload previous-year question docs to the `pyqs` collection.
+ * These come from the PYQ block Drishti appends to most daily articles, so the
+ * PYQ tab keeps growing with genuine questions instead of a frozen list.
+ */
+export function uploadPyqs(docs, dryRun = false) {
+  return uploadToCollection('pyqs', docs, dryRun, 'question');
 }
 
 /**

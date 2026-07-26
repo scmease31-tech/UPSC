@@ -164,6 +164,9 @@ async function main() {
         // default (editorial compilation PDFs interleave multiple papers, so
         // their article segmentation is unreliable). Pass --articles to force.
         articles: opts.articles || j.type === 'newspaper',
+        // Scanned e-papers have no text layer; OCR them when the tools are
+        // installed locally (a no-op warning otherwise).
+        ocr: true,
       }));
     } catch (e) {
       console.error(`  [err] ${path.basename(j.file)}: ${e.message}`);

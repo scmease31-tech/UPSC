@@ -11,7 +11,9 @@ import '../../providers/daily_progress_provider.dart';
 import '../../widgets/glass_widgets.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/network_image_widget.dart';
+import '../../widgets/update_banner.dart';
 import '../../services/notification_service.dart';
+import '../../services/update_service.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// ProfileScreen — User stats, settings, theme toggle, and account management.
@@ -51,6 +53,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Text('Profile', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
               ),
             ),
+
+          // Pending app update — stays until installed.
+          const SliverToBoxAdapter(child: UpdateBanner()),
 
           // Profile card
           SliverToBoxAdapter(child: _buildProfileCard(context, auth, user)),
@@ -225,6 +230,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: () => _showNotificationSettings(context),
             ),
             _divider(),
+            // Always reachable, whether or not an update has been detected yet.
+            if (!kIsWeb) ...[
+              _settingTile(
+                context,
+                icon: Icons.system_update_rounded,
+                color: AppTheme.successGreen,
+                title: 'Check for Updates',
+                trailing: ValueListenableBuilder<UpdateInfo?>(
+                  valueListenable: UpdateService.available,
+                  builder: (_, update, __) => update == null
+                      ? const Icon(Icons.chevron_right_rounded, color: Colors.grey)
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.successGreen,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'v${update.version}',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                ),
+                onTap: () => UpdateService.checkNow(context),
+              ),
+              _divider(),
+            ],
             _settingTile(
               context,
               icon: Icons.info_rounded,

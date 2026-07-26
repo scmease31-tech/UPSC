@@ -19,14 +19,17 @@
 
 import { scrapeDrishti, scrapeInsights } from './scrapers.js';
 import { deduplicateAndMerge } from './deduplicator.js';
+import { enrichImages } from './image-finder.js';
 import {
   initFirebase,
   uploadArticles,
   uploadVocabulary,
   uploadFlashcards,
   uploadSchemes,
+  uploadPyqs,
 } from './uploader.js';
 import { generateAll } from './generators.js';
+import { extractDailyVocabulary } from './vocab-extract.js';
 
 function getDateStr(date) {
   const y = date.getFullYear();
@@ -111,35 +114,70 @@ async function scrapeForDate(dateStr, dryRun) {
     mergedArticles[i].isTopNews = true;
   }
 
-  // 3. Upload articles to Firestore
+  // 3. Some sources publish articles with no artwork at all. Look for an
+  //    openly-licensed topic image before falling back to the app's generated
+  //    cover — a real photograph reads far better in the feed.
+  await enrichImages(mergedArticles);
+
+  // 4. Harvest the genuine previous-year questions Drishti appends to each
+  //    article, so the PYQ tab keeps growing on its own.
+  const pyqs = [];
+  const seenPyq = new Set();
+  for (const a of mergedArticles) {
+    for (const q of a._pyqs || []) {
+      if (seenPyq.has(q.id)) continue;
+      seenPyq.add(q.id);
+      pyqs.push(q);
+    }
+    delete a._pyqs; // never persisted on the article document
+  }
+
+  // 5. Upload articles to Firestore
   console.log(`\n[Upload] Uploading ${mergedArticles.length} articles to Firestore...`);
   const stats = await uploadArticles(mergedArticles, dryRun);
 
-  // 4. Derive supplementary study content from the same articles and upload it.
+  if (pyqs.length) {
+    console.log(`\n[Upload] ${pyqs.length} previous-year question(s) harvested...`);
+  }
+  const pyqStats = await uploadPyqs(pyqs, dryRun);
+
+  // 6. Derive supplementary study content from the same articles and upload it.
   //    This builds the vocabulary / flashcards / schemes libraries over time.
   console.log('\n[Generate] Deriving vocabulary, flashcards, and schemes...');
   const derived = generateAll(mergedArticles);
+
+  // The keyTerms-based generator only fires when a source supplies a glossary,
+  // which none currently do — so the day's vocabulary is mined from the article
+  // text itself and defined against a free dictionary.
+  const minedVocab = await extractDailyVocabulary(mergedArticles, { limit: 12 });
+  const vocabulary = [...derived.vocabulary];
+  const seenWord = new Set(vocabulary.map((v) => v.word.toLowerCase()));
+  for (const v of minedVocab) {
+    if (!seenWord.has(v.word.toLowerCase())) vocabulary.push(v);
+  }
+
   console.log(
-    `[Generate] vocabulary=${derived.vocabulary.length} ` +
+    `[Generate] vocabulary=${vocabulary.length} ` +
     `flashcards=${derived.flashcards.length} schemes=${derived.schemes.length}`
   );
 
-  const vocabStats = await uploadVocabulary(derived.vocabulary, dryRun);
+  const vocabStats = await uploadVocabulary(vocabulary, dryRun);
   const flashStats = await uploadFlashcards(derived.flashcards, dryRun);
   const schemeStats = await uploadSchemes(derived.schemes, dryRun);
 
   console.log(
     `\n[Done] ${dateStr}: ` +
-    `articles(+${stats.uploaded}/~${stats.skipped}) ` +
+    `articles(+${stats.uploaded}/~${stats.skipped}${stats.upgraded ? `/^${stats.upgraded}` : ''}) ` +
+    `pyqs(+${pyqStats.uploaded}/~${pyqStats.skipped}) ` +
     `vocab(+${vocabStats.uploaded}/~${vocabStats.skipped}) ` +
     `flashcards(+${flashStats.uploaded}/~${flashStats.skipped}) ` +
     `schemes(+${schemeStats.uploaded}/~${schemeStats.skipped})`
   );
 
   return {
-    uploaded: stats.uploaded + vocabStats.uploaded + flashStats.uploaded + schemeStats.uploaded,
-    skipped: stats.skipped + vocabStats.skipped + flashStats.skipped + schemeStats.skipped,
-    errors: stats.errors + vocabStats.errors + flashStats.errors + schemeStats.errors,
+    uploaded: stats.uploaded + pyqStats.uploaded + vocabStats.uploaded + flashStats.uploaded + schemeStats.uploaded,
+    skipped: stats.skipped + pyqStats.skipped + vocabStats.skipped + flashStats.skipped + schemeStats.skipped,
+    errors: stats.errors + pyqStats.errors + vocabStats.errors + flashStats.errors + schemeStats.errors,
   };
 }
 
