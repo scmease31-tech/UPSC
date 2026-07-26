@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import crypto from 'crypto';
+import { restructure } from './restructure.js';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -683,8 +684,12 @@ export async function scrapeInsights(dateStr) {
 
     const keyPoints = extractKeyPoints(section);
     const pyqs = extractPYQs(section);
-    const cleanedContent = cleanText(section).slice(0, 6000);
-    const summary = cleanedContent.slice(0, 300).replace(/\s+\S*$/, '') + '…';
+    // Insights pages are scraped as flat text (there is no per-article page to
+    // read), so impose the reader's section structure here — otherwise these
+    // articles render as a wall while Drishti's render as sections.
+    const cleanedContent = restructure(cleanText(section), { title }).slice(0, 6000);
+    const summary = cleanedContent.replace(/^##.*$/gm, '').replace(/^[•◦]\s*/gm, '').trim()
+      .slice(0, 300).replace(/\s+\S*$/, '') + '…';
 
     const wayForward = section.match(/Way Forward:?\s*([\s\S]*?)(?:Conclusion|SECURE|PRACTICE|$)/i);
     const conclusion = section.match(/Conclusion:?\s*([\s\S]*?)(?:\n\n\s*\n|SECURE|PRACTICE|GS PAPER|PRELIMS|CME|$)/i);

@@ -208,17 +208,56 @@ function acronym(name) {
  * docs. Uses the explicit `governmentScheme` field when present, plus pattern
  * matching on title/content.
  */
+/**
+ * Tidy a detected scheme name.
+ *
+ * Pattern matching over article text picks up the same scheme in several
+ * surface forms — with a leading article ("The Mobile Phone Manufacturing
+ * Scheme"), or with the phrase accidentally doubled where the text repeated it
+ * ("Gaganyaan Mission Gaganyaan Mission"). Left alone these become separate
+ * entries and the Govt Schemes tab fills with near-duplicates.
+ */
+function tidySchemeName(raw) {
+  let name = clean(raw).replace(/[.,;:]+$/, '').replace(/^(the|a|an)\s+/i, '');
+
+  // Collapse an exactly-doubled phrase.
+  const words = name.split(/\s+/);
+  if (words.length % 2 === 0) {
+    const half = words.length / 2;
+    if (words.slice(0, half).join(' ').toLowerCase() === words.slice(half).join(' ').toLowerCase()) {
+      name = words.slice(0, half).join(' ');
+    }
+  }
+
+  // Trim a reporting verb that got swept into the match.
+  name = name.replace(/^(PM|Government|Centre|Cabinet)\s+(Announces?|Launches?|Approves?|Unveils?)\s+/i, '');
+
+  return name;
+}
+
+/** Key used to merge surface variants of one scheme. */
+function schemeKey(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Names that describe a *category* of scheme rather than naming one. They match
+ * the patterns perfectly and tell a reader nothing.
+ */
+const GENERIC_SCHEME = /^(centrally sponsored|central sector|authorised use|state sponsored|government|national|new|old|special|various|other|similar|such|this|that|above|following|flagship|umbrella)\s+(scheme|mission|programme|program|yojana)s?$/i;
+
 export function generateSchemes(articles) {
   const byName = new Map();
 
   const add = (rawName, article) => {
-    const name = clean(rawName).replace(/[.,;:]+$/, '');
+    const name = tidySchemeName(rawName);
     if (!name || name.length < 6 || name.length > 90) return;
+    if (GENERIC_SCHEME.test(name)) return;
     // Skip obvious false positives (single generic word before Scheme/Mission).
     const words = name.split(/\s+/);
     if (words.length < 2) return;
 
-    const key = name.toLowerCase();
+    const key = schemeKey(name);
     if (byName.has(key)) return;
 
     const context = `${article.title} ${article.summary}`;

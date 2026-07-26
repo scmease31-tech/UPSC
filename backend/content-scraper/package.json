@@ -15,6 +15,7 @@
     "daily": "node daily-ingest.js",
     "inbox": "node inbox-ingest.js",
     "papers": "node upsc-papers.js",
+    "repair": "node repair-articles.js",
     "test": "node --test test/parsers.test.js",
     "smoke": "node index.js --dry-run"
   },

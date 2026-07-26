@@ -31,7 +31,16 @@ GitHub Actions and Firebase tiers. Full instructions: [`inbox/README.md`](inbox/
 | Drishti IAS + Insights on India | `daily-scraper.yml`, 4×/day | `articles`, `pyqs`, `flashcards`, `vocabulary`, `govtSchemes` |
 | Newspaper or question paper you upload | `newspaper-inbox.yml`, on upload | `articles`, `pyqs`, `flashcards`, `vocabulary`, `govtSchemes` |
 | Official UPSC papers from upsc.gov.in | `upsc-papers.yml`, manual | `pyqs` |
+| Everything already stored | `repair-articles.yml`, weekly | re-derives all of the above |
 | PDFs on your own machine | `node backend/content-scraper/daily-ingest.js` | same as above |
+
+**Keeping the archive current.** The pipeline keeps improving, so older articles
+sit at older quality levels. `repair-articles.js` walks the whole collection
+weekly: articles with their own source page are re-fetched and re-parsed, the
+rest have reading structure imposed on the stored text, missing artwork is
+looked up, and then vocabulary, PYQs, schemes and flashcards are re-derived from
+the full history. Re-running is safe — current articles are skipped and every
+derived collection de-duplicates on write.
 
 The Drishti scraper reads each article's own page rather than the daily index,
 which is what supplies real headline artwork, the section structure used by the

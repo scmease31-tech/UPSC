@@ -39,6 +39,7 @@ import {
 import { generateAll, generateSchemes } from './generators.js';
 import { ocrAvailable, ocrPdf } from './ocr.js';
 import { extractDailyVocabulary } from './vocab-extract.js';
+import { restructure } from './restructure.js';
 
 /**
  * Below this many alphanumeric characters per page a PDF is treated as
@@ -617,7 +618,9 @@ function parseArticles(text, source, dateStr, minBody) {
       id: hashId('art', title, dateStr),
       title,
       summary: body.slice(0, 300).replace(/\s+\S*$/, '') + '…',
-      content: body.slice(0, 6000),
+      // Newspaper text arrives as one reflowed run. It has no sections to find,
+      // but breaking it into paragraphs still makes it readable in the app.
+      content: restructure(body.slice(0, 6000), { title }),
       keyPoints,
       examRelevance: 'Both',
       categoryTags: ['Current Affairs'],

@@ -1,0 +1,72 @@
+name: Repair & Re-derive Content
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Levels up every stored article to the current standard and rebuilds the study
+# content derived from them.
+#
+# The pipeline keeps improving, which means older articles sit at older quality
+# levels: flat text, missing artwork, missing syllabus tags. This walks the full
+# collection, re-fetches what can be re-fetched, structures the rest, and then
+# re-derives vocabulary, PYQs, schemes and flashcards from the whole history.
+#
+# Runs weekly so the archive keeps pace with the pipeline without anyone having
+# to remember. Safe to re-run: articles already current are skipped and every
+# derived collection de-duplicates on write.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    # 03:15 IST on Sunday — after the night scrape, before anyone is studying.
+    - cron: '45 21 * * 6'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Only process the first N articles needing work (0 = all)'
+        default: '0'
+      dry_run:
+        description: 'Report only, do not write'
+        type: boolean
+        default: false
+
+concurrency:
+  group: repair-articles
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/content-scraper/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend/content-scraper
+        run: npm ci || npm install
+
+      - name: Test parsers
+        working-directory: backend/content-scraper
+        run: npm test
+
+      - name: Repair and re-derive
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          LIMIT="${{ github.event.inputs.limit }}"
+          if [ -n "$LIMIT" ] && [ "$LIMIT" != "0" ]; then
+            ARGS="$ARGS --limit $LIMIT"
+          fi
+          node repair-articles.js $ARGS
