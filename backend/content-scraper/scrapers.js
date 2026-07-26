@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import crypto from 'crypto';
-import { restructure } from './restructure.js';
+import { restructure, decodeEntities } from './restructure.js';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -100,7 +100,9 @@ function mapGsPaper(tags) {
 }
 
 function cleanText(text) {
-  return text
+  // Entities are decoded here rather than at render time — the app shows the
+  // stored string verbatim, so an "&#8217;" left in place reaches the reader.
+  return decodeEntities(text)
     .replace(/\r\n/g, '\n')
     .replace(/ /g, ' ')
     .replace(/[ \t]+/g, ' ')

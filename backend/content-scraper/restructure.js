@@ -69,6 +69,41 @@ const LABEL_HEADING_RE = /^[A-Z][^.!?]{2,90}:$/;
 
 const BULLET_RE = /^\s*([•◦■▪●o*\-–—]|\d{1,2}[.)])\s+(?=\S)/;
 
+/** Markers the reader already understands, so re-running is idempotent. */
+const EXISTING_HEADING_RE = /^(#{2,3})\s+(.+)$/;
+const EXISTING_BULLET_RE = /^([•◦])\s+(.+)$/;
+
+/**
+ * A list item that lost its bullet: "Responsible Governance: Building
+ * international oversight frameworks…". Scraped pages are full of these —
+ * flattening drops the <li> and leaves a label-and-explanation line that reads
+ * as a paragraph but belongs in a list.
+ */
+const LABEL_ITEM_RE = /^([A-Z][^.!?:]{2,60}):\s+(\S.{10,})$/;
+
+const NAMED_ENTITIES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“',
+  ndash: '–', mdash: '—', hellip: '…', middot: '·',
+  eacute: 'é', deg: '°', times: '×', bull: '•',
+};
+
+/**
+ * Decode HTML entities left behind by earlier scrapes.
+ *
+ * Articles stored before the current pipeline carry raw entities in their text
+ * ("Pope Leo XIV&#8217;s Magnifica Humanitas"), which the app renders literally.
+ */
+export function decodeEntities(text) {
+  return (text || '')
+    .replace(/&#(\d+);/g, (_, n) => {
+      const code = parseInt(n, 10);
+      return code > 0 && code < 0x110000 ? String.fromCodePoint(code) : '';
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&([a-z]+);/gi, (m, name) => NAMED_ENTITIES[name.toLowerCase()] ?? m);
+}
+
 function isHeading(line) {
   const t = line.trim().replace(/\s+/g, ' ');
   if (t.length < 3 || t.length > 110) return false;
@@ -107,7 +142,7 @@ export function restructure(raw, { title = '' } = {}) {
   if (!raw || raw.trim().length === 0) return '';
 
   // Flattened bodies often use " | " or repeated spaces where line breaks were.
-  const lines = raw
+  const lines = decodeEntities(raw)
     .replace(/\r\n/g, '\n')
     .split(/\n+/)
     .flatMap((l) => l.split(/\s*\|\s*/))
@@ -116,17 +151,25 @@ export function restructure(raw, { title = '' } = {}) {
     .filter((l) => !JUNK_LINE.test(l));
 
   const out = [];
-  const pushHeading = (text) => {
+  const pushHeading = (text, level = 2) => {
     const clean = text.trim().replace(/:$/, '');
     if (!clean) return;
-    if (out.length && out[out.length - 1] === `## ${clean}`) return;
-    out.push(`## ${clean}`);
+    const marker = '#'.repeat(level);
+    if (out.length && out[out.length - 1] === `${marker} ${clean}`) return;
+    out.push(`${marker} ${clean}`);
   };
 
   const titleKey = title.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
+
+    // Already-marked text passes through untouched, so re-running this on a
+    // previously structured body is a no-op rather than a mangling.
+    const existingHeading = line.match(EXISTING_HEADING_RE);
+    if (existingHeading) { pushHeading(existingHeading[2], existingHeading[1].length); continue; }
+    const existingBullet = line.match(EXISTING_BULLET_RE);
+    if (existingBullet) { out.push(`${existingBullet[1]} ${existingBullet[2]}`); continue; }
 
     // The headline is echoed in the body, and not always on the first line —
     // flattened pages repeat it after the metadata block too.
@@ -156,6 +199,21 @@ export function restructure(raw, { title = '' } = {}) {
       continue;
     }
 
+    // A list item whose bullet was lost in flattening. Only treated as one
+    // when it sits in a run of similar lines — a single "Label: text" line is
+    // far more likely to be an ordinary sentence.
+    const labelItem = line.match(LABEL_ITEM_RE);
+    if (labelItem) {
+      const neighbourIsItem = (j) => {
+        const n = lines[j];
+        return typeof n === 'string' && LABEL_ITEM_RE.test(n) && !isHeading(n);
+      };
+      if (neighbourIsItem(i - 1) || neighbourIsItem(i + 1)) {
+        out.push(`• ${labelItem[1]}: ${labelItem[2]}`);
+        continue;
+      }
+    }
+
     // Ordinary prose. Very long runs are usually several paragraphs that lost
     // their breaks — split them on sentence boundaries so the reader can breathe.
     if (line.length > 700) {
@@ -172,10 +230,16 @@ export function restructure(raw, { title = '' } = {}) {
     out.push(line);
   }
 
-  // A heading with nothing under it is noise.
-  while (out.length && out[out.length - 1].startsWith('## ')) out.pop();
+  // A heading with nothing under it is noise — including one immediately
+  // followed by another heading, which is what "## About X" + "## What is it?"
+  // collapses to when the intervening paragraph was empty.
+  const pruned = out.filter((line, i) => {
+    if (!/^#{2,3}\s/.test(line)) return true;
+    const next = out[i + 1];
+    return next !== undefined && !/^#{2,3}\s/.test(next);
+  });
 
-  return out.join('\n\n');
+  return pruned.join('\n\n');
 }
 
 /** True when the body already uses the reader's markers. */

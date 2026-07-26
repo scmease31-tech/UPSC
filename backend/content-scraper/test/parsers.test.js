@@ -241,3 +241,64 @@ test('plain prose with no structure is not mangled into headings', () => {
   assert.doesNotMatch(out, /^## /m);
   assert.match(out, /committee met on Tuesday/);
 });
+
+test('decodes HTML entities left behind by earlier scrapes', () => {
+  const flat = 'Context: Inspired by Pope Leo XIV&#8217;s Magnifica Humanitas &amp; the '
+    + 'Declaration, it calls for protecting human dignity &mdash; from unchecked AI systems.';
+  const out = restructure(flat, { title: '' });
+  assert.match(out, /Pope Leo XIV’s/);
+  assert.match(out, / & the Declaration/);
+  assert.doesNotMatch(out, /&#\d+;|&amp;|&mdash;/);
+});
+
+test('recovers list items that lost their bullets', () => {
+  const flat = [
+    'Core Principles of the Declaration',
+    'Disarming the Next Arms Race: Coordinated efforts to halt dual arms races.',
+    'Responsible Development: Aligning technological progress with human ethics.',
+    'Responsible Governance: Building international oversight frameworks.',
+  ].join('\n');
+
+  const out = restructure(flat, { title: '' });
+  assert.match(out, /^• Disarming the Next Arms Race: /m);
+  assert.match(out, /^• Responsible Governance: /m);
+});
+
+test('a lone label sentence is not turned into a bullet', () => {
+  const flat = 'Note: The committee will reconvene in December to review the draft text.';
+  const out = restructure(flat, { title: '' });
+  assert.doesNotMatch(out, /^• /m);
+});
+
+test('drops a heading immediately followed by another heading', () => {
+  const flat = [
+    'About The Rome Declaration for an Unarmed and Disarming Peace:',
+    'What it is?',
+    'The Declaration calls for protecting human dignity from unchecked AI systems.',
+  ].join('\n');
+
+  const out = restructure(flat, { title: '' });
+  assert.doesNotMatch(out, /## About The Rome Declaration/);
+  assert.match(out, /## What it is\?/);
+});
+
+test('re-running on already-structured text changes nothing', () => {
+  const structured = [
+    '## Why in News?',
+    '',
+    'The Rome Declaration was signed in July 2026 by Nobel laureates and AI scientists.',
+    '',
+    '## Summary',
+    '',
+    '• The Declaration warns against outsourcing moral decisions to AI systems.',
+    '',
+    '◦ It calls for an international treaty on autonomous weapons.',
+  ].join('\n');
+
+  const once = restructure(structured, { title: '' });
+  const twice = restructure(once, { title: '' });
+  assert.equal(twice, once, 'restructure must be idempotent');
+  assert.match(once, /^## Why in News\?$/m);
+  assert.match(once, /^• The Declaration warns/m);
+  assert.match(once, /^◦ It calls for an international treaty/m);
+});

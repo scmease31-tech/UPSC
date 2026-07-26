@@ -43,10 +43,14 @@ import { findTopicImage } from './image-finder.js';
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { dryRun: false, limit: 0, refetch: true, images: true, vocabPerBatch: 12 };
+  const o = { dryRun: false, limit: 0, refetch: true, images: true, force: false, vocabPerBatch: 12 };
   for (let i = 0; i < a.length; i++) {
     switch (a[i]) {
       case '--dry-run': o.dryRun = true; break;
+      // Re-process articles that already look current. Needed when the
+      // structuring rules themselves improve, since those articles would
+      // otherwise be skipped forever.
+      case '--force': o.force = true; break;
       case '--limit': o.limit = parseInt(a[++i], 10) || 0; break;
       case '--no-refetch': o.refetch = false; break;
       case '--no-images': o.images = false; break;
@@ -90,8 +94,10 @@ async function main() {
   const articles = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   console.log(`\nLoaded ${articles.length} article(s).`);
 
-  let needsWork = articles.filter((a) => !isStructured(a.content) || !a.imageUrl);
-  console.log(`${needsWork.length} need structuring and/or artwork.`);
+  let needsWork = opts.force
+    ? articles
+    : articles.filter((a) => !isStructured(a.content) || !a.imageUrl || /&(#\d+|[a-z]+);/i.test(a.content || ''));
+  console.log(`${needsWork.length} need structuring, artwork or cleanup${opts.force ? ' (forced: all)' : ''}.`);
   if (opts.limit) needsWork = needsWork.slice(0, opts.limit);
 
   const stats = { refetched: 0, restructured: 0, imaged: 0, unchanged: 0, failed: 0 };
@@ -121,15 +127,19 @@ async function main() {
       } catch { /* fall through to the offline route */ }
     }
 
-    // Offline route: structure whatever text we already hold.
-    if (!patch.content && !isStructured(a.content)) {
+    // Offline route: structure whatever text we already hold. Runs even on
+    // already-structured bodies, because it is idempotent and also decodes
+    // stray HTML entities and prunes empty headings.
+    if (!patch.content) {
       const original = a.content || '';
       const rebuilt = restructure(original, { title: a.title });
       // Accept it when it found real sections, or — for newspaper prose, which
       // genuinely has no sections — when it at least broke a single run of text
-      // into paragraphs.
+      // into paragraphs. Also accept any change that shortens the text, which
+      // means junk or a duplicated headline was removed.
       const gainedParagraphs = rebuilt.split('\n\n').length > original.split('\n\n').length;
-      if (rebuilt.length > 120 && (isStructured(rebuilt) || gainedParagraphs)) {
+      const changed = rebuilt !== original;
+      if (rebuilt.length > 120 && changed && (isStructured(rebuilt) || gainedParagraphs || rebuilt.length < original.length)) {
         patch.content = rebuilt;
         stats.restructured++;
       }
