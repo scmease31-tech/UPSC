@@ -17,6 +17,9 @@ name: Newspaper Inbox
 
 on:
   push:
+    # Branch-scoped: GitHub ignores `paths` filters on tag pushes, so without
+    # this the workflow fires on every release tag as well.
+    branches: [main]
     paths:
       - 'inbox/**'
       # Do not re-trigger on this workflow's own bookkeeping commit.
