@@ -120,50 +120,202 @@ export function generateVocabulary(articles) {
  *   1. Term cards   — front = key term, back = its definition
  *   2. Concept cards — front = "Why in news: <title>?", back = summary
  */
+/**
+ * Split a structured body into "## Heading" → content blocks.
+ * Bodies without headings yield nothing, which is correct — there is no
+ * section to build a card from.
+ */
+function sections(content) {
+  const out = [];
+  let heading = null;
+  let buf = [];
+
+  const flush = () => {
+    if (heading && buf.length) {
+      const body = buf.join(' ').replace(/^[•◦]\s*/gm, '').replace(/\s+/g, ' ').trim();
+      if (body.length > 40) out.push({ heading, body });
+    }
+    buf = [];
+  };
+
+  for (const line of (content || '').split('\n')) {
+    const t = line.trim();
+    if (!t) continue;
+    const h = t.match(/^#{2,3}\s+(.+)$/);
+    if (h) { flush(); heading = h[1].replace(/[:?]+$/, '').trim(); continue; }
+    buf.push(t.replace(/^[•◦]\s*/, ''));
+  }
+  flush();
+  return out;
+}
+
+/** Section names too generic to make a useful card front on their own. */
+const WEAK_HEADING = /^(summary|context|source|introduction|conclusion|note|about|overview|background)$/i;
+
+/** "X is a statutory body that …" — a definition worth its own card. */
+const DEFINITION_RE = /^([A-Z][A-Za-z0-9 ()'&/-]{3,70}?)\s+(?:is|are|was|were|refers to|means|stands for|is defined as)\s+(.{25,300}?[.!])/;
+
+/**
+ * A definition card is only useful if the term is a name, not a clause.
+ * "The capital, Skopje, is the birthplace of…" matches the definition shape but
+ * its subject is a fragment — the comma is the giveaway.
+ */
+function isNamedTerm(term) {
+  if (/[,;:]/.test(term)) return false;
+  const words = term.split(/\s+/);
+  if (words.length > 8) return false;
+  if (/^(It|This|That|These|Those|There|He|She|They|Which|What|Such|Both|One|Some|Many|Most)\b/i.test(term)) return false;
+  // A bare "The …" opener is usually a sentence subject rather than a name.
+  if (/^The\s/i.test(term) && words.length <= 2) return false;
+  return true;
+}
+
+/**
+ * Generate flashcard docs from articles.
+ *
+ * Four kinds of card, in descending reliability:
+ *   1. Term → definition, when a source supplies a glossary (`keyTerms`)
+ *   2. Section cards — a "## What is X?" heading and the text under it
+ *   3. Definition cards — "X is a …" sentences found in the body
+ *   4. One concept card per article — "Why in news: <title>"
+ *
+ * Only (1) and (4) existed before, and no scraper populates keyTerms, so every
+ * article produced exactly one card. Sections and definitions are where the
+ * real volume is: a typical Drishti article carries six to ten of them.
+ */
 export function generateFlashcards(articles) {
   const byFront = new Map();
 
+  const add = (front, back, article, category) => {
+    const f = clean(front);
+    const b = clean(back);
+    if (!f || f.length < 6 || f.length > 160) return;
+    if (b.length < 30) return;
+    const key = f.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (byFront.has(key)) return;
+    byFront.set(key, {
+      id: hashId('fc', f),
+      front: f,
+      back: b.slice(0, 600),
+      category,
+      newspaper: article.newspaper || '',
+      publishedDate: article.publishedDate || '',
+    });
+  };
+
   for (const article of articles) {
     const category = primaryCategory(article);
+    const title = clean(article.title);
 
-    // 1. Term → definition cards (highest quality, straight from keyTerms)
+    // 1. Curated glossary, when a source provides one.
     for (const [term, definition] of Object.entries(article.keyTerms || {})) {
-      const front = clean(term);
-      const back = clean(definition);
-      if (!front || back.length < 15) continue;
-      const key = front.toLowerCase();
-      if (!byFront.has(key)) {
-        byFront.set(key, {
-          id: hashId('fc', front),
-          front,
-          back,
-          category,
-          newspaper: article.newspaper || '',
-          publishedDate: article.publishedDate || '',
-        });
-      }
+      add(term, definition, article, category);
     }
 
-    // 2. Concept card from the article itself
-    const title = clean(article.title);
+    // 2. Section cards. A heading that already reads as a question becomes the
+    //    front verbatim; a plain one is qualified with the article topic so the
+    //    card still makes sense out of context.
+    for (const { heading, body } of sections(article.content)) {
+      if (WEAK_HEADING.test(heading)) continue;
+      // A question heading stands alone. A plain one is qualified with the
+      // article topic so the card still makes sense out of context — unless it
+      // already names that topic, which would read "X of Y — Y".
+      const isQuestion = /\?$|^(what|why|how|who|when|where|which)\b/i.test(heading);
+      const words = (s) => new Set(s.toLowerCase().match(/[a-z]{4,}/g) || []);
+      const headingWords = words(heading);
+      const shared = [...words(title)].filter((w) => headingWords.has(w)).length;
+      const front = isQuestion
+        ? heading.replace(/\?*$/, '?')
+        : (shared >= 2 ? heading : `${heading} — ${title}`);
+      add(front, body, article, category);
+    }
+
+    // 3. Definitions stated in the prose.
+    const plain = (article.content || '').replace(/^#{2,3}\s+.*$/gm, '').replace(/^[•◦]\s*/gm, '');
+    for (const sentence of plain.split(/(?<=[.!?])\s+/)) {
+      const m = sentence.trim().match(DEFINITION_RE);
+      if (!m) continue;
+      const term = m[1].trim();
+      if (!isNamedTerm(term)) continue;
+      add(term, sentence.trim(), article, category);
+    }
+
+    // 4. The article itself.
     const summary = clean(article.summary);
     if (title && summary.length > 40) {
-      const front = `Why in news: ${title}`;
-      const key = front.toLowerCase();
-      if (!byFront.has(key)) {
-        byFront.set(key, {
-          id: hashId('fc', title),
-          front,
-          back: summary.slice(0, 400),
-          category,
-          newspaper: article.newspaper || '',
-          publishedDate: article.publishedDate || '',
-        });
-      }
+      add(`Why in news: ${title}`, summary, article, category);
     }
   }
 
   return [...byFront.values()];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Key facts (the `dailyFacts` collection behind "UPSC Must Know")
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** A fact is worth memorising when it pins down a number, date, body or law. */
+const FACT_SIGNAL = /(\b\d{4}\b|\b\d+(\.\d+)?\s*(%|per cent|crore|lakh|billion|million|km|GW|MW|tonnes?)\b|Article\s+\d+|Section\s+\d+|Schedule\b|Amendment\b|Convention\b|Treaty\b|Protocol\b|Mission\b|Yojana\b|Act,?\s+\d{4}|established|launched|headquarters|ranked|largest|first\b)/i;
+
+/** Sentences that reference the news cycle rather than stating a durable fact. */
+const NOT_A_FACT = /(recently|last week|yesterday|today|this week|has been in the news|why in news|according to the article)/i;
+
+/**
+ * Build `dailyFacts` docs — one per article, grouped by subject.
+ *
+ * The Must Know screen merges these with its built-in bank, so every article
+ * ingested adds to what the screen can teach. Nothing wrote this collection
+ * before, which is why the screen only ever showed its static content.
+ */
+export function generateKeyFacts(articles, { perArticle = 6 } = {}) {
+  const out = [];
+
+  for (const article of articles) {
+    const category = primaryCategory(article);
+    const title = clean(article.title);
+    if (!title) continue;
+
+    const seen = new Set();
+    const facts = [];
+
+    // Curated bullets first — they are already condensed.
+    const candidates = [
+      ...(article.keyPoints || []),
+      ...(article.shortNotes || []),
+      ...(article.content || '')
+        .split('\n')
+        .filter((l) => /^[•◦]\s/.test(l.trim()))
+        .map((l) => l.replace(/^[•◦]\s*/, '')),
+      ...(article.content || '')
+        .replace(/^#{2,3}\s+.*$/gm, '')
+        .split(/(?<=[.!?])\s+/),
+    ];
+
+    for (const raw of candidates) {
+      const fact = clean(raw);
+      if (fact.length < 45 || fact.length > 260) continue;
+      if (!FACT_SIGNAL.test(fact)) continue;
+      if (NOT_A_FACT.test(fact)) continue;
+      const key = fact.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      facts.push(fact);
+      if (facts.length >= perArticle) break;
+    }
+
+    if (facts.length < 2) continue; // not worth a card
+
+    out.push({
+      id: hashId('kf', title),
+      category,
+      title,
+      facts,
+      publishedDate: article.publishedDate || '',
+      newspaper: article.newspaper || '',
+    });
+  }
+
+  return out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -302,5 +454,6 @@ export function generateAll(articles) {
     vocabulary: generateVocabulary(articles),
     flashcards: generateFlashcards(articles),
     schemes: generateSchemes(articles),
+    keyFacts: generateKeyFacts(articles),
   };
 }

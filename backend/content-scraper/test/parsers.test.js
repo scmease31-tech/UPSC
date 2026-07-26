@@ -5,6 +5,7 @@ import { classifyPaper, parsePrelimsPaper, parseMainsPaper } from '../upsc-paper
 import { classify as classifyUpload } from '../inbox-ingest.js';
 import { parsePyqBlock } from '../scrapers.js';
 import { restructure, isStructured } from '../restructure.js';
+import { generateFlashcards, generateKeyFacts } from '../generators.js';
 
 const base = 'https://www.upsc.gov.in/sites/default/files/';
 
@@ -301,4 +302,82 @@ test('re-running on already-structured text changes nothing', () => {
   assert.match(once, /^## Why in News\?$/m);
   assert.match(once, /^• The Declaration warns/m);
   assert.match(once, /^◦ It calls for an international treaty/m);
+});
+
+// ── derived study content ───────────────────────────────────────────────────
+
+const sampleArticle = {
+  title: 'Rome Declaration for an Unarmed and Disarming Peace',
+  summary: 'Nobel laureates and AI scientists signed a declaration warning against delegating moral decisions to AI systems.',
+  newspaper: 'Drishti IAS',
+  publishedDate: '2026-07-24',
+  categoryTags: ['International Relations'],
+  keyPoints: [],
+  content: [
+    '## Why in News?',
+    '',
+    'The Rome Declaration was signed in July 2026 by Nobel laureates and AI scientists.',
+    '',
+    '## What is the Rome Declaration?',
+    '',
+    'The Rome Declaration is a moral appeal calling for an international treaty on autonomous weapons systems.',
+    '',
+    '## Core Principles',
+    '',
+    '• Nuclear Disarmament: Renewed commitment to verifiable elimination of atomic arsenals by 2045.',
+    '• Responsible Governance: Building oversight frameworks for high-risk tools under Article 51 of the Charter.',
+  ].join('\n'),
+};
+
+test('flashcards come from sections and definitions, not just one per article', () => {
+  const cards = generateFlashcards([sampleArticle]);
+  // Previously this produced exactly one card, because term cards needed a
+  // keyTerms glossary that no scraper populates.
+  assert.ok(cards.length >= 4, `expected several cards, got ${cards.length}`);
+
+  const fronts = cards.map((c) => c.front);
+  assert.ok(fronts.some((f) => /^What is the Rome Declaration\?$/.test(f)), 'question heading kept verbatim');
+  assert.ok(fronts.some((f) => /^Why in news:/.test(f)), 'concept card present');
+  // A plain heading is qualified with the topic so it stands alone.
+  assert.ok(fronts.some((f) => /^Core Principles — Rome Declaration/.test(f)));
+  for (const c of cards) assert.ok(c.back.length >= 30, `card "${c.front}" has a thin back`);
+});
+
+test('a heading that already names the topic is not repeated in the front', () => {
+  const cards = generateFlashcards([sampleArticle]);
+  assert.ok(
+    !cards.some((c) => /Rome Declaration.*—.*Rome Declaration/.test(c.front)),
+    'front must not repeat the topic twice',
+  );
+});
+
+test('definition cards reject clause fragments', () => {
+  const article = {
+    ...sampleArticle,
+    content: 'The capital, Skopje, is the birthplace of Mother Teresa and a major cultural centre of the region.',
+  };
+  const cards = generateFlashcards([article]);
+  assert.ok(!cards.some((c) => /^The capital,/.test(c.front)), 'a comma-laden fragment is not a term');
+});
+
+test('key facts pick out durable, checkable statements', () => {
+  const [card] = generateKeyFacts([sampleArticle]);
+  assert.ok(card, 'expected a key-facts card');
+  assert.equal(card.category, 'International Relations');
+  assert.equal(card.title, sampleArticle.title);
+  assert.ok(card.facts.length >= 2);
+  // Every fact should carry a number, date, body or legal reference.
+  for (const f of card.facts) {
+    assert.match(f, /\d{4}|Article\s+\d+|Treaty|Convention|Declaration|Mission/i);
+  }
+});
+
+test('key facts skip articles with nothing memorable', () => {
+  const vague = {
+    ...sampleArticle,
+    keyPoints: [],
+    content: 'Officials met to discuss the matter. They agreed to continue talks at a later date.',
+    summary: 'Officials met to discuss the matter.',
+  };
+  assert.equal(generateKeyFacts([vague]).length, 0);
 });

@@ -34,8 +34,9 @@ import {
   uploadFlashcards,
   uploadSchemes,
   uploadPyqs,
+  uploadKeyFacts,
 } from './uploader.js';
-import { generateFlashcards, generateSchemes } from './generators.js';
+import { generateFlashcards, generateSchemes, generateKeyFacts } from './generators.js';
 import { extractDailyVocabulary } from './vocab-extract.js';
 import { parseDrishtiArticle, parsePyqBlock } from './scrapers.js';
 import { restructure, isStructured } from './restructure.js';
@@ -43,7 +44,7 @@ import { findTopicImage } from './image-finder.js';
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { dryRun: false, limit: 0, refetch: true, images: true, force: false, vocabPerBatch: 12 };
+  const o = { dryRun: false, limit: 0, refetch: true, images: true, force: false, vocabPerBatch: 20 };
   for (let i = 0; i < a.length; i++) {
     switch (a[i]) {
       case '--dry-run': o.dryRun = true; break;
@@ -209,6 +210,7 @@ async function main() {
 
   const flashcards = generateFlashcards(articles);
   const schemes = generateSchemes(articles);
+  const keyFacts = generateKeyFacts(articles);
 
   // Vocabulary is defined against a network dictionary, so mine it in dated
   // batches rather than from 196 articles at once — that keeps each day's list
@@ -233,18 +235,20 @@ async function main() {
 
   console.log(
     `Derived: pyqs=${pyqs.length} vocabulary=${vocabulary.length} `
-    + `flashcards=${flashcards.length} schemes=${schemes.length}`,
+    + `flashcards=${flashcards.length} schemes=${schemes.length} keyFacts=${keyFacts.length}`,
   );
 
   const p = await uploadPyqs(pyqs, opts.dryRun);
   const v = await uploadVocabulary(vocabulary, opts.dryRun);
   const f = await uploadFlashcards(flashcards, opts.dryRun);
   const s = await uploadSchemes(schemes, opts.dryRun);
+  const k = await uploadKeyFacts(keyFacts, opts.dryRun);
 
   console.log('\n' + '='.repeat(66));
   console.log(
     `Done: pyqs(+${p.uploaded}/~${p.skipped}) vocabulary(+${v.uploaded}/~${v.skipped}) `
-    + `flashcards(+${f.uploaded}/~${f.skipped}) schemes(+${s.uploaded}/~${s.skipped})`,
+    + `flashcards(+${f.uploaded}/~${f.skipped}) schemes(+${s.uploaded}/~${s.skipped}) `
+    + `keyFacts(+${k.uploaded}/~${k.skipped})`,
   );
   console.log('='.repeat(66));
 }

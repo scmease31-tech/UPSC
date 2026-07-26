@@ -27,6 +27,7 @@ import {
   uploadFlashcards,
   uploadSchemes,
   uploadPyqs,
+  uploadKeyFacts,
 } from './uploader.js';
 import { generateAll } from './generators.js';
 import { extractDailyVocabulary } from './vocab-extract.js';
@@ -158,12 +159,14 @@ async function scrapeForDate(dateStr, dryRun) {
 
   console.log(
     `[Generate] vocabulary=${vocabulary.length} ` +
-    `flashcards=${derived.flashcards.length} schemes=${derived.schemes.length}`
+    `flashcards=${derived.flashcards.length} schemes=${derived.schemes.length} ` +
+    `keyFacts=${derived.keyFacts.length}`
   );
 
   const vocabStats = await uploadVocabulary(vocabulary, dryRun);
   const flashStats = await uploadFlashcards(derived.flashcards, dryRun);
   const schemeStats = await uploadSchemes(derived.schemes, dryRun);
+  const factStats = await uploadKeyFacts(derived.keyFacts, dryRun);
 
   console.log(
     `\n[Done] ${dateStr}: ` +
@@ -171,13 +174,14 @@ async function scrapeForDate(dateStr, dryRun) {
     `pyqs(+${pyqStats.uploaded}/~${pyqStats.skipped}) ` +
     `vocab(+${vocabStats.uploaded}/~${vocabStats.skipped}) ` +
     `flashcards(+${flashStats.uploaded}/~${flashStats.skipped}) ` +
-    `schemes(+${schemeStats.uploaded}/~${schemeStats.skipped})`
+    `schemes(+${schemeStats.uploaded}/~${schemeStats.skipped}) ` +
+    `facts(+${factStats.uploaded}/~${factStats.skipped})`
   );
 
   return {
-    uploaded: stats.uploaded + pyqStats.uploaded + vocabStats.uploaded + flashStats.uploaded + schemeStats.uploaded,
-    skipped: stats.skipped + pyqStats.skipped + vocabStats.skipped + flashStats.skipped + schemeStats.skipped,
-    errors: stats.errors + pyqStats.errors + vocabStats.errors + flashStats.errors + schemeStats.errors,
+    uploaded: stats.uploaded + pyqStats.uploaded + vocabStats.uploaded + flashStats.uploaded + schemeStats.uploaded + factStats.uploaded,
+    skipped: stats.skipped + pyqStats.skipped + vocabStats.skipped + flashStats.skipped + schemeStats.skipped + factStats.skipped,
+    errors: stats.errors + pyqStats.errors + vocabStats.errors + flashStats.errors + schemeStats.errors + factStats.errors,
   };
 }
 

@@ -239,6 +239,15 @@ export function uploadSchemes(docs, dryRun = false) {
 }
 
 /**
+ * Upload key-fact docs to the `dailyFacts` collection, which the "UPSC Must
+ * Know" screen merges with its built-in bank. Nothing wrote this collection
+ * before, so the screen only ever showed its static content.
+ */
+export function uploadKeyFacts(docs, dryRun = false) {
+  return uploadToCollection('dailyFacts', docs, dryRun, 'title');
+}
+
+/**
  * Upload previous-year question docs to the `pyqs` collection.
  * These come from the PYQ block Drishti appends to most daily articles, so the
  * PYQ tab keeps growing with genuine questions instead of a frozen list.

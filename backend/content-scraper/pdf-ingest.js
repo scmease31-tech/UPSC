@@ -35,6 +35,7 @@ import {
   uploadFlashcards,
   uploadSchemes,
   deleteBySourceDate,
+  uploadKeyFacts,
 } from './uploader.js';
 import { generateAll, generateSchemes } from './generators.js';
 import { ocrAvailable, ocrPdf } from './ocr.js';
@@ -842,6 +843,7 @@ export async function ingestText({
       // should come from, so mine it here too.
       const vocab = await extractDailyVocabulary(articleDocs, { limit: 10 });
       vStats = await uploadVocabulary(vocab, dryRun);
+      await uploadKeyFacts(derived.keyFacts, dryRun);
     }
     console.log(`  [done] schemes: +${sStats.uploaded} added, ${sStats.skipped} existing, ${sStats.errors} errors`);
     return { file: base, type, schemes: sStats, articles: aStats, flashcards: fStats, vocabulary: vStats };
