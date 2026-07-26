@@ -262,11 +262,44 @@ export function parsePrelimsPaper(rawText, { year, paper = 'Prelims GS-I', url =
   }
 
   let stemFrom = 0;
+  let expectedNumber = 1;
   for (let k = 0; k < optionStarts.length; k++) {
     const optLine = optionStarts[k];
 
-    const stem = lines
-      .slice(stemFrom, optLine)
+    // A question's stem starts at its number. Anchoring there drops the cover
+    // page and section headings before question 1, and strips the tail of a
+    // previous option that wrapped onto the following line.
+    //
+    // Which number, though: stems contain their own numbered statement lists
+    // ("1. … 2. …"), so both "first number in the window" and "last number in
+    // the window" pick the wrong line. The question number is the one that
+    // continues the paper's sequence, so that is what is looked for first.
+    const window = lines.slice(stemFrom, optLine);
+    const numberedAt = (n) => window.findIndex((l) => new RegExp(`^\\s*${n}[.)]\\s+\\S`).test(l));
+
+    let stemStart = numberedAt(expectedNumber);
+    if (stemStart >= 0) {
+      expectedNumber++;
+    } else {
+      // Sequence lost (OCR dropped a number). Fall back to the last numbered
+      // line, and resynchronise from it.
+      let last = -1;
+      let lastNum = 0;
+      for (let i = window.length - 1; i >= 0; i--) {
+        const m = window[i].match(/^\s*(\d{1,3})[.)]\s+\S/);
+        if (m) { last = i; lastNum = parseInt(m[1], 10); break; }
+      }
+      if (last >= 0) {
+        stemStart = last;
+        expectedNumber = lastNum + 1;
+      } else {
+        // No number at all — keep only the nearby lines, never the whole gap.
+        stemStart = window.length > 12 ? window.length - 12 : 0;
+      }
+    }
+
+    const stem = window
+      .slice(stemStart)
       .join(' ')
       .replace(/^\s*\d{1,3}[.)]\s*/, '')
       .replace(/\s+/g, ' ')
@@ -280,6 +313,9 @@ export function parsePrelimsPaper(rawText, { year, paper = 'Prelims GS-I', url =
     stemFrom = optEnd;
 
     if (stem.length < 25) continue;
+    // Cover page / rubric that happens to sit above the first option block.
+    if (INSTRUCTION_RE.test(stem)) continue;
+    if (/\b(Booklet|Examination,\s*20\d\d|Note\s*:)/i.test(stem)) continue;
 
     const options = [];
     const optRe = /\(([a-d])\)\s*([\s\S]*?)(?=\n\([a-d]\)|$)/gi;

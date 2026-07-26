@@ -78,31 +78,52 @@ export function ocrAvailable() {
  * @param {string} [opts.lang='eng']
  * @returns {string} Extracted text, page blocks separated by blank lines.
  */
-export function ocrPdf(file, { maxPages = 12, dpi = 300, lang = 'eng' } = {}) {
+export function ocrPdf(file, { maxPages = 12, dpi = 300, lang = 'eng', batchSize = 6 } = {}) {
   const tools = ocrTools();
   if (!tools) throw new Error('OCR tools not available (need poppler-utils and tesseract-ocr)');
 
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'upsc-ocr-'));
-  const prefix = path.join(workDir, 'page');
 
   try {
-    execFileSync(
-      tools.pdftoppm,
-      ['-r', String(dpi), '-png', '-f', '1', '-l', String(maxPages), file, prefix],
-      { stdio: 'ignore', timeout: 10 * 60 * 1000 },
-    );
-
-    const images = fs
-      .readdirSync(workDir)
-      .filter((f) => f.endsWith('.png'))
-      .sort();
-
-    if (images.length === 0) return '';
-
     const pages = [];
-    for (const img of images) {
-      pages.push(ocrImage(path.join(workDir, img), { lang }));
+
+    // Rasterise in batches rather than in one call.
+    //
+    // A 48-page, 34 MB scan takes well over ten minutes to convert in a single
+    // pdftoppm invocation, which is how a whole UPSC paper was lost to
+    // ETIMEDOUT. Batching bounds each call, keeps peak disk use to a handful of
+    // PNGs, and means a late failure still returns the pages already read.
+    for (let start = 1; start <= maxPages; start += batchSize) {
+      const end = Math.min(start + batchSize - 1, maxPages);
+      const prefix = path.join(workDir, `b${start}`);
+
+      try {
+        execFileSync(
+          tools.pdftoppm,
+          ['-r', String(dpi), '-png', '-f', String(start), '-l', String(end), file, prefix],
+          { stdio: 'ignore', timeout: 5 * 60 * 1000 },
+        );
+      } catch (e) {
+        // Past the last page poppler simply produces nothing; anything else is
+        // worth surfacing but must not discard the pages already collected.
+        if (pages.length === 0) throw e;
+        break;
+      }
+
+      const images = fs
+        .readdirSync(workDir)
+        .filter((f) => f.startsWith(`b${start}-`) && f.endsWith('.png'))
+        .sort();
+
+      if (images.length === 0) break; // ran past the end of the document
+
+      for (const img of images) {
+        const full = path.join(workDir, img);
+        pages.push(ocrImage(full, { lang }));
+        try { fs.rmSync(full, { force: true }); } catch { /* best effort */ }
+      }
     }
+
     return pages.filter(Boolean).join('\n\n');
   } finally {
     try {
