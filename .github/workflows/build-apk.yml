@@ -44,34 +44,32 @@ jobs:
 
       - name: Setup signing keystore
         env:
-          # Set both in Settings > Secrets and variables > Actions. These were
-          # hardcoded as "android" in this file, and this repository is public.
+          # Set all three in Settings > Secrets and variables > Actions.
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/upload.p12
-          # Import PKCS12 into JKS, let keytool auto-assign alias
-          keytool -importkeystore \
-            -srckeystore /tmp/upload.p12 \
-            -srcstoretype PKCS12 \
-            -srcstorepass "$KEYSTORE_PASSWORD" \
-            -destkeystore android/app/upload-keystore.jks \
-            -deststoretype JKS \
-            -deststorepass "$KEYSTORE_PASSWORD" \
-            -destkeypass "$KEY_PASSWORD" \
-            -noprompt
-          # Find the alias that was imported
-          ALIAS=$(keytool -list -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" | grep "PrivateKeyEntry\|privatekey\|key entry" | head -1 | cut -d',' -f1)
-          echo "Detected alias: $ALIAS"
+          set -euo pipefail
+          if [ -z "${KEYSTORE_PASSWORD:-}" ] || [ -z "${KEY_PASSWORD:-}" ]; then
+            echo "::error::KEYSTORE_PASSWORD and KEY_PASSWORD secrets must be set."
+            exit 1
+          fi
+          # KEYSTORE_BASE64 now holds a JKS directly, so it is written straight
+          # into place. The previous version decoded a PKCS12 and converted it,
+          # then scraped the generated alias back out of keytool's output - all
+          # of which existed only because the original secret happened to be a
+          # .p12. The alias is known ("upload"), so none of that is needed.
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+          # Fail here rather than midway through Gradle if the secret is stale
+          # or the password is wrong.
+          keytool -list -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" -alias upload > /dev/null
           cat > android/key.properties << EOF
           storePassword=$KEYSTORE_PASSWORD
           keyPassword=$KEY_PASSWORD
-          keyAlias=$ALIAS
+          keyAlias=upload
           storeFile=upload-keystore.jks
           EOF
           # Deliberately NOT `cat`-ing key.properties: this repo is public, so
-          # Actions logs are public, and printing it published the keystore and
-          # key passwords to anyone who looked.
+          # Actions logs are public.
 
       - name: Build APK
         run: flutter build apk --release --no-tree-shake-icons --split-per-abi
