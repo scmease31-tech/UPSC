@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
@@ -44,8 +44,8 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
             SliverToBoxAdapter(child: _backBar(context)),
             SliverToBoxAdapter(child: _buildStreakCard(context, progress)),
             SliverToBoxAdapter(child: _buildWeeklyStats(context, progress)),
-            SliverToBoxAdapter(
-              child: SectionHeader(title: 'This Week', padding: const EdgeInsets.fromLTRB(20, 16, 20, 8)),
+            const SliverToBoxAdapter(
+              child: SectionHeader(title: 'This Week', padding: EdgeInsets.fromLTRB(20, 16, 20, 8)),
             ),
             SliverToBoxAdapter(child: _buildWeekChart(context, progress)),
             SliverToBoxAdapter(child: _buildAccuracyCard(context, progress)),
@@ -66,7 +66,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
             HapticFeedback.lightImpact();
             Navigator.pop(context);
           }),
-          Text('Weekly Progress', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+          Text('Weekly Progress', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
         ],
       ),
     );
@@ -90,7 +90,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                   child: Container(color: Colors.white),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  decoration: BoxDecoration(gradient: AppTheme.heroGradient),
+                  decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
                 ),
               ),
             ),
@@ -125,9 +125,9 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('${p.currentStreak} Day Streak', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text('${p.currentStreak} Day Streak', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 4),
-                        Text('Longest: ${p.longestStreak} days', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text('Longest: ${p.longestStreak} days', style: AppFonts.inter(fontSize: 13, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   ),
@@ -163,9 +163,9 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           children: [
-            Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+            Text(value, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
             const SizedBox(height: 2),
-            Text(label, style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textS(context))),
+            Text(label, style: AppFonts.inter(fontSize: 10, color: AppTheme.textS(context))),
           ],
         ),
       ),
@@ -199,7 +199,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(days[i], style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
+                Text(days[i], style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
               ],
             );
           }),
@@ -222,17 +222,17 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
               strokeWidth: 8,
               progressColor: accuracy >= 70 ? AppTheme.successGreen : AppTheme.warningOrange,
               trackColor: AppTheme.primaryColor.withValues(alpha: 0.08),
-              child: Text('${accuracy.round()}%', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+              child: Text('${accuracy.round()}%', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
             ),
             const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Quiz Accuracy', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                  Text('Quiz Accuracy', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                   const SizedBox(height: 4),
                   Text('${p.correctAnswersThisWeek}/${p.totalAnswersThisWeek} correct this week',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                      style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
                 ],
               ),
             ),
@@ -283,8 +283,8 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('UPSC Prelims ${p.prelimsExamYear}', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-                        Text('${p.daysToPrelimsExam} days remaining', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
+                        Text('UPSC Prelims ${p.prelimsExamYear}', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                        Text('${p.daysToPrelimsExam} days remaining', style: AppFonts.inter(fontSize: 13, color: Colors.white70)),
                       ],
                     ),
                   ),

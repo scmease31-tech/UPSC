@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../config/app_fonts.dart';
 
 import '../config/theme.dart';
 
@@ -45,7 +45,7 @@ class RichArticleContent extends StatelessWidget {
             padding: EdgeInsets.only(top: isFirst ? 0 : 16, bottom: 8),
             child: Text(
               b.text,
-              style: GoogleFonts.plusJakartaSans(
+              style: AppFonts.plusJakartaSans(
                 fontSize: 15 * scale,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textP(context),
@@ -65,7 +65,7 @@ class RichArticleContent extends StatelessWidget {
             padding: EdgeInsets.only(bottom: 12, top: isFirst ? 0 : 2),
             child: Text(
               b.text,
-              style: GoogleFonts.inter(
+              style: AppFonts.inter(
                 fontSize: 15 * scale,
                 color: AppTheme.textP(context),
                 height: 1.72,
@@ -143,7 +143,7 @@ class _Heading extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 17.5 * scale,
               fontWeight: FontWeight.w800,
               color: AppTheme.textP(context),
@@ -181,7 +181,7 @@ class _Bullet extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.inter(
+            style: AppFonts.inter(
               fontSize: (depth == 0 ? 14.5 : 14) * scale,
               color: depth == 0 ? AppTheme.textP(context) : AppTheme.textS(context),
               height: 1.62,

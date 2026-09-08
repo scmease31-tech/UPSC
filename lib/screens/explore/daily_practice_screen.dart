@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import '../../config/theme.dart';
 import '../../widgets/glass_widgets.dart';
@@ -54,7 +54,7 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
     if (_questions.isEmpty) {
       return GradientScaffold(
         showAppBar: false,
-        child: SafeArea(child: Center(child: Text('No questions available', style: GoogleFonts.inter(color: AppTheme.textS(context))))),
+        child: SafeArea(child: Center(child: Text('No questions available', style: AppFonts.inter(color: AppTheme.textS(context))))),
       );
     }
 
@@ -79,7 +79,7 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
                     GlassCard(
                       padding: const EdgeInsets.all(20),
                       child: Text(q['q'] ?? '',
-                          style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
+                          style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
                     ),
                     const SizedBox(height: 16),
                     ...List.generate(options.length, (i) {
@@ -108,13 +108,13 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.lightbulb_rounded, color: AppTheme.successGreen, size: 18),
+                                const Icon(Icons.lightbulb_rounded, color: AppTheme.successGreen, size: 18),
                                 const SizedBox(width: 8),
-                                Text('Explanation', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.successGreen)),
+                                Text('Explanation', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.successGreen)),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(q['explain'], style: GoogleFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textP(context))),
+                            Text(q['explain'], style: AppFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textP(context))),
                           ],
                         ),
                       ),
@@ -140,12 +140,12 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
             Navigator.pop(context);
           }),
           Expanded(
-            child: Text('Daily Practice', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context)), textAlign: TextAlign.center),
+            child: Text('Daily Practice', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context)), textAlign: TextAlign.center),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(color: AppTheme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-            child: Text('$_score/${_questions.length}', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+            child: Text('$_score/${_questions.length}', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
           ),
         ],
       ),
@@ -161,7 +161,7 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
           value: (_current + 1) / _questions.length,
           minHeight: 5,
           backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.08),
-          valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+          valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
         ),
       ),
     );
@@ -201,7 +201,7 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 0,
           ),
-          child: Text(isLast ? 'Finish' : 'Next', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+          child: Text(isLast ? 'Finish' : 'Next', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
         ),
       ),
     );
@@ -216,16 +216,16 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(grade, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800), textAlign: TextAlign.center),
+        title: Text(grade, style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w800), textAlign: TextAlign.center),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               '$_score / ${_questions.length}',
-              style: GoogleFonts.plusJakartaSans(fontSize: 36, fontWeight: FontWeight.w800, color: AppTheme.primaryColor),
+              style: AppFonts.plusJakartaSans(fontSize: 36, fontWeight: FontWeight.w800, color: AppTheme.primaryColor),
             ),
             const SizedBox(height: 8),
-            Text('questions correct', style: GoogleFonts.inter(color: AppTheme.textS(context))),
+            Text('questions correct', style: AppFonts.inter(color: AppTheme.textS(context))),
           ],
         ),
         actions: [

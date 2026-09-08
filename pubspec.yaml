@@ -25,7 +25,6 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.6
-  google_fonts: ^6.1.0
   flutter_svg: ^2.0.9
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
@@ -36,7 +35,6 @@ dependencies:
   # Utilities
   share_plus: ^7.2.1
   url_launcher: ^6.2.2
-  path_provider: ^2.1.2
   intl: ^0.19.0
   flutter_local_notifications: ^17.0.0
   percent_indicator: ^4.2.3
@@ -45,8 +43,6 @@ dependencies:
   timezone: ^0.9.4
   lottie: ^3.3.2
   package_info_plus: ^9.0.1
-  dio: ^5.9.2
-  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:
@@ -70,3 +66,21 @@ flutter:
     - assets/app_icons/
     - assets/flaticon_pngs/
     - assets/animations/
+    # The OFL texts (not the .ttf files, which the `fonts:` block below already
+    # bundles) so the app can surface them through LicenseRegistry.
+    - assets/fonts/OFL-Inter.txt
+    - assets/fonts/OFL-PlusJakartaSans.txt
+
+  # Bundled rather than fetched at runtime by google_fonts: previously the first
+  # launch rendered in fallback Roboto and visibly swapped once the download
+  # finished, and an offline first run never got the right typeface at all.
+  # These are the upstream variable fonts (one file covers every weight);
+  # AppFonts drives the `wght` axis via FontVariation. OFL licences ship
+  # alongside them in assets/fonts/.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans.ttf

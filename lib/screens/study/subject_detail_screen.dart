@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -82,7 +82,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             HapticFeedback.lightImpact();
             Navigator.pop(context);
           }),
-          Expanded(child: Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context)))),
+          Expanded(child: Text(title, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context)))),
         ],
       ),
     );
@@ -106,7 +106,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   child: Container(color: Colors.white),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  decoration: BoxDecoration(gradient: AppTheme.heroGradient),
+                  decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
                 ),
               ),
             ),
@@ -126,15 +126,15 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(subject.name, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+                  Text(subject.name, style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
                   const SizedBox(height: 6),
-                  Text(subject.description, style: GoogleFonts.inter(fontSize: 13, color: Colors.white70, height: 1.5),
+                  Text(subject.description, style: AppFonts.inter(fontSize: 13, color: Colors.white70, height: 1.5),
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
-                    child: Text('${subject.notes.length} study notes', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                    child: Text('${subject.notes.length} study notes', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                   ),
                 ],
               ),
@@ -158,7 +158,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               children: [
                 Expanded(
                   child: Text(note.title,
-                      style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
+                      style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                 ),
                 if (note.pdfUrl != null && note.pdfUrl!.isNotEmpty)
@@ -178,10 +178,10 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
             const SizedBox(height: 8),
             Text(note.content,
                 maxLines: 3, overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context), height: 1.5)),
+                style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context), height: 1.5)),
             const SizedBox(height: 8),
             Text('Updated ${_formatDate(note.lastUpdated)}',
-                style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context).withValues(alpha: 0.6))),
+                style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context).withValues(alpha: 0.6))),
           ],
         ),
       ),
@@ -197,7 +197,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         initialChildSize: 0.85,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (_, ctrl) => Container(
+        builder: (_, ctrl) => DecoratedBox(
           decoration: BoxDecoration(
             color: AppTheme.scaffold(context),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -210,9 +210,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                 child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
               ),
               const SizedBox(height: 20),
-              Text(note.title, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+              Text(note.title, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
               const SizedBox(height: 16),
-              Text(note.content, style: GoogleFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(context))),
+              Text(note.content, style: AppFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(context))),
               if (note.pdfUrl != null && note.pdfUrl!.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 SizedBox(
@@ -221,7 +221,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _openPdf(note.pdfUrl!),
                     icon: const Icon(Icons.picture_as_pdf_rounded),
-                    label: Text('Open PDF', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
+                    label: Text('Open PDF', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.errorRed,
                       foregroundColor: Colors.white,

@@ -115,6 +115,13 @@ class CategoryStyle {
     _ir, _history, _geography, _social, _security, _ethics, _general,
   ];
 
+  /// 'ai' has to match as a whole word. A bare substring test also fires on
+  /// "air", "train", "rainfall", "maintain", "campaign", "Britain", "certain"
+  /// and friends - and because the science branch is evaluated before
+  /// geography, environment and IR, those tags were being mislabelled as
+  /// Science & Technology.
+  static final RegExp _aiWord = RegExp(r'\bai\b');
+
   /// Resolve any raw tag ("GS Paper - 2", "biotechnology", "Polity") to a style.
   static CategoryStyle of(String? raw) {
     final k = (raw ?? '').toLowerCase().trim();
@@ -133,7 +140,8 @@ class CategoryStyle {
         k.contains('conservation')) return _environment;
     if (k.contains('science') || k.contains('tech') || k.contains('space') ||
         k.contains('biotech') || k.contains('digital') || k.contains('health') ||
-        k.contains('vaccine') || k.contains('ai')) return _science;
+        k.contains('vaccine') || k.contains('artificial intelligence') ||
+        _aiWord.hasMatch(k)) return _science;
     if (k.contains('international') || k.contains('foreign') || k.contains('bilateral') ||
         k.contains('diplomacy') || k.contains('global') || k.contains('summit') ||
         k.contains('treaty')) return _ir;

@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -212,7 +212,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
   Widget build(BuildContext context) {
     final dark = AppTheme.isDark(context);
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(gradient: AppTheme.scaffoldGradient(context)),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -292,7 +292,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               children: [
                 Text(
                   'AI Search Engine',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: AppTheme.textP(context),
@@ -305,7 +305,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                           ? 'AI Enhanced • ${GeminiService.keyCount} key${GeminiService.keyCount > 1 ? 's' : ''} active'
                           : 'AI Enhanced • Add API key for full power')
                       : 'Web Search • No API key needed',
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textS(context),
                   ),
@@ -322,7 +322,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 color: AppTheme.primaryColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.settings_rounded, color: AppTheme.primaryColor, size: 20),
+              child: const Icon(Icons.settings_rounded, color: AppTheme.primaryColor, size: 20),
             ),
           ),
         ],
@@ -372,7 +372,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     children: [
                       Text(
                         keyCount == 0 ? 'Enable AI Search' : 'Add More API Keys',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: AppFonts.plusJakartaSans(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textP(context),
@@ -383,7 +383,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         keyCount == 0
                             ? 'Free • Takes 30 seconds • No credit card'
                             : '$keyCount/5 keys added • Add more for uninterrupted search',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: AppTheme.primaryColor,
@@ -401,7 +401,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     ),
                     child: Text(
                       '$keyCount/5',
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF4CAF50),
@@ -433,7 +433,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       child: Text(
                         'Add up to 5 keys from different Google accounts. '
                         'When one key hits the rate limit, the app automatically switches to the next one — no interruptions!',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 12,
                           color: AppTheme.textS(context),
                           height: 1.4,
@@ -472,7 +472,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                           const SizedBox(width: 8),
                           Text(
                             keyCount == 0 ? 'Get Free API Key' : 'Add Another Key',
-                            style: GoogleFonts.inter(
+                            style: AppFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -497,7 +497,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     ),
                     child: Text(
                       keyCount == 0 ? 'I have a key' : 'Manage keys',
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textP(context),
@@ -528,7 +528,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             child: Center(
               child: Text(
                 '$step',
-                style: GoogleFonts.inter(
+                style: AppFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF7C4DFF),
@@ -542,7 +542,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(
+              style: AppFonts.inter(
                 fontSize: 13,
                 color: AppTheme.textS(context),
                 height: 1.4,
@@ -567,7 +567,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           SnackBar(
             content: Text(
               'Link copied! Open browser and paste: aistudio.google.com/apikey',
-              style: GoogleFonts.inter(fontSize: 13),
+              style: AppFonts.inter(fontSize: 13),
             ),
             duration: const Duration(seconds: 5),
           ),
@@ -588,24 +588,24 @@ class _AiSearchScreenState extends State<AiSearchScreen>
   Widget _buildSearchBar(bool dark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-      child: Container(
+      child: DecoratedBox(
         decoration: AppTheme.glassCard(context, radius: 18),
         child: Row(
           children: [
             const SizedBox(width: 16),
-            Icon(Icons.search_rounded, color: AppTheme.primaryColor, size: 24),
+            const Icon(Icons.search_rounded, color: AppTheme.primaryColor, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
-                style: GoogleFonts.inter(
+                style: AppFonts.inter(
                   fontSize: 15,
                   color: AppTheme.textP(context),
                 ),
                 decoration: InputDecoration(
                   hintText: 'Search any UPSC topic...',
-                  hintStyle: GoogleFonts.inter(
+                  hintStyle: AppFonts.inter(
                     fontSize: 15,
                     color: AppTheme.textT(context),
                   ),
@@ -676,11 +676,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   value: _selectedCategory ?? 'All',
                   isExpanded: true,
                   icon: Icon(Icons.expand_more_rounded, color: AppTheme.textS(context), size: 20),
-                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context)),
+                  style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context)),
                   dropdownColor: AppTheme.card(context),
                   items: _categories.map((c) => DropdownMenuItem(
                     value: c,
-                    child: Text(c, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context))),
+                    child: Text(c, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context))),
                   )).toList(),
                   onChanged: (val) => setState(() => _selectedCategory = val),
                 ),
@@ -711,7 +711,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   ),
                   child: Text(
                     _examTypes[i],
-                    style: GoogleFonts.inter(
+                    style: AppFonts.inter(
                       fontSize: 12,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                       color: selected ? AppTheme.primaryColor : AppTheme.textS(context),
@@ -744,7 +744,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           const SizedBox(height: 16),
           Text(
             _searchStatusText.isNotEmpty ? _searchStatusText : 'Searching the web...',
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: AppTheme.textP(context),
@@ -753,7 +753,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           const SizedBox(height: 8),
           Text(
             _useAiEnhanced ? 'Fetching & analyzing with AI' : 'Fetching content from the web',
-            style: GoogleFonts.inter(
+            style: AppFonts.inter(
               fontSize: 13,
               color: AppTheme.textS(context),
             ),
@@ -885,7 +885,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     const SizedBox(width: 4),
                     Text(
                       sourceLabel,
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.primaryColor,
@@ -899,7 +899,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           const SizedBox(height: 10),
           Text(
             result['title'] ?? 'Search Result',
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: AppTheme.textP(context),
@@ -979,11 +979,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.school_rounded, color: AppTheme.accentViolet, size: 18),
+                const Icon(Icons.school_rounded, color: AppTheme.accentViolet, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Exam Relevance',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -998,7 +998,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   ),
                   child: Text(
                     '$frequency Frequency',
-                    style: GoogleFonts.inter(
+                    style: AppFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: _frequencyColor(frequency.toString()),
@@ -1020,7 +1020,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 ),
                 child: Text(
                   p.toString(),
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.accentViolet,
@@ -1037,7 +1037,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   Expanded(
                     child: Text(
                       'Syllabus: $syllabus',
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textS(context),
                         fontStyle: FontStyle.italic,
@@ -1073,11 +1073,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.summarize_rounded, color: AppTheme.primaryColor, size: 18),
+                const Icon(Icons.summarize_rounded, color: AppTheme.primaryColor, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Quick Summary',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -1088,7 +1088,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             const SizedBox(height: 10),
             Text(
               result['summary'] ?? '',
-              style: GoogleFonts.inter(
+              style: AppFonts.inter(
                 fontSize: 14,
                 color: AppTheme.textP(context),
                 height: 1.6,
@@ -1113,11 +1113,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.checklist_rounded, color: AppTheme.successGreen, size: 18),
+                const Icon(Icons.checklist_rounded, color: AppTheme.successGreen, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Key Points',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -1126,7 +1126,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 const Spacer(),
                 Text(
                   '${points.length} points',
-                  style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textT(context)),
+                  style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context)),
                 ),
               ],
             ),
@@ -1147,7 +1147,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     child: Center(
                       child: Text(
                         '${entry.key + 1}',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.successGreen,
@@ -1158,7 +1158,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   Expanded(
                     child: Text(
                       entry.value,
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 13,
                         color: AppTheme.textP(context),
                         height: 1.5,
@@ -1185,11 +1185,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.article_rounded, color: AppTheme.accentViolet, size: 18),
+                const Icon(Icons.article_rounded, color: AppTheme.accentViolet, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Detailed Explanation',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -1200,7 +1200,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             const SizedBox(height: 12),
             Text(
               result['detailed_explanation'] ?? '',
-              style: GoogleFonts.inter(
+              style: AppFonts.inter(
                 fontSize: 14,
                 color: AppTheme.textP(context),
                 height: 1.7,
@@ -1236,7 +1236,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 color: AppTheme.warmYellow.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.lightbulb_outline_rounded, color: AppTheme.warmYellow, size: 22),
+              child: const Icon(Icons.lightbulb_outline_rounded, color: AppTheme.warmYellow, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1245,7 +1245,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 children: [
                   Text(
                     'Memory Aid (Mnemonic)',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textP(context),
@@ -1254,7 +1254,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   const SizedBox(height: 6),
                   Text(
                     result['mnemonic'] ?? '',
-                    style: GoogleFonts.inter(
+                    style: AppFonts.inter(
                       fontSize: 13,
                       color: AppTheme.textP(context),
                       height: 1.5,
@@ -1283,11 +1283,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.account_tree_rounded, color: AppTheme.primaryColor, size: 18),
+                const Icon(Icons.account_tree_rounded, color: AppTheme.primaryColor, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Flowchart / Process',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -1313,7 +1313,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         child: Center(
                           child: Text(
                             '${entry.key + 1}',
-                            style: GoogleFonts.inter(
+                            style: AppFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -1335,7 +1335,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
                       child: Text(
                         entry.value,
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 13,
                           color: AppTheme.textP(context),
                           height: 1.5,
@@ -1365,11 +1365,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.menu_book_rounded, color: AppTheme.accentRose, size: 18),
+                const Icon(Icons.menu_book_rounded, color: AppTheme.accentRose, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Important Terms',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -1398,7 +1398,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       ),
                       child: Text(
                         entry.key,
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.accentRose,
@@ -1409,7 +1409,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     Expanded(
                       child: Text(
                         entry.value.toString(),
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 13,
                           color: AppTheme.textP(context),
                           height: 1.5,
@@ -1446,11 +1446,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.edit_note_rounded, color: AppTheme.accentViolet, size: 20),
+                const Icon(Icons.edit_note_rounded, color: AppTheme.accentViolet, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Mains Answer Framework',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -1461,7 +1461,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             const SizedBox(height: 10),
             Text(
               result['answer_framework'] ?? '',
-              style: GoogleFonts.inter(
+              style: AppFonts.inter(
                 fontSize: 13,
                 color: AppTheme.textP(context),
                 height: 1.6,
@@ -1486,11 +1486,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.history_edu_rounded, color: AppTheme.warningOrange, size: 18),
+                const Icon(Icons.history_edu_rounded, color: AppTheme.warningOrange, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Previous Year Connections',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -1504,12 +1504,12 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.arrow_right_rounded, color: AppTheme.warningOrange, size: 18),
+                  const Icon(Icons.arrow_right_rounded, color: AppTheme.warningOrange, size: 18),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       q,
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 13,
                         color: AppTheme.textP(context),
                         height: 1.5,
@@ -1547,11 +1547,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.flash_on_rounded, color: AppTheme.mintGreen, size: 18),
+                const Icon(Icons.flash_on_rounded, color: AppTheme.mintGreen, size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Quick Revision Notes',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -1577,7 +1577,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   Expanded(
                     child: Text(
                       n,
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 13,
                         color: AppTheme.textP(context),
                         height: 1.5,
@@ -1603,7 +1603,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
         children: [
           Text(
             'Related Topics',
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: AppTheme.textP(context),
@@ -1627,7 +1627,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 ),
                 child: Text(
                   t,
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.primaryColor,
@@ -1656,7 +1656,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               const SizedBox(width: 10),
               Text(
                 'Generate Quiz on This Topic',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppFonts.plusJakartaSans(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -1695,7 +1695,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: AppFonts.inter(
                 fontSize: 14,
                 color: AppTheme.textP(context),
                 height: 1.5,
@@ -1735,7 +1735,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         const SizedBox(width: 8),
                         Text(
                           'Retry Now',
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -1760,7 +1760,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       ),
                       child: Text(
                         '+ Add Key',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.textP(context),
@@ -1789,11 +1789,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.trending_up_rounded, color: AppTheme.primaryColor, size: 20),
+              const Icon(Icons.trending_up_rounded, color: AppTheme.primaryColor, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Trending UPSC Topics',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppFonts.plusJakartaSans(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textP(context),
@@ -1817,7 +1817,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   decoration: AppTheme.glassCard(context, radius: 12),
                   child: Text(
                     topic,
-                    style: GoogleFonts.inter(
+                    style: AppFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: AppTheme.textP(context),
@@ -1848,7 +1848,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               const SizedBox(width: 8),
               Text(
                 'Recent Searches',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppFonts.plusJakartaSans(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textP(context),
@@ -1862,7 +1862,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 },
                 child: Text(
                   'Clear',
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textT(context),
                   ),
@@ -1884,7 +1884,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   const SizedBox(width: 10),
                   Text(
                     s,
-                    style: GoogleFonts.inter(
+                    style: AppFonts.inter(
                       fontSize: 14,
                       color: AppTheme.textS(context),
                     ),
@@ -1921,7 +1921,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
         children: [
           Text(
             'Explore by Subject',
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 17,
               fontWeight: FontWeight.w700,
               color: AppTheme.textP(context),
@@ -1963,7 +1963,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       Expanded(
                         child: Text(
                           item['label'] as String,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.textP(context),
@@ -2030,7 +2030,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       const SizedBox(width: 6),
                       Text(
                         'Web Search',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 13,
                           fontWeight: !_useAiEnhanced ? FontWeight.w700 : FontWeight.w500,
                           color: !_useAiEnhanced ? const Color(0xFF26A69A) : AppTheme.textS(context),
@@ -2046,7 +2046,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                           ),
                           child: Text(
                             'FREE',
-                            style: GoogleFonts.inter(
+                            style: AppFonts.inter(
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF26A69A),
@@ -2089,7 +2089,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       const SizedBox(width: 6),
                       Text(
                         'AI Enhanced',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 13,
                           fontWeight: _useAiEnhanced ? FontWeight.w700 : FontWeight.w500,
                           color: _useAiEnhanced ? AppTheme.primaryColor : AppTheme.textS(context),
@@ -2141,7 +2141,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 const SizedBox(width: 8),
                 Text(
                   'Sources (${sources.length})',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -2150,7 +2150,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 const Spacer(),
                 Text(
                   'Tap to read full article',
-                  style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textT(context)),
+                  style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context)),
                 ),
               ],
             ),
@@ -2196,7 +2196,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                           children: [
                             Text(
                               title,
-                              style: GoogleFonts.inter(
+                              style: AppFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFF26A69A),
@@ -2210,7 +2210,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                               const SizedBox(height: 3),
                               Text(
                                 desc,
-                                style: GoogleFonts.inter(
+                                style: AppFonts.inter(
                                   fontSize: 11,
                                   color: AppTheme.textS(context),
                                   height: 1.3,
@@ -2269,7 +2269,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               const SizedBox(width: 8),
               Text(
                 'Enhance with AI Analysis',
-                style: GoogleFonts.inter(
+                style: AppFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -2284,7 +2284,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 ),
                 child: Text(
                   'Gemini',
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -2309,7 +2309,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Link copied! Open in browser: $url', style: GoogleFonts.inter(fontSize: 12)),
+            content: Text('Link copied! Open in browser: $url', style: AppFonts.inter(fontSize: 12)),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -2346,7 +2346,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   const SizedBox(width: 10),
                   Text(
                     'API Keys (${keys.length}/5)',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700),
+                    style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -2370,7 +2370,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                             child: Text(
                               'Auto-rotation: When one key is rate-limited, '
                               'the app switches to the next automatically!',
-                              style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF2E7D32), height: 1.4),
+                              style: AppFonts.inter(fontSize: 11, color: const Color(0xFF2E7D32), height: 1.4),
                             ),
                           ),
                         ],
@@ -2382,7 +2382,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     if (keys.isNotEmpty) ...[
                       Text(
                         'Your API Keys',
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)),
+                        style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)),
                       ),
                       const SizedBox(height: 8),
                       ...List.generate(keys.length, (i) {
@@ -2414,7 +2414,12 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                               const SizedBox(width: 8),
                               Text(
                                 'Key ${i + 1}: $masked',
-                                style: GoogleFonts.sourceCodePro(
+                                // Platform monospace instead of a third Google
+                                // font family: this single masked-key label was
+                                // pulling down an entire typeface at runtime.
+                                style: TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontFamilyFallback: const ['Roboto Mono', 'Courier New'],
                                   fontSize: 12,
                                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                                   color: AppTheme.textP(context),
@@ -2428,7 +2433,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                     color: const Color(0xFF4CAF50).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text('Active', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFF4CAF50))),
+                                  child: Text('Active', style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFF4CAF50))),
                                 ),
                               const SizedBox(width: 4),
                               InkWell(
@@ -2452,7 +2457,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     if (keys.length < 5) ...[
                       Text(
                         keys.isEmpty ? 'Don\'t have a key yet?' : 'Add another key (use a different Google account)',
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)),
+                        style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)),
                       ),
                       const SizedBox(height: 6),
                       GestureDetector(
@@ -2482,7 +2487,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                               const SizedBox(width: 6),
                               Text(
                                 'Open Google AI Studio →',
-                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF7C4DFF)),
+                                style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF7C4DFF)),
                               ),
                             ],
                           ),
@@ -2493,7 +2498,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         controller: controller,
                         decoration: InputDecoration(
                           hintText: 'Paste new API key here...',
-                          hintStyle: GoogleFonts.inter(fontSize: 14, color: Colors.grey),
+                          hintStyle: AppFonts.inter(fontSize: 14, color: Colors.grey),
                           prefixIcon: const Icon(Icons.vpn_key_rounded, size: 19),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                           focusedBorder: OutlineInputBorder(
@@ -2512,7 +2517,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                             },
                           ),
                         ),
-                        style: GoogleFonts.inter(fontSize: 14),
+                        style: AppFonts.inter(fontSize: 14),
                       ),
                     ] else ...[
                       Container(
@@ -2528,7 +2533,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                             Expanded(
                               child: Text(
                                 'Maximum 5 keys reached! You have excellent search capacity.',
-                                style: GoogleFonts.inter(fontSize: 12, color: Colors.amber[800], height: 1.3),
+                                style: AppFonts.inter(fontSize: 12, color: Colors.amber[800], height: 1.3),
                               ),
                             ),
                           ],
@@ -2541,7 +2546,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text('Close', style: GoogleFonts.inter(color: Colors.grey)),
+                  child: Text('Close', style: AppFonts.inter(color: Colors.grey)),
                 ),
                 if (keys.length < 5)
                   ElevatedButton(
@@ -2575,7 +2580,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                   const SizedBox(width: 8),
                                   Text(
                                     'Key ${GeminiService.keyCount} added! (${GeminiService.keyCount}/5)',
-                                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                                    style: AppFonts.inter(fontWeight: FontWeight.w600),
                                   ),
                                 ],
                               ),
@@ -2593,7 +2598,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     },
                     child: Text(
                       keys.isEmpty ? 'Activate AI Search' : 'Add Key',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      style: AppFonts.inter(fontWeight: FontWeight.w700),
                     ),
                   ),
               ],
@@ -2625,7 +2630,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             const SizedBox(height: 16),
             Text(
               'Generating quiz questions...',
-              style: GoogleFonts.inter(fontSize: 14),
+              style: AppFonts.inter(fontSize: 14),
             ),
           ],
         ),
@@ -2684,17 +2689,17 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   const SizedBox(height: 20),
                   Text(
                     'Quiz Complete!',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textP(context)),
+                    style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textP(context)),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Score: $score / ${questions.length}',
-                    style: GoogleFonts.inter(fontSize: 18, color: AppTheme.primaryColor, fontWeight: FontWeight.w700),
+                    style: AppFonts.inter(fontSize: 18, color: AppTheme.primaryColor, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Topic: $topic',
-                    style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context)),
+                    style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context)),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -2737,12 +2742,12 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     children: [
                       Text(
                         'Question ${currentQ + 1} / ${questions.length}',
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+                        style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
                       ),
                       const Spacer(),
                       Text(
                         'Score: $score',
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textS(context)),
+                        style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textS(context)),
                       ),
                     ],
                   ),
@@ -2750,7 +2755,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 LinearProgressIndicator(
                   value: (currentQ + 1) / questions.length,
                   backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+                  valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
                 ),
                 // Question
                 Expanded(
@@ -2761,7 +2766,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       children: [
                         Text(
                           q['question'] ?? '',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: AppFonts.plusJakartaSans(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
                             color: AppTheme.textP(context),
@@ -2824,7 +2829,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                     child: Center(
                                       child: Text(
                                         String.fromCharCode(65 + i),
-                                        style: GoogleFonts.inter(
+                                        style: AppFonts.inter(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
                                           color: (answered && (isCorrect || (isSelected && !isCorrect)))
@@ -2838,7 +2843,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                   Expanded(
                                     child: Text(
                                       options[i].toString(),
-                                      style: GoogleFonts.inter(
+                                      style: AppFonts.inter(
                                         fontSize: 14,
                                         color: AppTheme.textP(context),
                                       ),
@@ -2860,12 +2865,12 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.lightbulb_rounded, color: AppTheme.primaryColor, size: 18),
+                                const Icon(Icons.lightbulb_rounded, color: AppTheme.primaryColor, size: 18),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     q['explanation'] ?? '',
-                                    style: GoogleFonts.inter(
+                                    style: AppFonts.inter(
                                       fontSize: 13,
                                       color: AppTheme.textP(context),
                                       height: 1.5,

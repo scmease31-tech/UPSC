@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 
 import '../../config/category_style.dart';
 import '../../config/theme.dart';
@@ -126,8 +126,8 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
           indicatorWeight: 3,
           labelColor: AppTheme.primaryColor,
           unselectedLabelColor: AppTheme.textS(context),
-          labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14),
-          unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14),
+          labelStyle: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14),
+          unselectedLabelStyle: AppFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14),
           tabs: const [Tab(text: 'Prelims'), Tab(text: 'Mains')],
         ),
       ),
@@ -201,13 +201,13 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
             FittedBox(
               child: Text(
                 value,
-                style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: color),
+                style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: color),
               ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textT(context), fontWeight: FontWeight.w500),
+              style: AppFonts.inter(fontSize: 10.5, color: AppTheme.textT(context), fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -227,7 +227,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
       child: TextField(
         controller: _searchCtrl,
         onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
-        style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textP(context)),
+        style: AppFonts.inter(fontSize: 14, color: AppTheme.textP(context)),
         decoration: InputDecoration(
           isDense: true,
           hintText: 'Search questions, topics, keywords…',
@@ -343,7 +343,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
           ),
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: AppFonts.inter(
               fontSize: dense ? 11.5 : 12.5,
               fontWeight: FontWeight.w700,
               color: selected ? Colors.white : (AppTheme.isDark(context) ? Colors.white70 : color),
@@ -361,7 +361,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
         children: [
           Text(
             n == 1 ? '1 question' : '$n questions',
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textS(context)),
+            style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textS(context)),
           ),
           const Spacer(),
           if (_year != null || _subject != null || _query.isNotEmpty || _onlyBookmarked || _onlyUnattempted)
@@ -378,11 +378,11 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
               },
               child: Row(
                 children: [
-                  Icon(Icons.refresh_rounded, size: 14, color: AppTheme.primaryColor),
+                  const Icon(Icons.refresh_rounded, size: 14, color: AppTheme.primaryColor),
                   const SizedBox(width: 4),
                   Text(
                     'Clear filters',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                    style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
                   ),
                 ],
               ),
@@ -408,7 +408,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
           const SizedBox(height: 12),
           Text(
             q.question,
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 14.5,
               fontWeight: FontWeight.w600,
               color: AppTheme.textP(context),
@@ -465,7 +465,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textS(context), height: 1.4),
+              style: AppFonts.inter(fontSize: 11.5, color: AppTheme.textS(context), height: 1.4),
             ),
           ),
         ],
@@ -543,7 +543,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
                 ),
                 child: Text(
                   String.fromCharCode(97 + i),
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color: border ?? AppTheme.textS(context),
@@ -554,7 +554,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
               Expanded(
                 child: Text(
                   q.options[i],
-                  style: GoogleFonts.inter(fontSize: 13, color: textColor, height: 1.45),
+                  style: AppFonts.inter(fontSize: 13, color: textColor, height: 1.45),
                 ),
               ),
               if (trailing != null) ...[
@@ -578,18 +578,18 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb_rounded, size: 14, color: AppTheme.successGreen),
+              const Icon(Icons.lightbulb_rounded, size: 14, color: AppTheme.successGreen),
               const SizedBox(width: 6),
               Text(
                 'Explanation',
-                style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppTheme.successGreen),
+                style: AppFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppTheme.successGreen),
               ),
             ],
           ),
           const SizedBox(height: 7),
           Text(
             text,
-            style: GoogleFonts.inter(fontSize: 12.5, height: 1.6, color: AppTheme.textP(context)),
+            style: AppFonts.inter(fontSize: 12.5, height: 1.6, color: AppTheme.textP(context)),
           ),
         ],
       ),
@@ -611,7 +611,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
           const SizedBox(height: 12),
           Text(
             q.question,
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 14.5,
               fontWeight: FontWeight.w600,
               color: AppTheme.textP(context),
@@ -636,11 +636,11 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.tips_and_updates_rounded, size: 14, color: AppTheme.primaryColor),
+                        const Icon(Icons.tips_and_updates_rounded, size: 14, color: AppTheme.primaryColor),
                         const SizedBox(width: 6),
                         Text(
                           'Model approach',
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.primaryColor,
@@ -651,7 +651,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
                     const SizedBox(height: 8),
                     Text(
                       q.approach,
-                      style: GoogleFonts.inter(fontSize: 12.5, height: 1.7, color: AppTheme.textP(context)),
+                      style: AppFonts.inter(fontSize: 12.5, height: 1.7, color: AppTheme.textP(context)),
                     ),
                   ],
                 ),
@@ -688,7 +688,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
               const SizedBox(width: 5),
               Text(
                 q.subject,
-                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: style.onSoft(context)),
+                style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: style.onSoft(context)),
               ),
             ],
           ),
@@ -714,7 +714,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
               child: Icon(Icons.info_outline_rounded, size: 14, color: AppTheme.textT(context)),
             ),
           ),
-        Text('Q$index', style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textT(context))),
+        Text('Q$index', style: AppFonts.inter(fontSize: 10.5, color: AppTheme.textT(context))),
         const SizedBox(width: 4),
         GestureDetector(
           onTap: () async {
@@ -747,7 +747,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
         ),
         child: Text(
           label,
-          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+          style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color),
         ),
       );
 
@@ -763,7 +763,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
           const SizedBox(width: 6),
           Text(
             label,
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+            style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
           ),
         ],
       ),
@@ -790,7 +790,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
             const SizedBox(height: 16),
             Text(
               'No questions match these filters',
-              style: GoogleFonts.plusJakartaSans(
+              style: AppFonts.plusJakartaSans(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textP(context),
@@ -800,7 +800,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
             const SizedBox(height: 6),
             Text(
               'Try a different year or subject, or clear the filters.',
-              style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textS(context), height: 1.5),
+              style: AppFonts.inter(fontSize: 12.5, color: AppTheme.textS(context), height: 1.5),
               textAlign: TextAlign.center,
             ),
           ],
@@ -825,12 +825,20 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      // A bare Column in a default sheet is capped near half the screen height;
+      // with large system font scaling the two ListTiles overflow it. Scroll
+      // instead of clipping.
+      isScrollControlled: true,
       builder: (sheetContext) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(sheetContext).size.height * 0.85,
+        ),
         decoration: BoxDecoration(
           color: AppTheme.card(context),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(8, 12, 8, 24),
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -846,19 +854,19 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
             SwitchListTile(
               value: _onlyUnattempted,
               activeThumbColor: AppTheme.primaryColor,
-              title: Text('Unattempted only', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+              title: Text('Unattempted only', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
               subtitle: Text('Hide questions you have already answered',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                  style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
               onChanged: (v) {
                 setState(() => _onlyUnattempted = v);
                 Navigator.pop(sheetContext);
               },
             ),
             ListTile(
-              leading: Icon(Icons.restart_alt_rounded, color: AppTheme.errorRed),
-              title: Text('Reset my attempts', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+              leading: const Icon(Icons.restart_alt_rounded, color: AppTheme.errorRed),
+              title: Text('Reset my attempts', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
               subtitle: Text('Clears answered/accuracy, keeps saved questions',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                  style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
               onTap: () async {
                 Navigator.pop(sheetContext);
                 await PyqService.resetProgress();
@@ -872,6 +880,7 @@ class _PYQScreenState extends State<PYQScreen> with SingleTickerProviderStateMix
               },
             ),
           ],
+        ),
         ),
       ),
     );

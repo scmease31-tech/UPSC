@@ -179,11 +179,7 @@ class NewsApiService {
     if (response.statusCode != 200) return [];
 
     final items = _parseRssItems(response.body);
-    return items.where((item) {
-      // Filter out entertainment/sports/celebrity news
-      final title = (item['title'] as String? ?? '').toLowerCase();
-      return !_isIrrelevantNews(title);
-    }).take(8).toList();
+    return _relevantOnly(items, 8);
   }
 
   /// Professional Indian news RSS feed URLs (no API key required).
@@ -225,10 +221,7 @@ class NewsApiService {
         for (final item in items) {
           item['source'] = source;
         }
-        return items.where((item) {
-          final title = (item['title'] as String? ?? '').toLowerCase();
-          return !_isIrrelevantNews(title);
-        }).take(6).toList();
+        return _relevantOnly(items, 6);
       } catch (e) {
         debugPrint('[NewsAPI] Feed error ($feedUrl): $e');
         return <Map<String, dynamic>>[];
@@ -315,6 +308,34 @@ class NewsApiService {
     }
 
     return bestCategory;
+  }
+
+  /// Drop entertainment/sport, then prefer items carrying a positive
+  /// India/UPSC signal.
+  ///
+  /// The blocklist alone was not enough: general human-interest and crime
+  /// stories ("Cops recover body from pond") contain none of its terms, so they
+  /// reached the feed of an exam-prep app. [_isIndiaOrUpscRelevant] already
+  /// existed for this but was never called.
+  ///
+  /// If the allowlist would leave nothing, the blocklist-only set is returned
+  /// instead, so a strict match can never empty the feed.
+  static List<Map<String, dynamic>> _relevantOnly(
+    List<Map<String, dynamic>> items,
+    int limit,
+  ) {
+    final cleaned = items.where((item) {
+      final title = (item['title'] as String? ?? '').toLowerCase();
+      return !_isIrrelevantNews(title);
+    }).toList();
+
+    final relevant = cleaned.where((item) {
+      final title = item['title'] as String? ?? '';
+      final description = item['description'] as String? ?? '';
+      return _isIndiaOrUpscRelevant('$title $description');
+    }).toList();
+
+    return (relevant.isEmpty ? cleaned : relevant).take(limit).toList();
   }
 
   /// Check if content is relevant to India or UPSC topics.

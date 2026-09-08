@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -182,7 +182,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
                 children: [
                   Text(
                     'UPSC Daily Edge',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: dark ? Colors.white : AppTheme.textPrimary,
@@ -193,7 +193,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
                   ),
                   Text(
                     'Exam Preparation',
-                    style: GoogleFonts.inter(
+                    style: AppFonts.inter(
                       fontSize: 11,
                       color: dark ? AppTheme.darkTextTertiary : AppTheme.textTertiary,
                       fontWeight: FontWeight.w500,
@@ -256,7 +256,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
                       children: [
                         Text(
                           item.label,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 14,
                             fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                             color: isActive
@@ -267,7 +267,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
                         ),
                         Text(
                           item.subtitle,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 11,
                             color: dark ? AppTheme.darkTextTertiary : AppTheme.textTertiary,
                           ),
@@ -310,7 +310,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
                 const SizedBox(width: 12),
                 Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 13,
                     color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
                     fontWeight: FontWeight.w500,
@@ -351,7 +351,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
                   Expanded(
                     child: Text(
                       dark ? 'Light Mode' : 'Dark Mode',
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 13,
                         color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
                         fontWeight: FontWeight.w500,
@@ -394,7 +394,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
                   Expanded(
                     child: Text(
                       'Collapse',
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 13,
                         color: dark ? AppTheme.darkTextTertiary : AppTheme.textTertiary,
                         fontWeight: FontWeight.w500,
@@ -435,7 +435,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
           // Page title
           Text(
             pageTitle,
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: dark ? Colors.white : AppTheme.textPrimary,
@@ -467,7 +467,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
                       const SizedBox(width: 10),
                       Text(
                         'Search topics, articles...',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 13,
                           color: dark ? AppTheme.darkTextTertiary : AppTheme.textTertiary,
                         ),
@@ -574,7 +574,7 @@ class _WebUserChip extends StatelessWidget {
             child: (photoUrl == null || photoUrl!.isEmpty)
                 ? Text(
                     firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U',
-                    style: GoogleFonts.inter(
+                    style: AppFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.primaryColor,
@@ -585,7 +585,7 @@ class _WebUserChip extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             firstName,
-            style: GoogleFonts.inter(
+            style: AppFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: dark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import '../../config/theme.dart';
 import '../../services/firestore_content_service.dart';
@@ -164,9 +164,9 @@ class _MockTestScreenState extends State<MockTestScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                          Text(title, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                           const SizedBox(height: 2),
-                          Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                          Text(subtitle, style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
                         ],
                       ),
                     ),
@@ -204,7 +204,7 @@ class _MockTestScreenState extends State<MockTestScreen> {
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
-          Text(text, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+          Text(text, style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
         ],
       ),
     );
@@ -234,20 +234,20 @@ class _MockTestScreenState extends State<MockTestScreen> {
                 const SizedBox(width: 6),
                 Text(
                   '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 16, fontWeight: FontWeight.w800,
                     color: _remainingSeconds < 60 ? AppTheme.errorRed : AppTheme.primaryColor,
                   ),
                 ),
                 const Spacer(),
                 Text('Q ${_currentQ + 1}/${_currentQuestions.length}',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
+                    style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
                 const SizedBox(width: 12),
                 if (_markedForReview.contains(_currentQ))
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(color: AppTheme.warningOrange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)),
-                    child: Text('Marked', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.warningOrange)),
+                    child: Text('Marked', style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.warningOrange)),
                   ),
               ],
             ),
@@ -262,7 +262,7 @@ class _MockTestScreenState extends State<MockTestScreen> {
               value: (_currentQ + 1) / _currentQuestions.length,
               minHeight: 3,
               backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-              valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+              valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
             ),
           ),
         ),
@@ -274,7 +274,7 @@ class _MockTestScreenState extends State<MockTestScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(question, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
+                Text(question, style: AppFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
                 const SizedBox(height: 16),
                 ...List.generate(options.length, (oi) {
                   final selected = _answers[_currentQ] == oi;
@@ -315,7 +315,7 @@ class _MockTestScreenState extends State<MockTestScreen> {
                               child: Center(
                                 child: Text(
                                   String.fromCharCode(65 + oi),
-                                  style: GoogleFonts.inter(
+                                  style: AppFonts.inter(
                                     fontSize: 13, fontWeight: FontWeight.w700,
                                     color: selected ? Colors.white : AppTheme.textS(context),
                                   ),
@@ -324,7 +324,7 @@ class _MockTestScreenState extends State<MockTestScreen> {
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Text(options[oi], style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.4)),
+                              child: Text(options[oi], style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.4)),
                             ),
                           ],
                         ),
@@ -351,7 +351,7 @@ class _MockTestScreenState extends State<MockTestScreen> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        side: BorderSide(color: AppTheme.primaryColor),
+                        side: const BorderSide(color: AppTheme.primaryColor),
                       ),
                     ),
                   ),
@@ -439,14 +439,14 @@ class _MockTestScreenState extends State<MockTestScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('${percentage.round()}%', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800)),
-                    Text('Score', style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textS(context))),
+                    Text('${percentage.round()}%', style: AppFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800)),
+                    Text('Score', style: AppFonts.inter(fontSize: 10, color: AppTheme.textS(context))),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               Text('${marks.toStringAsFixed(1)} / $totalMarks marks',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700)),
+                  style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -461,7 +461,7 @@ class _MockTestScreenState extends State<MockTestScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Question Analysis', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+        Text('Question Analysis', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
         const SizedBox(height: 10),
         // Question-wise review
         ...List.generate(questions.length, (i) {
@@ -486,24 +486,24 @@ class _MockTestScreenState extends State<MockTestScreen> {
                     children: [
                       Icon(statusIcon, color: statusColor, size: 20),
                       const SizedBox(width: 8),
-                      Text('Q${i + 1}', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: statusColor)),
+                      Text('Q${i + 1}', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: statusColor)),
                       const Spacer(),
                       Text(
                         !answered ? 'Unattempted' : isCorrect ? '+2.00' : '-0.66',
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: statusColor),
+                        style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: statusColor),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(qText, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
+                  Text(qText, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 6),
                   if (answered && !isCorrect && _answers[i]! < qOptions.length)
-                    Text('Your answer: ${qOptions[_answers[i]!]}', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.errorRed)),
+                    Text('Your answer: ${qOptions[_answers[i]!]}', style: AppFonts.inter(fontSize: 12, color: AppTheme.errorRed)),
                   if (correctIdx < qOptions.length)
-                    Text('Correct: ${qOptions[correctIdx]}', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.successGreen, fontWeight: FontWeight.w600)),
+                    Text('Correct: ${qOptions[correctIdx]}', style: AppFonts.inter(fontSize: 12, color: AppTheme.successGreen, fontWeight: FontWeight.w600)),
                   if (explanation.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text(explanation, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context), height: 1.4)),
+                    Text(explanation, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context), height: 1.4)),
                   ],
                 ],
               ),
@@ -536,8 +536,8 @@ class _MockTestScreenState extends State<MockTestScreen> {
         ),
         child: Column(
           children: [
-            Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
-            Text(label, style: GoogleFonts.inter(fontSize: 10, color: color)),
+            Text(value, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+            Text(label, style: AppFonts.inter(fontSize: 10, color: color)),
           ],
         ),
       ),
@@ -554,14 +554,14 @@ class _MockTestScreenState extends State<MockTestScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Submit Test?', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+        title: Text('Submit Test?', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Answered: ${_answers.length}/${_currentQuestions.length}', style: GoogleFonts.inter(fontSize: 14)),
-            if (unanswered > 0) Text('Unanswered: $unanswered', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.errorRed)),
-            if (_markedForReview.isNotEmpty) Text('Marked for review: ${_markedForReview.length}', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.warningOrange)),
+            Text('Answered: ${_answers.length}/${_currentQuestions.length}', style: AppFonts.inter(fontSize: 14)),
+            if (unanswered > 0) Text('Unanswered: $unanswered', style: AppFonts.inter(fontSize: 14, color: AppTheme.errorRed)),
+            if (_markedForReview.isNotEmpty) Text('Marked for review: ${_markedForReview.length}', style: AppFonts.inter(fontSize: 14, color: AppTheme.warningOrange)),
           ],
         ),
         actions: [
@@ -584,8 +584,8 @@ class _MockTestScreenState extends State<MockTestScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Exit Test?', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
-        content: Text('Your progress will be lost.', style: GoogleFonts.inter()),
+        title: Text('Exit Test?', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+        content: Text('Your progress will be lost.', style: AppFonts.inter()),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Continue')),
           ElevatedButton(

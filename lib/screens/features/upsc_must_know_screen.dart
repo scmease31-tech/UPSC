@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -474,9 +474,9 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor)),
+                              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor)),
                               const SizedBox(width: 10),
-                              Text('Fetching latest content...', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                              Text('Fetching latest content...', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
                             ],
                           ),
                         );
@@ -505,13 +505,13 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('UPSC Must Know', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-                Text('$totalFacts facts across ${_allSections.length} topics', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+                Text('UPSC Must Know', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                Text('$totalFacts facts across ${_allSections.length} topics', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
               ],
             ),
           ),
           if (_isLoadingWeb)
-            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor)),
+            const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor)),
         ],
       ),
     );
@@ -524,10 +524,10 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
         padding: EdgeInsets.zero,
         child: TextField(
           controller: _searchController,
-          style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textP(context)),
+          style: AppFonts.inter(fontSize: 14, color: AppTheme.textP(context)),
           decoration: InputDecoration(
             hintText: 'Search facts... (e.g., "Article 21", "GDP", "ISRO")',
-            hintStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context)),
+            hintStyle: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context)),
             prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textS(context), size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
@@ -587,7 +587,7 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
                 ),
                 child: Text(
                   tab,
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: isSelected ? Colors.white : AppTheme.textS(context),
@@ -626,7 +626,7 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
                         ),
                       ),
                       Positioned.fill(
-                        child: Container(
+                        child: DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topLeft, end: Alignment.bottomRight,
@@ -643,8 +643,8 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
                   ),
                 ),
               ),
-              title: Text(section.title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-              subtitle: Text('${section.facts.length} key facts', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+              title: Text(section.title, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+              subtitle: Text('${section.facts.length} key facts', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               children: section.facts.asMap().entries.map((entry) {
                 final idx = entry.key;
@@ -679,7 +679,7 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
                             child: Center(
                               child: Text(
                                 '${idx + 1}',
-                                style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                                style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
                               ),
                             ),
                           ),
@@ -688,7 +688,7 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
                         Expanded(
                           child: Text(
                             fact,
-                            style: GoogleFonts.inter(
+                            style: AppFonts.inter(
                               fontSize: 13,
                               color: AppTheme.textP(context),
                               height: 1.55,

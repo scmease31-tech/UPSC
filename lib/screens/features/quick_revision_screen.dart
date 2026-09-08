@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import '../../config/theme.dart';
 import '../../services/firestore_content_service.dart';
@@ -77,7 +77,7 @@ class _QuickRevisionScreenState extends State<QuickRevisionScreen> {
             children: [
               Icon(Icons.cloud_off_rounded, size: 48, color: AppTheme.textT(context)),
               const SizedBox(height: 12),
-              Text('Failed to load notes', style: GoogleFonts.inter(color: AppTheme.textS(context))),
+              Text('Failed to load notes', style: AppFonts.inter(color: AppTheme.textS(context))),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () { setState(() { _loading = true; _hasError = false; }); _loadNotes(); },
@@ -132,12 +132,12 @@ class _QuickRevisionScreenState extends State<QuickRevisionScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(paper, style: GoogleFonts.plusJakartaSans(
+                          Text(paper, style: AppFonts.plusJakartaSans(
                             fontSize: 14, fontWeight: FontWeight.w800,
                             color: sel ? Colors.white : colors[i],
                           )),
                           const SizedBox(height: 2),
-                          Text(_paperDescriptions[paper] ?? '', style: GoogleFonts.inter(
+                          Text(_paperDescriptions[paper] ?? '', style: AppFonts.inter(
                             fontSize: 9, color: sel ? Colors.white70 : AppTheme.textT(context),
                           ), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
@@ -154,7 +154,7 @@ class _QuickRevisionScreenState extends State<QuickRevisionScreen> {
             child: topics.isEmpty
                 ? Center(
                     child: Text('No notes available for this paper',
-                        style: GoogleFonts.inter(color: AppTheme.textS(context))),
+                        style: AppFonts.inter(color: AppTheme.textS(context))),
                   )
                 : ListView.builder(
               controller: _scrollController,
@@ -199,10 +199,10 @@ class _QuickRevisionScreenState extends State<QuickRevisionScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(topic['title'] ?? '', style: GoogleFonts.plusJakartaSans(
+                                      Text(topic['title'] ?? '', style: AppFonts.plusJakartaSans(
                                         fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context),
                                       )),
-                                      Text('${points.length} key points', style: GoogleFonts.inter(
+                                      Text('${points.length} key points', style: AppFonts.inter(
                                         fontSize: 11, color: AppTheme.textT(context),
                                       )),
                                     ],
@@ -235,14 +235,14 @@ class _QuickRevisionScreenState extends State<QuickRevisionScreen> {
                                       Container(
                                         margin: const EdgeInsets.only(top: 6),
                                         width: 6, height: 6,
-                                        decoration: BoxDecoration(
+                                        decoration: const BoxDecoration(
                                           color: AppTheme.primaryColor,
                                           shape: BoxShape.circle,
                                         ),
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
-                                        child: Text(p, style: GoogleFonts.inter(
+                                        child: Text(p, style: AppFonts.inter(
                                           fontSize: 13, height: 1.5, color: AppTheme.textP(context),
                                         )),
                                       ),
@@ -261,10 +261,10 @@ class _QuickRevisionScreenState extends State<QuickRevisionScreen> {
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(Icons.lightbulb_rounded, size: 16, color: AppTheme.warningOrange),
+                                        const Icon(Icons.lightbulb_rounded, size: 16, color: AppTheme.warningOrange),
                                         const SizedBox(width: 8),
                                         Expanded(
-                                          child: Text('Mnemonic: ${topic['mnemonic']}', style: GoogleFonts.inter(
+                                          child: Text('Mnemonic: ${topic['mnemonic']}', style: AppFonts.inter(
                                             fontSize: 12, fontWeight: FontWeight.w600,
                                             color: AppTheme.warningOrange,
                                           )),

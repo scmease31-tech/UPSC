@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -105,7 +105,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text('Quiz Results', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                    Text('Quiz Results', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                   ],
                 ),
               ),
@@ -143,7 +143,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
                         children: [
                           Image.asset(iconPath, width: 36, height: 36),
                           const SizedBox(height: 4),
-                          Text(grade, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+                          Text(grade, style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
                         ],
                       ),
                     ),
@@ -169,9 +169,9 @@ class _QuizResultScreenState extends State<QuizResultScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('${(animPct * 100).round()}%',
-                            style: GoogleFonts.plusJakartaSans(fontSize: w < 360 ? 28 : 36, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+                            style: AppFonts.plusJakartaSans(fontSize: w < 360 ? 28 : 36, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
                         Text('${quiz.score}/${quiz.totalQuestions}',
-                            style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
+                            style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
                       ],
                     ),
                   );
@@ -201,7 +201,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Question Breakdown', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                    Text('Question Breakdown', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                     const SizedBox(height: 12),
                     ...List.generate(quiz.totalQuestions, (i) {
                       final q = quiz.questions[i];
@@ -226,7 +226,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
                                 Expanded(
                                   child: Text('Q${i + 1}: ${q.question}',
                                       maxLines: 2, overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textP(context))),
+                                      style: AppFonts.inter(fontSize: 12, color: AppTheme.textP(context))),
                                 ),
                               ],
                             ),
@@ -272,10 +272,10 @@ class _QuizResultScreenState extends State<QuizResultScreen>
                           }
                         },
                         icon: const Icon(Icons.replay_rounded),
-                        label: Text('Retry', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
+                        label: Text('Retry', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.primaryColor,
-                          side: BorderSide(color: AppTheme.primaryColor),
+                          side: const BorderSide(color: AppTheme.primaryColor),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                       ),
@@ -293,7 +293,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
                           Navigator.pushReplacementNamed(context, '/main');
                         },
                         icon: const Icon(Icons.home_rounded),
-                        label: Text('Home', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
+                        label: Text('Home', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
@@ -349,9 +349,9 @@ class _QuizResultScreenState extends State<QuizResultScreen>
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           children: [
-            Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+            Text(value, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
             const SizedBox(height: 4),
-            Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+            Text(label, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
           ],
         ),
       ),
@@ -373,7 +373,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: color),
+        style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: color),
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
@@ -62,20 +62,20 @@ class _ExploreScreenState extends State<ExploreScreen>
               SliverToBoxAdapter(child: _buildCountdownRow(context, progress, dark)),
 
               // Quick tools
-              SliverToBoxAdapter(
-                child: SectionHeader(title: 'Quick Tools', padding: const EdgeInsets.fromLTRB(20, 20, 20, 10)),
+              const SliverToBoxAdapter(
+                child: SectionHeader(title: 'Quick Tools', padding: EdgeInsets.fromLTRB(20, 20, 20, 10)),
               ),
               SliverToBoxAdapter(child: _buildToolGrid(context, dark)),
 
               // Browse by date
-              SliverToBoxAdapter(
-                child: SectionHeader(title: 'Browse by Date', padding: const EdgeInsets.fromLTRB(20, 20, 20, 10)),
+              const SliverToBoxAdapter(
+                child: SectionHeader(title: 'Browse by Date', padding: EdgeInsets.fromLTRB(20, 20, 20, 10)),
               ),
               SliverToBoxAdapter(child: _buildDateStrip(context, articles, dark)),
 
               // Syllabus overview
-              SliverToBoxAdapter(
-                child: SectionHeader(title: 'Syllabus Overview', padding: const EdgeInsets.fromLTRB(20, 20, 20, 10)),
+              const SliverToBoxAdapter(
+                child: SectionHeader(title: 'Syllabus Overview', padding: EdgeInsets.fromLTRB(20, 20, 20, 10)),
               ),
               SliverToBoxAdapter(child: _buildSyllabus(context, dark)),
 
@@ -103,12 +103,12 @@ class _ExploreScreenState extends State<ExploreScreen>
           ),
           Text(
             'Explore',
-            style: GoogleFonts.plusJakartaSans(
+            style: AppFonts.plusJakartaSans(
               fontSize: 24, fontWeight: FontWeight.w800, color: AppTheme.textP(context),
             ),
           ),
           const SizedBox(width: 8),
-          SizedBox(
+          const SizedBox(
             width: 36, height: 36,
             child: Icon(Icons.explore_rounded, color: AppTheme.primaryColor, size: 28),
           ),
@@ -121,7 +121,7 @@ class _ExploreScreenState extends State<ExploreScreen>
             ),
             child: Text(
               DateFormat('d MMM').format(DateTime.now()),
-              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+              style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
             ),
           ),
         ],
@@ -180,7 +180,7 @@ class _ExploreScreenState extends State<ExploreScreen>
             children: [
               Icon(icon, size: 16, color: gradient[0]),
               const SizedBox(width: 6),
-              Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
+              Text(label, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
             ],
           ),
           const SizedBox(height: 8),
@@ -188,10 +188,10 @@ class _ExploreScreenState extends State<ExploreScreen>
             shaderCallback: (b) => LinearGradient(colors: gradient).createShader(b),
             child: Text(
               '$days',
-              style: GoogleFonts.plusJakartaSans(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white),
+              style: AppFonts.plusJakartaSans(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white),
             ),
           ),
-          Text('days remaining', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+          Text('days remaining', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
         ],
       ),
     );
@@ -201,12 +201,12 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   Widget _buildToolGrid(BuildContext context, bool dark) {
     final tools = [
-      _Tool('Daily Practice', Icons.edit_note_rounded, AppTheme.primaryColor, '/daily-practice'),
-      _Tool('Daily Challenge', Icons.flash_on_rounded, AppTheme.warningOrange, '/daily-challenge'),
-      _Tool('Revision Hub', Icons.replay_circle_filled_rounded, AppTheme.accentViolet, '/revision'),
-      _Tool('Must Know', Icons.star_rounded, const Color(0xFFFF6B6B), '/upsc-must-know'),
-      _Tool('Flashcards', Icons.style_rounded, const Color(0xFF448AFF), '/flashcards'),
-      _Tool('Magazine', Icons.auto_stories_rounded, AppTheme.primaryDark, '/magazine'),
+      const _Tool('Daily Practice', Icons.edit_note_rounded, AppTheme.primaryColor, '/daily-practice'),
+      const _Tool('Daily Challenge', Icons.flash_on_rounded, AppTheme.warningOrange, '/daily-challenge'),
+      const _Tool('Revision Hub', Icons.replay_circle_filled_rounded, AppTheme.accentViolet, '/revision'),
+      const _Tool('Must Know', Icons.star_rounded, Color(0xFFFF6B6B), '/upsc-must-know'),
+      const _Tool('Flashcards', Icons.style_rounded, Color(0xFF448AFF), '/flashcards'),
+      const _Tool('Magazine', Icons.auto_stories_rounded, AppTheme.primaryDark, '/magazine'),
     ];
 
     return Padding(
@@ -228,7 +228,7 @@ class _ExploreScreenState extends State<ExploreScreen>
               HapticFeedback.lightImpact();
               Navigator.pushNamed(context, t.route);
             },
-            child: Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 color: dark ? AppTheme.darkCardBg : Colors.white,
                 borderRadius: BorderRadius.circular(18),
@@ -264,7 +264,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: Text(
                       t.label,
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 11, fontWeight: FontWeight.w600,
                         color: AppTheme.textP(context), height: 1.2,
                       ),
@@ -292,7 +292,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         child: GlassCard(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Center(
-            child: Text('No dates available yet', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            child: Text('No dates available yet', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
           ),
         ),
       );
@@ -332,16 +332,16 @@ class _ExploreScreenState extends State<ExploreScreen>
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(weekDay, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textS(context))),
+                        Text(weekDay, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textS(context))),
                         const SizedBox(height: 2),
-                        Text(dayNum, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.primaryColor)),
-                        Text(month, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
+                        Text(dayNum, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.primaryColor)),
+                        Text(month, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
                       ],
                     )
                   : Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(d, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.textP(context)),
+                        child: Text(d, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.textP(context)),
                             textAlign: TextAlign.center),
                       ),
                     ),
@@ -356,11 +356,11 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   Widget _buildSyllabus(BuildContext context, bool dark) {
     final items = [
-      _SyllabusItem('GS-I', 'Heritage, History, Geography, Society', Icons.account_balance_rounded, AppTheme.primaryColor),
-      _SyllabusItem('GS-II', 'Governance, Polity, International Relations', Icons.gavel_rounded, AppTheme.accentViolet),
-      _SyllabusItem('GS-III', 'Technology, Economy, Environment, Security', Icons.science_rounded, AppTheme.warningOrange),
-      _SyllabusItem('GS-IV', 'Ethics, Integrity and Aptitude', Icons.psychology_rounded, const Color(0xFF448AFF)),
-      _SyllabusItem('Essay', 'Philosophical, Social, Political Topics', Icons.edit_rounded, const Color(0xFFFF6B6B)),
+      const _SyllabusItem('GS-I', 'Heritage, History, Geography, Society', Icons.account_balance_rounded, AppTheme.primaryColor),
+      const _SyllabusItem('GS-II', 'Governance, Polity, International Relations', Icons.gavel_rounded, AppTheme.accentViolet),
+      const _SyllabusItem('GS-III', 'Technology, Economy, Environment, Security', Icons.science_rounded, AppTheme.warningOrange),
+      const _SyllabusItem('GS-IV', 'Ethics, Integrity and Aptitude', Icons.psychology_rounded, Color(0xFF448AFF)),
+      const _SyllabusItem('Essay', 'Philosophical, Social, Political Topics', Icons.edit_rounded, Color(0xFFFF6B6B)),
     ];
 
     return Padding(
@@ -398,11 +398,11 @@ class _ExploreScreenState extends State<ExploreScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.tag, style: GoogleFonts.plusJakartaSans(
+                        Text(item.tag, style: AppFonts.plusJakartaSans(
                           fontSize: 14, fontWeight: FontWeight.w700, color: item.color,
                         )),
                         const SizedBox(height: 2),
-                        Text(item.desc, style: GoogleFonts.inter(
+                        Text(item.desc, style: AppFonts.inter(
                           fontSize: 12, color: AppTheme.textS(context), height: 1.3,
                         )),
                       ],

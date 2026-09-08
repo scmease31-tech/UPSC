@@ -28,6 +28,7 @@ import '../screens/features/vocabulary_screen.dart';
 import '../screens/features/mock_test_screen.dart';
 import '../screens/features/govt_schemes_screen.dart';
 import '../screens/search/ai_search_screen.dart';
+import '../screens/profile/credits_screen.dart';
 import '../screens/web/web_wrappers.dart';
 
 /// Centralized route configuration.
@@ -62,6 +63,7 @@ class AppRoutes {
   static const String mockTest = '/mock-test';
   static const String govtSchemes = '/govt-schemes';
   static const String aiSearch = '/ai-search';
+  static const String credits = '/credits';
 
   /// Wraps auth screens with web-friendly split layout on web.
   static Widget _authWrap(Widget child) {
@@ -107,6 +109,7 @@ class AppRoutes {
       mockTest: (_) => _featureWrap(const MockTestScreen(), 'Mock Test'),
       govtSchemes: (_) => _featureWrap(const GovtSchemesScreen(), 'Govt Schemes'),
       aiSearch: (_) => _featureWrap(const AiSearchScreen(), 'AI Search'),
+      credits: (_) => const CreditsScreen(),
     };
   }
 }

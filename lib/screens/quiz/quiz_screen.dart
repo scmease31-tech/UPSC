@@ -1,7 +1,7 @@
-﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -56,14 +56,14 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
 
     const _ib = 'assets/flaticon_pngs/';
     final categories = [
-      _QuizTopic('Polity', '${_ib}polity.png', AppTheme.accentViolet, 'Polity'),
-      _QuizTopic('Economy', '${_ib}economy.png', AppTheme.primaryColor, 'Economy'),
-      _QuizTopic('Environ', '${_ib}environment.png', AppTheme.successGreen, 'Environment'),
-      _QuizTopic('Science', '${_ib}science.png', const Color(0xFF448AFF), 'Science & Tech'),
-      _QuizTopic('Intl.', '${_ib}international.png', const Color(0xFFFF6B6B), 'International'),
-      _QuizTopic('Geography', '${_ib}geography.png', AppTheme.primaryDark, 'Geography'),
-      _QuizTopic('History', '${_ib}history.png', const Color(0xFF8D6E63), 'History'),
-      _QuizTopic('Mixed', '${_ib}target_mixed.png', AppTheme.warningOrange, null),
+      const _QuizTopic('Polity', '${_ib}polity.png', AppTheme.accentViolet, 'Polity'),
+      const _QuizTopic('Economy', '${_ib}economy.png', AppTheme.primaryColor, 'Economy'),
+      const _QuizTopic('Environ', '${_ib}environment.png', AppTheme.successGreen, 'Environment'),
+      const _QuizTopic('Science', '${_ib}science.png', Color(0xFF448AFF), 'Science & Tech'),
+      const _QuizTopic('Intl.', '${_ib}international.png', Color(0xFFFF6B6B), 'International'),
+      const _QuizTopic('Geography', '${_ib}geography.png', AppTheme.primaryDark, 'Geography'),
+      const _QuizTopic('History', '${_ib}history.png', Color(0xFF8D6E63), 'History'),
+      const _QuizTopic('Mixed', '${_ib}target_mixed.png', AppTheme.warningOrange, null),
     ];
 
     Widget content = FadeTransition(
@@ -77,7 +77,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Text('Quiz Arena', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+                  child: Text('Quiz Arena', style: AppFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
                 ),
               ),
 
@@ -88,8 +88,8 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             SliverToBoxAdapter(child: _buildStatsRow(context, progress)),
 
             // Topic Grid
-            SliverToBoxAdapter(
-              child: SectionHeader(title: 'Choose Topic', padding: const EdgeInsets.fromLTRB(20, 12, 20, 6)),
+            const SliverToBoxAdapter(
+              child: SectionHeader(title: 'Choose Topic', padding: EdgeInsets.fromLTRB(20, 12, 20, 6)),
             ),
             SliverToBoxAdapter(child: _buildTopicGrid(context, categories)),
 
@@ -99,7 +99,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             // Leaderboard teaser
             SliverToBoxAdapter(child: _buildLeaderboard(context, progress)),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            SliverToBoxAdapter(child: SizedBox(height: AppTheme.navBarClearance(context))),
           ],
         ),
       );
@@ -111,7 +111,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
     final accuracy = p.weeklyAccuracy;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           boxShadow: AppTheme.cardShadow,
@@ -120,10 +120,11 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
           borderRadius: BorderRadius.circular(22),
           child: Stack(
             children: [
-              // Background image
-              SizedBox(
-                height: 160,
-                width: double.infinity,
+              // Image and overlay stretch to whatever height the content needs,
+              // so the card adapts to screen width and font scale instead of
+              // being pinned to one hardcoded height (which left dead space on
+              // wide screens and overflowed on narrow ones).
+              Positioned.fill(
                 child: CachedNetworkImage(
                   imageUrl: AppImages.quizHero,
                   fit: BoxFit.cover,
@@ -136,8 +137,8 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                 ),
               ),
               // Dark overlay
-              Container(
-                height: 160,
+              Positioned.fill(
+                child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -148,10 +149,13 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                     end: Alignment.centerRight,
                   ),
                 ),
+                ),
               ),
               // Content
-              SizedBox(
-                height: 160,
+              // This child is the only non-positioned one, so it defines the
+              // card height; the minHeight keeps short content from collapsing.
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 160),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -165,8 +169,8 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('${accuracy.round()}%', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
-                            Text('Accuracy', style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
+                            Text('${accuracy.round()}%', style: AppFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
+                            Text('Accuracy', style: AppFonts.inter(fontSize: 11, color: Colors.white70)),
                           ],
                         ),
                       ),
@@ -176,7 +180,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('Your Performance', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text('Your Performance', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white), maxLines: 2, overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 10),
                             _whiteStatLine(Icons.quiz_rounded, '${p.quizzesThisWeek} quizzes taken'),
                             const SizedBox(height: 6),
@@ -202,7 +206,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
       children: [
         Icon(icon, size: 14, color: Colors.white70),
         const SizedBox(width: 8),
-        Expanded(child: Text(text, style: GoogleFonts.inter(fontSize: 12, color: Colors.white70))),
+        Expanded(child: Text(text, style: AppFonts.inter(fontSize: 12, color: Colors.white70))),
       ],
     );
   }
@@ -236,9 +240,9 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             child: Icon(icon, color: color, size: 19),
           ),
           const SizedBox(height: 8),
-          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textP(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(value, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textP(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 2),
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context), fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(label, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context), fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -278,7 +282,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                       children: [
                         Lottie.asset('assets/animations/loading.json', width: 100, height: 100),
                         const SizedBox(height: 12),
-                        Text('Loading ${t.name}...', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500)),
+                        Text('Loading ${t.name}...', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ),
@@ -294,12 +298,12 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to load quiz. Please try again.'), behavior: SnackBarBehavior.floating),
+                    const SnackBar(content: Text('Failed to load quiz. Please try again.'), behavior: SnackBarBehavior.floating),
                   );
                 }
               }
             },
-            child: Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 gradient: LinearGradient(
@@ -319,7 +323,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 6),
                   Text(
                     t.name,
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -355,7 +359,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                   children: [
                     Lottie.asset('assets/animations/loading.json', width: 100, height: 100),
                     const SizedBox(height: 12),
-                    Text('Preparing quiz...', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500)),
+                    Text('Preparing quiz...', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -370,7 +374,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             if (context.mounted) {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to load quiz. Please try again.'), behavior: SnackBarBehavior.floating),
+                const SnackBar(content: Text('Failed to load quiz. Please try again.'), behavior: SnackBarBehavior.floating),
               );
             }
           }
@@ -383,7 +387,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             children: [
               const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
               const SizedBox(width: 12),
-              Text('Start Quick Quiz', style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
+              Text('Start Quick Quiz', style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
             ],
           ),
         ),
@@ -438,8 +442,8 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Keep it up!', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-                          Text('Complete daily quizzes to climb the ranks', style: GoogleFonts.inter(fontSize: 11, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text('Keep it up!', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                          Text('Daily quizzes climb the ranks', style: AppFonts.inter(fontSize: 11, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),

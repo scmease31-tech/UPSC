@@ -92,7 +92,7 @@ class NotificationService {
     );
     const details = NotificationDetails(android: androidDetails);
 
-    final title = 'Today\'s Current Affairs Ready!';
+    const title = 'Today\'s Current Affairs Ready!';
     final body = articleTitle != null
         ? '$articleTitle — Tap to read the full analysis.'
         : 'Check out the latest UPSC-relevant news and updates.';

@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../config/app_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../config/category_style.dart';
@@ -82,11 +82,17 @@ class ArticleThumbnail extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
+                        // Ramps earlier and darker than before: the headline sits
+                        // in the lower-middle of the card, and over a light, busy
+                        // source image (infographics, charts) a 0.62 floor let the
+                        // underlying text bleed through and made the title hard to
+                        // read. The top stays light so the image still shows.
                         colors: [
-                          Colors.black.withValues(alpha: 0.05),
-                          Colors.black.withValues(alpha: 0.62),
+                          Colors.black.withValues(alpha: 0.10),
+                          Colors.black.withValues(alpha: 0.55),
+                          Colors.black.withValues(alpha: 0.85),
                         ],
-                        stops: const [0.35, 1.0],
+                        stops: const [0.25, 0.62, 1.0],
                       ),
                     ),
                   ),
@@ -181,7 +187,7 @@ class _GeneratedCover extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         style.label.toUpperCase(),
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.1,
@@ -194,7 +200,7 @@ class _GeneratedCover extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           footnote!,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
                             color: Colors.white.withValues(alpha: 0.72),

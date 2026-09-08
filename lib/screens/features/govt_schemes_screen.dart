@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import '../../config/theme.dart';
 import '../../services/firestore_content_service.dart';
@@ -86,7 +86,7 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
             children: [
               Icon(Icons.error_outline, size: 48, color: AppTheme.textT(context)),
               const SizedBox(height: 12),
-              Text('Failed to load schemes', style: GoogleFonts.inter(color: AppTheme.textS(context))),
+              Text('Failed to load schemes', style: AppFonts.inter(color: AppTheme.textS(context))),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () {
@@ -110,7 +110,7 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
           // Search
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-            child: Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 color: AppTheme.isDark(context)
                     ? Colors.white.withValues(alpha: 0.06)
@@ -121,10 +121,10 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
               child: TextField(
                 controller: _searchCtrl,
                 onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
-                style: GoogleFonts.inter(fontSize: 14),
+                style: AppFonts.inter(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'Search schemes...',
-                  hintStyle: GoogleFonts.inter(fontSize: 14, color: AppTheme.textT(context)),
+                  hintStyle: AppFonts.inter(fontSize: 14, color: AppTheme.textT(context)),
                   prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textT(context), size: 20),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -154,7 +154,7 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                     onSelected: (_) => setState(() => _selectedSector = sec),
                     backgroundColor: AppTheme.isDark(context) ? Colors.white.withValues(alpha: 0.06) : Colors.white.withValues(alpha: 0.7),
                     selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
-                    labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? AppTheme.primaryColor : AppTheme.textS(context)),
+                    labelStyle: AppFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? AppTheme.primaryColor : AppTheme.textS(context)),
                     side: BorderSide(color: selected ? AppTheme.primaryColor : Colors.transparent),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -167,14 +167,14 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
             child: Row(
               children: [
-                Text('${schemes.length} schemes', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                Text('${schemes.length} schemes', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
               ],
             ),
           ),
           // Scheme list
           Expanded(
             child: schemes.isEmpty
-                ? Center(child: Text('No schemes found', style: GoogleFonts.inter(color: AppTheme.textS(context))))
+                ? Center(child: Text('No schemes found', style: AppFonts.inter(color: AppTheme.textS(context))))
                 : ListView.builder(
                     controller: _scrollController,
                     physics: const BouncingScrollPhysics(),
@@ -224,16 +224,16 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                      Text(name, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                       if (fullForm.isNotEmpty && fullForm != name)
-                        Text(fullForm, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textT(context))),
+                        Text(fullForm, style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context))),
                     ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(description, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context), height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+            Text(description, style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context), height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -257,7 +257,7 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(text, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+      child: Text(text, style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
     );
   }
 
@@ -306,9 +306,9 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800)),
+                        Text(name, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800)),
                         if (fullForm.isNotEmpty && fullForm != name)
-                          Text(fullForm, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
+                          Text(fullForm, style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
                       ],
                     ),
                   ),
@@ -325,9 +325,9 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              Text(detailedDescription, style: GoogleFonts.inter(fontSize: 14, height: 1.7)),
+              Text(detailedDescription, style: AppFonts.inter(fontSize: 14, height: 1.7)),
               const SizedBox(height: 16),
-              Text('Key Features', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+              Text('Key Features', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
               const SizedBox(height: 10),
               ...keyFeatures.map((f) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -336,7 +336,7 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                   children: [
                     Container(margin: const EdgeInsets.only(top: 6), width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(f, style: GoogleFonts.inter(fontSize: 13, height: 1.5))),
+                    Expanded(child: Text(f, style: AppFonts.inter(fontSize: 13, height: 1.5))),
                   ],
                 ),
               )),
@@ -352,12 +352,12 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
+                      const Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
                       const SizedBox(width: 6),
-                      Text('UPSC Relevance', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                      Text('UPSC Relevance', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                     ]),
                     const SizedBox(height: 8),
-                    Text(upscRelevance, style: GoogleFonts.inter(fontSize: 13, height: 1.5)),
+                    Text(upscRelevance, style: AppFonts.inter(fontSize: 13, height: 1.5)),
                   ],
                 ),
               ),

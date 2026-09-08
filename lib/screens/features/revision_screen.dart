@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../config/theme.dart';
@@ -54,7 +54,7 @@ class RevisionScreen extends StatelessWidget {
                 HapticFeedback.lightImpact();
                 Navigator.pop(context);
               }),
-              Text('Revision Hub', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+              Text('Revision Hub', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
             ],
           ),
         ),
@@ -98,8 +98,8 @@ class RevisionScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('Review & Revise', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-                            Text('Bookmarks, wrong answers & saved facts', style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
+                            Text('Review & Revise', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                            Text('Bookmarks, wrong answers & saved facts', style: AppFonts.inter(fontSize: 11, color: Colors.white70)),
                           ],
                         ),
                       ),
@@ -131,7 +131,7 @@ class RevisionScreen extends StatelessWidget {
           ),
           labelColor: Colors.white,
           unselectedLabelColor: AppTheme.textS(context),
-          labelStyle: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600),
+          labelStyle: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600),
           dividerHeight: 0,
           tabs: const [
             Tab(text: 'Bookmarks'),
@@ -157,9 +157,9 @@ class _BookmarksTab extends StatelessWidget {
           children: [
             Icon(Icons.bookmark_rounded, color: AppTheme.primaryColor.withValues(alpha: 0.3), size: 56),
             const SizedBox(height: 14),
-            Text('No bookmarks yet', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+            Text('No bookmarks yet', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
             const SizedBox(height: 4),
-            Text('Bookmark articles to review later', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            Text('Bookmark articles to review later', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
           ],
         ),
       );
@@ -189,13 +189,13 @@ class _BookmarksTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(a.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
-                      Text(a.categoryTags.join(', '), style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+                          style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+                      Text(a.categoryTags.join(', '), style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.bookmark_remove_rounded, color: AppTheme.errorRed, size: 20),
+                  icon: const Icon(Icons.bookmark_remove_rounded, color: AppTheme.errorRed, size: 20),
                   onPressed: () {
                     HapticFeedback.mediumImpact();
                     bookmarks.toggleBookmark(a.id);
@@ -223,9 +223,9 @@ class _IncorrectTab extends StatelessWidget {
           children: [
             Icon(Icons.check_circle_rounded, color: AppTheme.successGreen.withValues(alpha: 0.3), size: 56),
             const SizedBox(height: 14),
-            Text('No incorrect questions!', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+            Text('No incorrect questions!', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
             const SizedBox(height: 4),
-            Text('All answers correct — great job!', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            Text('All answers correct — great job!', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
           ],
         ),
       );
@@ -249,7 +249,7 @@ class _IncorrectTab extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: AppTheme.errorRed.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                      child: Text('Wrong', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
+                      child: Text('Wrong', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
                     ),
                     const Spacer(),
                     GestureDetector(
@@ -259,10 +259,10 @@ class _IncorrectTab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(q['question'] ?? '', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textP(context), height: 1.4)),
+                Text(q['question'] ?? '', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textP(context), height: 1.4)),
                 if (q['explanation'] != null) ...[
                   const SizedBox(height: 8),
-                  Text(q['explanation'], style: GoogleFonts.inter(fontSize: 12, color: AppTheme.successGreen, height: 1.4)),
+                  Text(q['explanation'], style: AppFonts.inter(fontSize: 12, color: AppTheme.successGreen, height: 1.4)),
                 ],
               ],
             ),
@@ -288,9 +288,9 @@ class _SavedFactsTab extends StatelessWidget {
               color: AppTheme.textT(context).withValues(alpha: 0.4),
             ),
             const SizedBox(height: 14),
-            Text('No saved facts yet', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+            Text('No saved facts yet', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
             const SizedBox(height: 4),
-            Text('Save interesting facts as you learn', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            Text('Save interesting facts as you learn', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
           ],
         ),
       );
@@ -307,12 +307,12 @@ class _SavedFactsTab extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                Icon(Icons.push_pin_rounded, color: AppTheme.warningOrange, size: 18),
+                const Icon(Icons.push_pin_rounded, color: AppTheme.warningOrange, size: 18),
                 const SizedBox(width: 12),
-                Expanded(child: Text(facts[i], style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context)))),
+                Expanded(child: Text(facts[i], style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context)))),
                 GestureDetector(
                   onTap: () => progress.toggleSavedFact(facts[i]),
-                  child: Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed, size: 18),
+                  child: const Icon(Icons.delete_outline_rounded, color: AppTheme.errorRed, size: 18),
                 ),
               ],
             ),

@@ -1,10 +1,11 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
+import '../../config/routes.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/daily_progress_provider.dart';
@@ -50,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-                child: Text('Profile', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+                child: Text('Profile', style: AppFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
               ),
             ),
 
@@ -64,14 +65,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SliverToBoxAdapter(child: _buildStatsRow(context, auth, progress)),
 
           // Settings
-          SliverToBoxAdapter(
-            child: SectionHeader(title: 'Settings', padding: const EdgeInsets.fromLTRB(20, 10, 20, 6)),
+          const SliverToBoxAdapter(
+            child: SectionHeader(title: 'Settings', padding: EdgeInsets.fromLTRB(20, 10, 20, 6)),
           ),
           SliverToBoxAdapter(child: _buildSettings(context, theme, dark)),
 
           // Actions
-          SliverToBoxAdapter(
-            child: SectionHeader(title: 'Quick Links', padding: const EdgeInsets.fromLTRB(20, 10, 20, 6)),
+          const SliverToBoxAdapter(
+            child: SectionHeader(title: 'Quick Links', padding: EdgeInsets.fromLTRB(20, 10, 20, 6)),
           ),
           SliverToBoxAdapter(child: _buildActions(context)),
 
@@ -79,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (auth.isLoggedIn)
             SliverToBoxAdapter(child: _buildSignOut(context, auth)),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          SliverToBoxAdapter(child: SizedBox(height: AppTheme.navBarClearance(context))),
         ],
       );
 
@@ -110,13 +111,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Text(
                     auth.isLoggedIn ? (user?.name ?? 'User') : 'Guest User',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+                    style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (auth.isLoggedIn && user?.email != null) ...[
                     const SizedBox(height: 2),
-                    Text(user!.email, style: GoogleFonts.inter(fontSize: 12, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(user!.email, style: AppFonts.inter(fontSize: 12, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                   if (!auth.isLoggedIn) ...[
                     const SizedBox(height: 8),
@@ -130,7 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             const Icon(Icons.login_rounded, size: 14, color: Colors.white),
                             const SizedBox(width: 6),
-                            Text('Sign In', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                            Text('Sign In', style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                           ],
                         ),
                       ),
@@ -193,9 +194,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Icon(icon, color: color, size: 16),
             ),
             const SizedBox(height: 6),
-            FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textP(context)), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textP(context)), maxLines: 1, overflow: TextOverflow.ellipsis)),
             const SizedBox(height: 2),
-            FittedBox(fit: BoxFit.scaleDown, child: Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w500, color: AppTheme.textS(context)), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            FittedBox(fit: BoxFit.scaleDown, child: Text(label, style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w500, color: AppTheme.textS(context)), maxLines: 1, overflow: TextOverflow.ellipsis)),
           ],
         ),
       ),
@@ -249,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           child: Text(
                             'v${update.version}',
-                            style: GoogleFonts.inter(
+                            style: AppFonts.inter(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -268,6 +269,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: 'About App',
               trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
               onTap: () => _showAboutDialog(context),
+            ),
+            _divider(),
+            // Several of the licences behind the app's assets (the Flaticon free
+            // licence especially) require the credit to be reachable by users.
+            _settingTile(
+              context,
+              icon: Icons.workspace_premium_rounded,
+              color: AppTheme.accentViolet,
+              title: 'Credits & Licences',
+              trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.credits),
             ),
           ],
         ),
@@ -315,11 +327,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               context: context,
               builder: (_) => AlertDialog(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                title: Text('Sign Out?', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
-                content: Text('Your local data will be preserved.', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
+                title: Text('Sign Out?', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+                content: Text('Your local data will be preserved.', style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600))),
-                  TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Sign Out', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed))),
+                  TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel', style: AppFonts.inter(fontWeight: FontWeight.w600))),
+                  TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Sign Out', style: AppFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed))),
                 ],
               ),
             );
@@ -328,8 +340,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (context.mounted) Navigator.pushReplacementNamed(context, '/login');
             }
           },
-          icon: Icon(Icons.logout_rounded, color: AppTheme.errorRed),
-          label: Text('Sign Out', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
+          icon: const Icon(Icons.logout_rounded, color: AppTheme.errorRed),
+          label: Text('Sign Out', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: AppTheme.errorRed.withValues(alpha: 0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -347,7 +359,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
         child: Icon(icon, color: color, size: 20),
       ),
-      title: Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textP(context))),
+      title: Text(title, style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textP(context))),
       trailing: trailing,
     );
   }
@@ -357,11 +369,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showNotificationSettings(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      // isScrollControlled + a scroll view: without them the sheet is capped at
+      // roughly half the screen, and the five reminder rows plus the action
+      // buttons overflowed it. This shape adapts to any screen height.
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return Padding(
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -376,9 +398,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
               Text('Notification Settings',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(ctx))),
+                  style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(ctx))),
               const SizedBox(height: 4),
-              Text('Manage your daily reminders', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(ctx))),
+              Text('Manage your daily reminders', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(ctx))),
               const SizedBox(height: 20),
               _notifItem(ctx, Icons.article_rounded, 'Daily Current Affairs', '8:00 AM', AppTheme.primaryColor),
               _notifItem(ctx, Icons.style_rounded, 'Flashcard Reminder', '7:30 AM', AppTheme.accentViolet),
@@ -404,7 +426,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: Text('Turn Off All', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
+                      child: Text('Turn Off All', style: AppFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -425,13 +447,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: Text('Enable All', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                      child: Text('Enable All', style: AppFonts.inter(fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
             ],
+          ),
+              ),
+            ),
           ),
         );
       },
@@ -452,9 +477,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+              child: Text(title, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
             ),
-            Text(time, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+            Text(time, style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
           ],
         ),
       ),
@@ -477,21 +502,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
-            Text('UPSC Daily Edge', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+            Text('UPSC Daily Edge', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Version 1.0.0', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+            Text('Version 1.0.0', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
             const SizedBox(height: 12),
             Text(
               'Your daily companion for UPSC preparation. Get curated current affairs, practice quizzes, flashcards, and track your progress — all in one app.',
-              style: GoogleFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textS(context)),
+              style: AppFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textS(context)),
             ),
             const SizedBox(height: 16),
-            Text('Features:', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+            Text('Features:', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
             const SizedBox(height: 8),
             _aboutFeature('Daily current affairs analysis'),
             _aboutFeature('Topic-wise quiz practice'),
@@ -503,7 +528,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+            child: Text('Close', style: AppFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
           ),
         ],
       ),
@@ -515,9 +540,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(Icons.check_circle_rounded, size: 14, color: AppTheme.successGreen),
+          const Icon(Icons.check_circle_rounded, size: 14, color: AppTheme.successGreen),
           const SizedBox(width: 8),
-          Expanded(child: Text(text, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey))),
+          Expanded(child: Text(text, style: AppFonts.inter(fontSize: 12, color: Colors.grey))),
         ],
       ),
     );

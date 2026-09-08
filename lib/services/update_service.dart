@@ -1,13 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../config/app_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider/path_provider.dart';
 
 /// A newer release than the one installed.
 class UpdateInfo {
@@ -18,7 +15,7 @@ class UpdateInfo {
   const UpdateInfo({required this.version, required this.notes, required this.downloadUrl});
 }
 
-/// Checks GitHub Releases for a newer version, downloads in-app, and installs.
+/// Checks GitHub Releases for a newer version and points the user at it.
 class UpdateService {
   static const _owner = 'scmease31-tech';
   static const _repo = 'UPSC';
@@ -133,7 +130,7 @@ class UpdateService {
             const SizedBox(width: 12),
             Expanded(
               child: Text('Update Available',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700)),
+                  style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -142,7 +139,7 @@ class UpdateService {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Version $version is available.',
-                style: GoogleFonts.inter(fontSize: 14, height: 1.5)),
+                style: AppFonts.inter(fontSize: 14, height: 1.5)),
             if (notes.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
@@ -154,7 +151,7 @@ class UpdateService {
                 ),
                 child: SingleChildScrollView(
                   child: Text(notes,
-                      style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[700], height: 1.5)),
+                      style: AppFonts.inter(fontSize: 12, color: Colors.grey[700], height: 1.5)),
                 ),
               ),
             ],
@@ -163,15 +160,15 @@ class UpdateService {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Later', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            child: Text('Later', style: AppFonts.inter(fontWeight: FontWeight.w600)),
           ),
           FilledButton.icon(
             onPressed: () {
               Navigator.pop(ctx);
-              _downloadAndInstall(context, downloadUrl);
+              _openReleasePage(context);
             },
-            icon: const Icon(Icons.download_rounded, size: 18),
-            label: Text('Update Now', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            icon: const Icon(Icons.open_in_new_rounded, size: 18),
+            label: Text('Get Update', style: AppFonts.inter(fontWeight: FontWeight.w600)),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF00BFA6),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -182,181 +179,31 @@ class UpdateService {
     );
   }
 
-  /// Downloads the APK in-app with a progress dialog, then triggers install.
-  static Future<void> _downloadAndInstall(BuildContext context, String url) async {
-    final progress = ValueNotifier<double>(0);
-    final status = ValueNotifier<String>('Connecting...');
-    final cancelToken = CancelToken();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              const SizedBox(
-                width: 22, height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF00BFA6)),
-              ),
-              const SizedBox(width: 14),
-              Text('Downloading Update',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ValueListenableBuilder<double>(
-                valueListenable: progress,
-                builder: (_, val, __) => Column(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: val > 0 ? val : null,
-                        minHeight: 8,
-                        backgroundColor: Colors.grey.withValues(alpha: 0.15),
-                        color: const Color(0xFF00BFA6),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text('${(val * 100).toStringAsFixed(0)}%',
-                        style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: const Color(0xFF00BFA6))),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 4),
-              ValueListenableBuilder<String>(
-                valueListenable: status,
-                builder: (_, msg, __) => Text(msg,
-                    style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600])),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                cancelToken.cancel('User cancelled');
-                Navigator.pop(ctx);
-              },
-              child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-      ),
-    );
-
+  /// Opens the GitHub release page in the browser.
+  ///
+  /// This deliberately does NOT download or install an APK. Google Play's
+  /// Device and Network Abuse policy prohibits apps that fetch and install
+  /// packages from outside Play, and the REQUEST_INSTALL_PACKAGES permission it
+  /// needed is a restricted permission Google does not grant to study apps.
+  /// Sideload users still get told an update exists and can grab it manually;
+  /// Play users are updated by Play itself.
+  static Future<void> _openReleasePage(BuildContext context) async {
+    final uri = Uri.parse('https://github.com/$_owner/$_repo/releases/latest');
     try {
-      final dir = await getTemporaryDirectory();
-      final savePath = '${dir.path}/$_apkAsset';
-
-      // Delete old file if exists
-      final old = File(savePath);
-      if (await old.exists()) await old.delete();
-
-      final dio = Dio();
-      dio.options.followRedirects = true;
-      dio.options.maxRedirects = 5;
-      dio.options.receiveTimeout = const Duration(minutes: 10);
-
-      await dio.download(
-        url,
-        savePath,
-        cancelToken: cancelToken,
-        onReceiveProgress: (received, total) {
-          if (total > 0) {
-            progress.value = received / total;
-            final mb = (received / 1024 / 1024).toStringAsFixed(1);
-            final totalMb = (total / 1024 / 1024).toStringAsFixed(1);
-            status.value = '$mb / $totalMb MB';
-          } else {
-            final mb = (received / 1024 / 1024).toStringAsFixed(1);
-            status.value = '$mb MB downloaded';
-          }
-        },
-      );
-
-      progress.value = 1.0;
-      status.value = 'Installing...';
-
-      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
-
-      // Trigger APK install
-      final result = await OpenFilex.open(savePath, type: 'application/vnd.android.package-archive');
-      if (result.type != ResultType.done && context.mounted) {
-        _showInstallHelpDialog(context, savePath);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
       }
-    } on DioException catch (e) {
-      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
-      if (e.type != DioExceptionType.cancel && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed: ${e.message ?? "Network error"}')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed: $e')),
-        );
-      }
-    } finally {
-      progress.dispose();
-      status.dispose();
+    } catch (_) {
+      // fall through to the message below
     }
-  }
-
-  static void _showInstallHelpDialog(BuildContext context, String apkPath) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text('Installation Help',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
         content: Text(
-          'If you see "Package conflict" or "App not installed":\n\n'
-          '1. Uninstall the current app\n'
-          '2. Tap "Retry Install" below\n\n'
-          'This is a one-time step due to a signing key change. '
-          'Future updates will install normally.',
-          style: GoogleFonts.inter(fontSize: 13.5, height: 1.6),
+          'Could not open the release page. Visit github.com/$_owner/$_repo/releases',
+          style: AppFonts.inter(fontSize: 13),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Dismiss', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-          ),
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              OpenFilex.open(apkPath, type: 'application/vnd.android.package-archive');
-            },
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: Text('Retry Install', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.orange,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ],
       ),
     );
   }

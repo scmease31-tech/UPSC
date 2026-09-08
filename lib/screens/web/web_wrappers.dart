@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import '../../config/theme.dart';
 
 /// Web-friendly centered layout for auth screens (login/signup).
@@ -34,7 +34,7 @@ class WebAuthScaffold extends StatelessWidget {
                     }
                   },
                   icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                  label: Text('Back', style: GoogleFonts.inter(fontSize: 14)),
+                  label: Text('Back', style: AppFonts.inter(fontSize: 14)),
                   style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
                 ),
               ),
@@ -61,7 +61,7 @@ class WebAuthScaffold extends StatelessWidget {
           // Left: Branding panel
           Expanded(
             flex: 5,
-            child: Container(
+            child: DecoratedBox(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF00BFA6), Color(0xFF00897B)],
@@ -89,7 +89,7 @@ class WebAuthScaffold extends StatelessWidget {
                       const SizedBox(height: 32),
                       Text(
                         'UPSC Daily Edge',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: AppFonts.plusJakartaSans(
                           fontSize: 36,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
@@ -99,7 +99,7 @@ class WebAuthScaffold extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         'Your AI-Powered UPSC Companion',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 18,
                           color: Colors.white.withValues(alpha: 0.85),
                           height: 1.5,
@@ -123,7 +123,7 @@ class WebAuthScaffold extends StatelessWidget {
                               const SizedBox(width: 14),
                               Text(
                                 item.$2,
-                                style: GoogleFonts.inter(
+                                style: AppFonts.inter(
                                   fontSize: 15,
                                   color: Colors.white.withValues(alpha: 0.9),
                                   fontWeight: FontWeight.w500,
@@ -204,7 +204,7 @@ class WebFeatureScaffold extends StatelessWidget {
                             color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary),
                           if (!isNarrow) ...[
                             const SizedBox(width: 8),
-                            Text('Back to Dashboard', style: GoogleFonts.inter(
+                            Text('Back to Dashboard', style: AppFonts.inter(
                               fontSize: 13, fontWeight: FontWeight.w600,
                               color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
                             )),
@@ -228,7 +228,7 @@ class WebFeatureScaffold extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text('UPSC Daily Edge', style: GoogleFonts.plusJakartaSans(
+                Text('UPSC Daily Edge', style: AppFonts.plusJakartaSans(
                   fontSize: 16, fontWeight: FontWeight.w800,
                   color: dark ? Colors.white : AppTheme.textPrimary,
                 )),
@@ -236,11 +236,11 @@ class WebFeatureScaffold extends StatelessWidget {
                 if (title.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('/', style: GoogleFonts.inter(
+                    child: Text('/', style: AppFonts.inter(
                       fontSize: 16, color: dark ? AppTheme.darkTextTertiary : AppTheme.textTertiary,
                     )),
                   ),
-                  Text(title, style: GoogleFonts.plusJakartaSans(
+                  Text(title, style: AppFonts.plusJakartaSans(
                     fontSize: 16, fontWeight: FontWeight.w600,
                     color: dark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
                   )),

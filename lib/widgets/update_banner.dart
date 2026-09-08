@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../config/app_fonts.dart';
 
 import '../config/theme.dart';
 import '../services/update_service.dart';
@@ -73,7 +73,7 @@ class UpdateBanner extends StatelessWidget {
                     children: [
                       Text(
                         'Update available',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: AppFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -82,7 +82,7 @@ class UpdateBanner extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Version ${update.version} — tap to install',
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 11.5,
                           color: Colors.white.withValues(alpha: 0.9),
                         ),
@@ -105,7 +105,7 @@ class UpdateBanner extends StatelessWidget {
                   ),
                   child: Text(
                     'Update',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
+                    style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],

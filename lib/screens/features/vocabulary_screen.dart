@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -162,7 +162,7 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
           // Search
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-            child: Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 color: AppTheme.isDark(context)
                     ? Colors.white.withValues(alpha: 0.06)
@@ -173,10 +173,10 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
               child: TextField(
                 controller: _searchCtrl,
                 onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
-                style: GoogleFonts.inter(fontSize: 14),
+                style: AppFonts.inter(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'Search words...',
-                  hintStyle: GoogleFonts.inter(fontSize: 14, color: AppTheme.textT(context)),
+                  hintStyle: AppFonts.inter(fontSize: 14, color: AppTheme.textT(context)),
                   prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textT(context), size: 20),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -206,7 +206,7 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
                     onSelected: (_) => setState(() => _selectedCategory = cat),
                     backgroundColor: AppTheme.isDark(context) ? Colors.white.withValues(alpha: 0.06) : Colors.white.withValues(alpha: 0.7),
                     selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
-                    labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? AppTheme.primaryColor : AppTheme.textS(context)),
+                    labelStyle: AppFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? AppTheme.primaryColor : AppTheme.textS(context)),
                     side: BorderSide(color: selected ? AppTheme.primaryColor : Colors.transparent),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -218,7 +218,7 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
           // Word list
           Expanded(
             child: filtered.isEmpty
-                ? Center(child: Text('No words found', style: GoogleFonts.inter(color: AppTheme.textS(context))))
+                ? Center(child: Text('No words found', style: AppFonts.inter(color: AppTheme.textS(context))))
                 : ListView.builder(
                     controller: _scrollController,
                     physics: const BouncingScrollPhysics(),
@@ -239,10 +239,10 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
+            Text(value, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
             const SizedBox(width: 6),
             Flexible(
-              child: Text(label, style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textS(context)),
+              child: Text(label, style: AppFonts.inter(fontSize: 10, color: AppTheme.textS(context)),
                   overflow: TextOverflow.ellipsis, maxLines: 1),
             ),
           ],
@@ -275,7 +275,7 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
                   child: Row(
                     children: [
                       Flexible(
-                        child: Text(word, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textP(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(word, style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textP(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -284,7 +284,7 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
                           color: _categoryColor(category).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(category, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: _categoryColor(category))),
+                        child: Text(category, style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: _categoryColor(category))),
                       ),
                     ],
                   ),
@@ -317,14 +317,14 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            Text(meaning, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context), height: 1.4)),
+            Text(meaning, style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context), height: 1.4)),
             const SizedBox(height: 6),
             Row(
               children: [
                 Icon(Icons.format_quote_rounded, size: 14, color: AppTheme.textT(context)),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: Text(example, style: GoogleFonts.inter(fontSize: 11, fontStyle: FontStyle.italic, color: AppTheme.textT(context))),
+                  child: Text(example, style: AppFonts.inter(fontSize: 11, fontStyle: FontStyle.italic, color: AppTheme.textT(context))),
                 ),
               ],
             ),
@@ -346,6 +346,7 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
     final upscUsage = w['upscUsage'] as String? ?? '';
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       builder: (ctx) => SafeArea(
@@ -358,9 +359,9 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
               children: [
                 Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
                 const SizedBox(height: 20),
-                Text(word, style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800)),
+                Text(word, style: AppFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
-                Text('($partOfSpeech)', style: GoogleFonts.inter(fontSize: 13, fontStyle: FontStyle.italic, color: AppTheme.textS(ctx))),
+                Text('($partOfSpeech)', style: AppFonts.inter(fontSize: 13, fontStyle: FontStyle.italic, color: AppTheme.textS(ctx))),
                 const SizedBox(height: 12),
                 _detailRow('Meaning', meaning, Icons.lightbulb_outline_rounded),
                 _detailRow('Example', example, Icons.format_quote_rounded),
@@ -409,9 +410,9 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                Text(label, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                 const SizedBox(height: 2),
-                Text(value, style: GoogleFonts.inter(fontSize: 13, height: 1.5)),
+                Text(value, style: AppFonts.inter(fontSize: 13, height: 1.5)),
               ],
             ),
           ),

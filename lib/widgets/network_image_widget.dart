@@ -82,7 +82,7 @@ class NetworkImageWidget extends StatelessWidget {
   }
 
   Widget _errorFallback(bool dark) {
-    return Container(
+    return ColoredBox(
       color: dark ? Colors.grey.shade800 : Colors.grey.shade200,
       child: Center(
         child: Icon(
@@ -157,7 +157,7 @@ class AvatarImage extends StatelessWidget {
   }
 
   Widget _initialsWidget(String initials, bool dark) {
-    return Container(
+    return ColoredBox(
       color: dark ? AppTheme.darkCardBg : AppTheme.pastelLavender,
       child: Center(
         child: initials.isNotEmpty
@@ -233,9 +233,9 @@ class ImageBanner extends StatelessWidget {
                   highlightColor: Colors.grey.shade100,
                   child: Container(color: Colors.white),
                 ),
-                errorWidget: (_, __, ___) => Container(
-                  decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
-                  child: const Center(child: Icon(Icons.image_rounded, color: Colors.white54, size: 48)),
+                errorWidget: (_, __, ___) => const DecoratedBox(
+                  decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
+                  child: Center(child: Icon(Icons.image_rounded, color: Colors.white54, size: 48)),
                 ),
               ),
               Container(

@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -66,17 +66,17 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
               child: Image.asset(
                 'assets/images/logo.png',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, __, ___) => const DecoratedBox(
                   decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
-                  child: const Icon(Icons.person_add_rounded, size: 40, color: Colors.white),
+                  child: Icon(Icons.person_add_rounded, size: 40, color: Colors.white),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 8),
-          Text('Create Account', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+          Text('Create Account', style: AppFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
           const SizedBox(height: 4),
-          Text('Start your UPSC journey', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
+          Text('Start your UPSC journey', style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
           const SizedBox(height: 28),
         ],
 
@@ -96,7 +96,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
           child: OutlinedButton.icon(
             onPressed: auth.isLoading ? null : _googleSignIn,
             icon: SvgPicture.asset('assets/icons/google_logo.svg', width: 22, height: 22),
-            label: Text('Sign up with Google', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
+            label: Text('Sign up with Google', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.textP(context),
               side: BorderSide(color: AppTheme.textS(context).withValues(alpha: 0.2)),
@@ -110,10 +110,10 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Already have an account? ', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            Text('Already have an account? ', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
             GestureDetector(
               onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-              child: Text('Sign In', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+              child: Text('Sign In', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
             ),
           ],
         ),
@@ -146,9 +146,9 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (kIsWeb) ...[
-            Text('Create Account', style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+            Text('Create Account', style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
             const SizedBox(height: 4),
-            Text('Start your UPSC journey', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
+            Text('Start your UPSC journey', style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
             const SizedBox(height: 24),
           ],
           TextFormField(
@@ -177,7 +177,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.errorRed), textAlign: TextAlign.center),
+            Text(_error!, style: AppFonts.inter(fontSize: 12, color: AppTheme.errorRed), textAlign: TextAlign.center),
           ],
           const SizedBox(height: 20),
           SizedBox(
@@ -197,7 +197,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                       children: [
                         const Icon(Icons.person_add_rounded, size: 20),
                         const SizedBox(width: 8),
-                        Text('Create Account', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                        Text('Create Account', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
                       ],
                     ),
             ),
@@ -214,7 +214,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
       filled: true,
       fillColor: AppTheme.card(context).withValues(alpha: 0.6),
-      labelStyle: GoogleFonts.inter(fontSize: 14),
+      labelStyle: AppFonts.inter(fontSize: 14),
     );
   }
 

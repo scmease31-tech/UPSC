@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../config/app_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../config/theme.dart';
 import '../services/notification_service.dart';
@@ -340,7 +340,7 @@ class _SplashScreenState extends State<SplashScreen>
                       opacity: _titleFade,
                       child: Text(
                         'UPSC Daily Edge',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: AppFonts.plusJakartaSans(
                           fontSize: 34,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.primaryDark,
@@ -380,7 +380,7 @@ class _SplashScreenState extends State<SplashScreen>
                           },
                           child: Text(
                             'Your Daily UPSC Companion',
-                            style: GoogleFonts.inter(
+                            style: AppFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                               color: Colors.white,
@@ -417,7 +417,7 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: 16),
                     Text(
                       'Preparing your study dashboard...',
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 12,
                         color: AppTheme.primaryDark.withValues(alpha: 0.5),
                         letterSpacing: 0.3,
@@ -437,7 +437,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Text(
                   'v1.0.0',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 11,
                     color: AppTheme.primaryDark.withValues(alpha: 0.25),
                   ),

@@ -1,7 +1,7 @@
-﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../config/app_fonts.dart';
 import '../config/theme.dart';
 import '../services/update_service.dart';
 import 'home/home_screen.dart';
@@ -103,7 +103,7 @@ class _MainNavigationState extends State<MainNavigation>
     final dark = AppTheme.isDark(context);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(gradient: AppTheme.scaffoldGradient(context)),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -207,7 +207,7 @@ class _MainNavigationState extends State<MainNavigation>
               const SizedBox(height: 2),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
-                style: GoogleFonts.inter(
+                style: AppFonts.inter(
                   fontSize: isActive ? 10 : 9.5,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   color: isActive

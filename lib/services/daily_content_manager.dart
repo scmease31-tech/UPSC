@@ -42,7 +42,7 @@ class DailyContentManager {
     final rng = Random(seed);
 
     // Extended question bank for daily challenges
-    final allChallengeQs = _extendedChallengeQuestions;
+    const allChallengeQs = _extendedChallengeQuestions;
     final shuffled = List<Map<String, dynamic>>.from(allChallengeQs);
     shuffled.shuffle(rng);
     return shuffled.take(5).toList();

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
@@ -126,14 +126,14 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
               children: [
                 Icon(Icons.flash_on_rounded, size: 56, color: AppTheme.textT(context)),
                 const SizedBox(height: 16),
-                Text('No challenge questions yet', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                Text('No challenge questions yet', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                 const SizedBox(height: 8),
-                Text('Check back later!', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+                Text('Check back later!', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: Text('Go Back', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
+                  child: Text('Go Back', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
@@ -163,7 +163,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                     HapticFeedback.lightImpact();
                     Navigator.pop(context);
                   }),
-                  Expanded(child: Text('Daily Challenge', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context)), textAlign: TextAlign.center)),
+                  Expanded(child: Text('Daily Challenge', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context)), textAlign: TextAlign.center)),
                   Image.asset('assets/flaticon_pngs/lightning.png', width: 20, height: 20),
                 ],
               ),
@@ -181,7 +181,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                         value: (_current + 1) / _questions.length,
                         minHeight: 5,
                         backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.08),
-                        valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+                        valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
                       ),
                     ),
                   ),
@@ -193,7 +193,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text('${_secondsLeft}s',
-                        style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700,
+                        style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700,
                             color: timerFraction > 0.4 ? AppTheme.primaryColor : AppTheme.errorRed)),
                   ),
                 ],
@@ -212,7 +212,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                       GlassCard(
                         padding: const EdgeInsets.all(20),
                         child: Text(q['q'] ?? '',
-                            style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
+                            style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
                       ),
                       const SizedBox(height: 16),
                       ...List.generate(options.length, (i) => Padding(
@@ -235,12 +235,12 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(children: [
-                                Icon(Icons.lightbulb_rounded, color: AppTheme.successGreen, size: 18),
+                                const Icon(Icons.lightbulb_rounded, color: AppTheme.successGreen, size: 18),
                                 const SizedBox(width: 8),
-                                Text('Explanation', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.successGreen)),
+                                Text('Explanation', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.successGreen)),
                               ]),
                               const SizedBox(height: 8),
-                              Text(q['explain'], style: GoogleFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textP(context))),
+                              Text(q['explain'], style: AppFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textP(context))),
                             ],
                           ),
                         ),
@@ -268,7 +268,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(_current >= _questions.length - 1 ? 'See Results' : 'Next',
-                            style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                            style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
                         const SizedBox(width: 8),
                         Icon(_current >= _questions.length - 1 ? Icons.emoji_events_rounded : Icons.arrow_forward_rounded, size: 20),
                       ],
@@ -326,7 +326,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                         alignment: Alignment.bottomCenter,
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Text('Challenge Complete!',
-                            style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+                            style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
                       ),
                     ],
                   ),
@@ -341,8 +341,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('$_score/${_questions.length}', style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
-                      Text('correct', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                      Text('$_score/${_questions.length}', style: AppFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+                      Text('correct', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
                     ],
                   ),
                 ),
@@ -355,7 +355,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                     children: [
                       Image.asset('assets/flaticon_pngs/lightning.png', width: 24, height: 24),
                       const SizedBox(width: 8),
-                      Text('+$xp XP earned!', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.warningOrange)),
+                      Text('+$xp XP earned!', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.warningOrange)),
                     ],
                   ),
                 ),
@@ -378,7 +378,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
                       children: [
                         const Icon(Icons.home_rounded, size: 20),
                         const SizedBox(width: 8),
-                        Text('Done', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                        Text('Done', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
                       ],
                     ),
                   ),
