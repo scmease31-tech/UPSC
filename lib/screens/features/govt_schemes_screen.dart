@@ -194,6 +194,8 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
     final description = s['description'] as String? ?? '';
     final sector = s['sector'] as String? ?? '';
     final year = s['year'] as String? ?? '';
+    final ministry = s['ministry'] as String? ?? '';
+    final keyFeatures = (s['keyFeatures'] as List<dynamic>?)?.cast<String>() ?? const <String>[];
     final icon = FirestoreContentService.getIcon(s['iconName'] as String? ?? '');
     final color = FirestoreContentService.parseColor(s['colorHex'] as String? ?? '');
 
@@ -224,24 +226,67 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                      // Scheme names run long ("Pradhan Mantri Jan Arogya
+                      // Yojana"); cap them so cards keep a consistent rhythm.
+                      Text(
+                        name,
+                        style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       if (fullForm.isNotEmpty && fullForm != name)
-                        Text(fullForm, style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context))),
+                        Text(
+                          fullForm,
+                          style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right_rounded, size: 18, color: AppTheme.textT(context)),
               ],
             ),
             const SizedBox(height: 8),
             Text(description, style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context), height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 8),
-            Row(
+
+            // Ministry was only visible after opening the sheet, yet "which
+            // ministry runs this scheme" is standard exam material — surface it
+            // on the card so it is skimmable.
+            if (ministry.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.account_balance_rounded, size: 13, color: AppTheme.textT(context)),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      ministry,
+                      style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textT(context)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            const SizedBox(height: 10),
+            // Wrap, not Row: sector names like "Social Justice and Empowerment"
+            // overflowed the old fixed Row. Empty values are skipped rather than
+            // rendering a blank pill or a bare "Launched: ".
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
               children: [
-                _schemeBadge(sector, color),
-                const SizedBox(width: 8),
-                _schemeBadge('Launched: $year', AppTheme.textTertiary),
-                const Spacer(),
-                Icon(Icons.chevron_right_rounded, size: 18, color: AppTheme.textT(context)),
+                if (sector.isNotEmpty) _schemeBadge(sector, color),
+                if (year.isNotEmpty) _schemeBadge('Launched: $year', AppTheme.textTertiary),
+                if (keyFeatures.isNotEmpty)
+                  _schemeBadge(
+                    '${keyFeatures.length} key ${keyFeatures.length == 1 ? 'feature' : 'features'}',
+                    AppTheme.primaryColor,
+                  ),
               ],
             ),
           ],
