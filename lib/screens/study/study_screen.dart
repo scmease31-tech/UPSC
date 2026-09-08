@@ -1,8 +1,8 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -91,7 +91,7 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(hp, 16, hp, 4),
-                  child: Text('Study Hub', style: GoogleFonts.plusJakartaSans(fontSize: _scaledFont(w, 26), fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+                  child: Text('Study Hub', style: AppFonts.plusJakartaSans(fontSize: _scaledFont(w, 26), fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
                 ),
               ),
 
@@ -114,7 +114,7 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
             // Magazine shortcut
             SliverToBoxAdapter(child: _buildMagazineCard(context, w)),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            SliverToBoxAdapter(child: SizedBox(height: AppTheme.navBarClearance(context))),
           ],
         ),
       );
@@ -173,7 +173,7 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
                       strokeWidth: w < 380 ? 6 : 8,
                       progressColor: Colors.white,
                       trackColor: Colors.white24,
-                      child: Text('${p.studyMinutesThisWeek}', style: GoogleFonts.plusJakartaSans(fontSize: circleFontSize, fontWeight: FontWeight.w800, color: Colors.white)),
+                      child: Text('${p.studyMinutesThisWeek}', style: AppFonts.plusJakartaSans(fontSize: circleFontSize, fontWeight: FontWeight.w800, color: Colors.white)),
                     ),
                     SizedBox(width: w < 340 ? 10 : 16),
                     Expanded(
@@ -181,9 +181,9 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Study Time This Week', style: GoogleFonts.plusJakartaSans(fontSize: _scaledFont(w, 15), fontWeight: FontWeight.w700, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text('Study Time This Week', style: AppFonts.plusJakartaSans(fontSize: _scaledFont(w, 15), fontWeight: FontWeight.w700, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
                           const SizedBox(height: 4),
-                          Text('${p.studyMinutesThisWeek} / 300 min goal', style: GoogleFonts.inter(fontSize: _scaledFont(w, 12), color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text('${p.studyMinutesThisWeek} / 300 min goal', style: AppFonts.inter(fontSize: _scaledFont(w, 12), color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                           const SizedBox(height: 8),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
@@ -216,20 +216,20 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
     final hp = _hPad(w);
 
     final allLinks = [
-      _QLink('Flashcards', Icons.style_rounded, AppTheme.accentViolet, '/flashcards'),
-      _QLink('Revision', Icons.replay_circle_filled_rounded, AppTheme.primaryColor, '/revision'),
-      _QLink('Must Know', Icons.star_rounded, AppTheme.warningOrange, '/upsc-must-know'),
-      _QLink('PYQ', Icons.history_edu_rounded, const Color(0xFFE91E63), '/pyq'),
-      _QLink('Timer', Icons.timer_rounded, const Color(0xFFFF6B6B), '/study-timer'),
-      _QLink('Notes', Icons.note_alt_rounded, const Color(0xFF8D6E63), '/quick-revision'),
-      _QLink('Answer', Icons.edit_note_rounded, const Color(0xFF448AFF), '/answer-writing'),
-      _QLink('Magazine', Icons.auto_stories_rounded, AppTheme.errorRed, '/magazine'),
-      _QLink('Mock', Icons.quiz_rounded, const Color(0xFFD32F2F), '/mock-test'),
-      _QLink('Affairs', Icons.newspaper_rounded, const Color(0xFF00897B), '/current-affairs'),
-      _QLink('Syllabus', Icons.checklist_rounded, const Color(0xFFEF6C00), '/syllabus-tracker'),
-      _QLink('Vocab', Icons.abc_rounded, const Color(0xFF5C6BC0), '/vocabulary'),
-      _QLink('Schemes', Icons.account_balance_rounded, const Color(0xFF388E3C), '/govt-schemes'),
-      _QLink('AI Search', Icons.auto_awesome_rounded, const Color(0xFF7C4DFF), '/ai-search'),
+      const _QLink('Flashcards', Icons.style_rounded, AppTheme.accentViolet, '/flashcards'),
+      const _QLink('Revision', Icons.replay_circle_filled_rounded, AppTheme.primaryColor, '/revision'),
+      const _QLink('Must Know', Icons.star_rounded, AppTheme.warningOrange, '/upsc-must-know'),
+      const _QLink('PYQ', Icons.history_edu_rounded, Color(0xFFE91E63), '/pyq'),
+      const _QLink('Timer', Icons.timer_rounded, Color(0xFFFF6B6B), '/study-timer'),
+      const _QLink('Notes', Icons.note_alt_rounded, Color(0xFF8D6E63), '/quick-revision'),
+      const _QLink('Answer', Icons.edit_note_rounded, Color(0xFF448AFF), '/answer-writing'),
+      const _QLink('Magazine', Icons.auto_stories_rounded, AppTheme.errorRed, '/magazine'),
+      const _QLink('Mock', Icons.quiz_rounded, Color(0xFFD32F2F), '/mock-test'),
+      const _QLink('Affairs', Icons.newspaper_rounded, Color(0xFF00897B), '/current-affairs'),
+      const _QLink('Syllabus', Icons.checklist_rounded, Color(0xFFEF6C00), '/syllabus-tracker'),
+      const _QLink('Vocab', Icons.abc_rounded, Color(0xFF5C6BC0), '/vocabulary'),
+      const _QLink('Schemes', Icons.account_balance_rounded, Color(0xFF388E3C), '/govt-schemes'),
+      const _QLink('AI Search', Icons.auto_awesome_rounded, Color(0xFF7C4DFF), '/ai-search'),
     ];
 
     // Adaptive: 4 columns on small, 5 on normal+
@@ -295,7 +295,7 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: Text(
                         l.label,
-                        style: GoogleFonts.inter(fontSize: labelSize, fontWeight: FontWeight.w600, color: AppTheme.textP(context)),
+                        style: AppFonts.inter(fontSize: labelSize, fontWeight: FontWeight.w600, color: AppTheme.textP(context)),
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -342,7 +342,7 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
               HapticFeedback.lightImpact();
               Navigator.pushNamed(context, '/subject-detail', arguments: s.id);
             },
-            child: Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
                 gradient: LinearGradient(
@@ -369,12 +369,12 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
                     const Spacer(),
                     Text(
                       s.name,
-                      style: GoogleFonts.plusJakartaSans(fontSize: _scaledFont(w, 14), fontWeight: FontWeight.w700, color: Colors.white),
+                      style: AppFonts.plusJakartaSans(fontSize: _scaledFont(w, 14), fontWeight: FontWeight.w700, color: Colors.white),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Text('${s.notes.length} notes', style: GoogleFonts.inter(fontSize: _scaledFont(w, 11), color: Colors.white.withValues(alpha: 0.8))),
+                    Text('${s.notes.length} notes', style: AppFonts.inter(fontSize: _scaledFont(w, 11), color: Colors.white.withValues(alpha: 0.8))),
                   ],
                 ),
               ),
@@ -448,9 +448,9 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('Weekly Magazine', style: GoogleFonts.plusJakartaSans(fontSize: _scaledFont(w, 15), fontWeight: FontWeight.w700, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text('Weekly Magazine', style: AppFonts.plusJakartaSans(fontSize: _scaledFont(w, 15), fontWeight: FontWeight.w700, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 2),
-                            Text('Download latest UPSC compilations', style: GoogleFonts.inter(fontSize: _scaledFont(w, 12), color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text('Download latest UPSC compilations', style: AppFonts.inter(fontSize: _scaledFont(w, 12), color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                           ],
                         ),
                       ),

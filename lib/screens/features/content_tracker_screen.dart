@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
@@ -75,12 +75,12 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
           slivers: [
             SliverToBoxAdapter(child: _backBar(context)),
             SliverToBoxAdapter(child: _heroCard(context, progress, doneCount, tasks.length, pct)),
-            SliverToBoxAdapter(child: SectionHeader(title: 'Daily Tasks', padding: const EdgeInsets.fromLTRB(20, 16, 20, 8))),
+            const SliverToBoxAdapter(child: SectionHeader(title: 'Daily Tasks', padding: EdgeInsets.fromLTRB(20, 16, 20, 8))),
             SliverList(delegate: SliverChildBuilderDelegate((_, i) => _taskTile(context, tasks[i]), childCount: tasks.length)),
-            SliverToBoxAdapter(child: SectionHeader(title: 'Weekly Stats', padding: const EdgeInsets.fromLTRB(20, 20, 20, 8))),
+            const SliverToBoxAdapter(child: SectionHeader(title: 'Weekly Stats', padding: EdgeInsets.fromLTRB(20, 20, 20, 8))),
             SliverToBoxAdapter(child: _weeklyStats(context, progress)),
             SliverToBoxAdapter(child: _countdownRow(context, progress)),
-            SliverToBoxAdapter(child: SectionHeader(title: 'Recent Updates', padding: const EdgeInsets.fromLTRB(20, 20, 20, 8))),
+            const SliverToBoxAdapter(child: SectionHeader(title: 'Recent Updates', padding: EdgeInsets.fromLTRB(20, 20, 20, 8))),
             SliverToBoxAdapter(child: _updateHistory(context)),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
@@ -99,7 +99,7 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
             HapticFeedback.lightImpact();
             Navigator.pop(context);
           }),
-          Text('Content Tracker', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+          Text('Content Tracker', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
         ],
       ),
     );
@@ -128,7 +128,7 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
                   child: Container(color: Colors.white),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  decoration: BoxDecoration(gradient: AppTheme.heroGradient),
+                  decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
                 ),
               ),
             ),
@@ -154,9 +154,9 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text("Today's Progress", style: GoogleFonts.plusJakartaSans(fontSize: w < 360 ? 16 : 18, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text("Today's Progress", style: AppFonts.plusJakartaSans(fontSize: w < 360 ? 16 : 18, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 4),
-                        Text('$done of $total tasks done', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text('$done of $total tasks done', style: AppFonts.inter(fontSize: 13, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -175,7 +175,7 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
                     strokeWidth: 7,
                     progressColor: Colors.white,
                     trackColor: Colors.white24,
-                    child: Text('${(pct * 100).round()}%', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                    child: Text('${(pct * 100).round()}%', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
                   ),
                 ],
               ),
@@ -195,7 +195,7 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
         children: [
           Icon(icon, size: 13, color: Colors.white),
           const SizedBox(width: 4),
-          Text(text, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
+          Text(text, style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
         ],
       ),
     );
@@ -219,9 +219,9 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(t.title, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                  Text(t.title, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                   const SizedBox(height: 2),
-                  Text(t.subtitle, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+                  Text(t.subtitle, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
                 ],
               ),
             ),
@@ -269,8 +269,8 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
         children: [
           Icon(icon, size: 18, color: color),
           const SizedBox(width: 12),
-          Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context)))),
-          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+          Expanded(child: Text(label, style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context)))),
+          Text(value, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
         ],
       ),
     );
@@ -297,10 +297,10 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
       padding: const EdgeInsets.symmetric(vertical: 18),
       child: Column(
         children: [
-          Text('$days', style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: color)),
-          Text('days left', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+          Text('$days', style: AppFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: color)),
+          Text('days left', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
           const SizedBox(height: 2),
-          Text(label, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+          Text(label, style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
         ],
       ),
     );
@@ -315,7 +315,7 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
           padding: const EdgeInsets.all(20),
           child: Center(
             child: Text('No updates yet. Complete tasks to see history.',
-                style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
           ),
         ),
       );
@@ -359,8 +359,8 @@ class _ContentTrackerScreenState extends State<ContentTrackerScreen> {
                 children: [
                   Icon(icon, size: 16, color: AppTheme.primaryColor),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textP(context)))),
-                  Text(date, style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textS(context))),
+                  Expanded(child: Text(label, style: AppFonts.inter(fontSize: 12, color: AppTheme.textP(context)))),
+                  Text(date, style: AppFonts.inter(fontSize: 10, color: AppTheme.textS(context))),
                 ],
               ),
             );

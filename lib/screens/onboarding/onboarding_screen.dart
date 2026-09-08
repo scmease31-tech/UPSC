@@ -1,10 +1,10 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
@@ -166,7 +166,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             const SizedBox(width: 12),
             Text(
               'UPSC Daily Edge',
-              style: GoogleFonts.plusJakartaSans(
+              style: AppFonts.plusJakartaSans(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppTheme.textPrimary,
@@ -192,7 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             ),
             child: Text(
               'Log In',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+              style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
             ),
           ),
           const SizedBox(width: 8),
@@ -208,7 +208,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             ),
             child: Text(
               'Get Started',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
+              style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -223,7 +223,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         onTap: onTap,
         child: Text(
           label,
-          style: GoogleFonts.inter(
+          style: AppFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: AppTheme.textSecondary,
@@ -301,7 +301,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               const SizedBox(width: 8),
               Text(
                 '#1 UPSC Preparation Platform',
-                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+                style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
               ),
             ],
           ),
@@ -310,7 +310,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         // Headline
         Text(
           'Your AI-Powered\nUPSC Companion',
-          style: GoogleFonts.plusJakartaSans(
+          style: AppFonts.plusJakartaSans(
             fontSize: 52,
             fontWeight: FontWeight.w900,
             color: AppTheme.textPrimary,
@@ -322,7 +322,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         // Subtext
         Text(
           'Master Current Affairs, practice smart quizzes, track your progress, and ace the UPSC exam with AI-curated study material.',
-          style: GoogleFonts.inter(
+          style: AppFonts.inter(
             fontSize: 18,
             color: AppTheme.textSecondary,
             height: 1.7,
@@ -346,7 +346,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Start Free', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
+                  Text('Start Free', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
                   const SizedBox(width: 8),
                   const Icon(Icons.arrow_forward_rounded, size: 20),
                 ],
@@ -361,13 +361,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               ),
               child: Text(
                 'I have an account',
-                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
               ),
             ),
             ElevatedButton.icon(
               onPressed: () => launchUrl(Uri.parse(_apkDownloadUrl), mode: LaunchMode.externalApplication),
               icon: const Icon(Icons.download_rounded, size: 20),
-              label: Text('Download Android App', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
+              label: Text('Download Android App', style: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF34A853),
                 foregroundColor: Colors.white,
@@ -441,9 +441,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+                Text(title, style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
                 const SizedBox(height: 4),
-                Text(subtitle, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary, height: 1.4)),
+                Text(subtitle, style: AppFonts.inter(fontSize: 13, color: AppTheme.textSecondary, height: 1.4)),
               ],
             ),
           ),
@@ -454,12 +454,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
 
   Widget _buildWebFeatures(BuildContext context, bool isWide) {
     final features = [
-      _WebFeature(Icons.newspaper_rounded, 'Current Affairs', 'Daily AI-curated analysis from top newspapers, tailored for UPSC preparation.', AppTheme.primaryColor),
-      _WebFeature(Icons.psychology_rounded, 'Smart Quizzes', 'Topic-wise practice with AI-generated questions. Track accuracy and earn XP.', AppTheme.accentViolet),
-      _WebFeature(Icons.style_rounded, 'Flashcards', 'Quick revision with daily rotating cards, mnemonics, and short notes.', const Color(0xFFFF6B6B)),
-      _WebFeature(Icons.track_changes_rounded, 'Progress Tracker', 'Streaks, weekly reports, exam countdown — stay motivated daily.', const Color(0xFFFF9800)),
-      _WebFeature(Icons.auto_awesome_rounded, 'AI Search', 'Ask anything about UPSC topics and get instant, detailed answers.', const Color(0xFF448AFF)),
-      _WebFeature(Icons.menu_book_rounded, 'Study Hub', 'Organized subjects, PYQs, answer writing practice, and syllabus tracking.', const Color(0xFF8D6E63)),
+      const _WebFeature(Icons.newspaper_rounded, 'Current Affairs', 'Daily AI-curated analysis from top newspapers, tailored for UPSC preparation.', AppTheme.primaryColor),
+      const _WebFeature(Icons.psychology_rounded, 'Smart Quizzes', 'Topic-wise practice with AI-generated questions. Track accuracy and earn XP.', AppTheme.accentViolet),
+      const _WebFeature(Icons.style_rounded, 'Flashcards', 'Quick revision with daily rotating cards, mnemonics, and short notes.', Color(0xFFFF6B6B)),
+      const _WebFeature(Icons.track_changes_rounded, 'Progress Tracker', 'Streaks, weekly reports, exam countdown — stay motivated daily.', Color(0xFFFF9800)),
+      const _WebFeature(Icons.auto_awesome_rounded, 'AI Search', 'Ask anything about UPSC topics and get instant, detailed answers.', Color(0xFF448AFF)),
+      const _WebFeature(Icons.menu_book_rounded, 'Study Hub', 'Organized subjects, PYQs, answer writing practice, and syllabus tracking.', Color(0xFF8D6E63)),
     ];
 
     final cols = isWide ? 3 : (MediaQuery.of(context).size.width > 600 ? 2 : 1);
@@ -478,7 +478,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             children: [
               Text(
                 'Everything You Need to Crack UPSC',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppFonts.plusJakartaSans(
                   fontSize: isWide ? 36 : 28,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.textPrimary,
@@ -489,7 +489,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               const SizedBox(height: 12),
               Text(
                 'Comprehensive tools and content designed specifically for UPSC aspirants.',
-                style: GoogleFonts.inter(fontSize: 16, color: AppTheme.textSecondary, height: 1.6),
+                style: AppFonts.inter(fontSize: 16, color: AppTheme.textSecondary, height: 1.6),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
@@ -539,14 +539,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                         color: const Color(0xFF448AFF).withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text('📰 Live Content', style: GoogleFonts.inter(
+                      child: Text('📰 Live Content', style: AppFonts.inter(
                         fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF448AFF),
                       )),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       "Today's Current Affairs",
-                      style: GoogleFonts.plusJakartaSans(
+                      style: AppFonts.plusJakartaSans(
                         fontSize: isWide ? 36 : 26,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.textPrimary,
@@ -557,7 +557,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                     const SizedBox(height: 8),
                     Text(
                       'Auto-scraped from Drishti IAS & Insights on India — updated daily',
-                      style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textSecondary, height: 1.5),
+                      style: AppFonts.inter(fontSize: 14, color: AppTheme.textSecondary, height: 1.5),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -633,7 +633,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                                 color: const Color(0xFF0D1B2A),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Text(dateLabel, style: GoogleFonts.plusJakartaSans(
+                              child: Text(dateLabel, style: AppFonts.plusJakartaSans(
                                 fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white,
                               )),
                             ),
@@ -675,7 +675,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(width: 10),
-            Text(source, style: GoogleFonts.plusJakartaSans(
+            Text(source, style: AppFonts.plusJakartaSans(
               fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary,
             )),
             const SizedBox(width: 8),
@@ -685,7 +685,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 color: accent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text('${articles.length}', style: GoogleFonts.inter(
+              child: Text('${articles.length}', style: AppFonts.inter(
                 fontSize: 12, fontWeight: FontWeight.w700, color: accent,
               )),
             ),
@@ -718,7 +718,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppFonts.plusJakartaSans(
                       fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary, height: 1.4,
                     ),
                     maxLines: 2,
@@ -728,7 +728,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                     const SizedBox(height: 6),
                     Text(
                       summary,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary, height: 1.5),
+                      style: AppFonts.inter(fontSize: 12, color: AppTheme.textSecondary, height: 1.5),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -761,7 +761,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(label, style: GoogleFonts.inter(
+      child: Text(label, style: AppFonts.inter(
         fontSize: 11, fontWeight: FontWeight.w600, color: color.withValues(alpha: 0.8),
       )),
     );
@@ -787,7 +787,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           Row(children: [
             Container(width: 4, height: 20, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 10),
-            Text(name, style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
+            Text(name, style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
           ]),
           const SizedBox(height: 12),
           Wrap(
@@ -805,7 +805,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item['title']!, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(item['title']!, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimary, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 10),
                   Wrap(spacing: 6, children: [
                     _tagChip(item['tag']!, accent),
@@ -825,7 +825,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(color: const Color(0xFF0D1B2A), borderRadius: BorderRadius.circular(10)),
-          child: Text("Today's Editorials", style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+          child: Text("Today's Editorials", style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
         ),
         const SizedBox(height: 16),
         sourceGroup('Drishti IAS', const Color(0xFF00BFA6), drishti),
@@ -842,7 +842,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               elevation: 0,
             ),
-            child: Text('Sign up to read full articles →', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text('Sign up to read full articles →', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
           ),
         ),
       ],
@@ -851,10 +851,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
 
   Widget _buildWebStats(BuildContext context, bool isWide) {
     final stats = [
-      _WebStat('10K+', 'Active Learners'),
-      _WebStat('5000+', 'Quiz Questions'),
-      _WebStat('500+', 'Articles Daily'),
-      _WebStat('95%', 'User Satisfaction'),
+      const _WebStat('10K+', 'Active Learners'),
+      const _WebStat('5000+', 'Quiz Questions'),
+      const _WebStat('500+', 'Articles Daily'),
+      const _WebStat('95%', 'User Satisfaction'),
     ];
 
     return Container(
@@ -879,7 +879,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               children: [
                 Text(
                   s.value,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: isWide ? 40 : 28,
                     fontWeight: FontWeight.w900,
                     color: AppTheme.primaryLight,
@@ -888,7 +888,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 const SizedBox(height: 8),
                 Text(
                   s.label,
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 14,
                     color: Colors.white60,
                     fontWeight: FontWeight.w500,
@@ -914,7 +914,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             children: [
               Text(
                 'Ready to Start Your UPSC Journey?',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppFonts.plusJakartaSans(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.textPrimary,
@@ -925,7 +925,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               const SizedBox(height: 16),
               Text(
                 'Join thousands of aspirants who are preparing smarter with UPSC Daily Edge.',
-                style: GoogleFonts.inter(fontSize: 16, color: AppTheme.textSecondary, height: 1.6),
+                style: AppFonts.inter(fontSize: 16, color: AppTheme.textSecondary, height: 1.6),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -940,7 +940,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 ),
                 child: Text(
                   'Create Free Account →',
-                  style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700),
+                  style: AppFonts.inter(fontSize: 17, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -961,7 +961,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       child: Center(
         child: Text(
           '© 2024 UPSC Daily Edge. Built for aspirants, by aspirants.',
-          style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textTertiary),
+          style: AppFonts.inter(fontSize: 13, color: AppTheme.textTertiary),
         ),
       ),
     );
@@ -1055,7 +1055,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                           children: [
                             Text(
                               isLast ? 'Get Started' : 'Continue',
-                              style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700),
+                              style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(width: 8),
                             Icon(
@@ -1071,7 +1071,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                   if (!isLast)
                     TextButton(
                       onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                      child: Text('Skip', style: GoogleFonts.inter(fontSize: 14, color: Colors.black45)),
+                      child: Text('Skip', style: AppFonts.inter(fontSize: 14, color: Colors.black45)),
                     )
                   else
                     const SizedBox(height: 48),
@@ -1085,7 +1085,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   }
 
   Widget _buildPage(BuildContext context, _OnboardPage p, int index) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -1168,21 +1168,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                           ),
                           child: Text(
                             'Step ${index + 1} of ${_pages.length}',
-                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: p.accentColor),
+                            style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: p.accentColor),
                           ),
                         ),
                         const SizedBox(height: 20),
                         // Title
                         Text(
                           p.title,
-                          style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textPrimary, height: 1.2, letterSpacing: -0.5),
+                          style: AppFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textPrimary, height: 1.2, letterSpacing: -0.5),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 14),
                         // Subtitle
                         Text(
                           p.subtitle,
-                          style: GoogleFonts.inter(fontSize: 15, color: AppTheme.textSecondary, height: 1.65, letterSpacing: 0.1),
+                          style: AppFonts.inter(fontSize: 15, color: AppTheme.textSecondary, height: 1.65, letterSpacing: 0.1),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -1272,12 +1272,12 @@ class _WebFeatureCardState extends State<_WebFeatureCard> {
                 children: [
                   Text(
                     f.title,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                    style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     f.description,
-                    style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary, height: 1.5),
+                    style: AppFonts.inter(fontSize: 13, color: AppTheme.textSecondary, height: 1.5),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),

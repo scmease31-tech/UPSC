@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import '../../config/theme.dart';
 import '../../widgets/glass_widgets.dart';
 
@@ -82,19 +82,19 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(children: [
-          Icon(Icons.timer_off_rounded, color: AppTheme.warningOrange),
+          const Icon(Icons.timer_off_rounded, color: AppTheme.warningOrange),
           const SizedBox(width: 8),
-          Text('Time\'s Up!', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+          Text('Time\'s Up!', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
         ]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('You wrote $_wordCount words.', style: GoogleFonts.inter(fontSize: 14)),
+            Text('You wrote $_wordCount words.', style: AppFonts.inter(fontSize: 14)),
             const SizedBox(height: 8),
             Text(
               _getWordCountFeedback(),
-              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context)),
+              style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context)),
             ),
           ],
         ),
@@ -104,7 +104,7 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
               Navigator.pop(context);
               _stopWriting();
             },
-            child: Text('Done', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+            child: Text('Done', style: AppFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
           ),
         ],
       ),
@@ -156,21 +156,21 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [
-                  Icon(Icons.edit_note_rounded, size: 20, color: AppTheme.primaryColor),
+                  const Icon(Icons.edit_note_rounded, size: 20, color: AppTheme.primaryColor),
                   const SizedBox(width: 8),
-                  Text('Why Practice Answer Writing?', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                  Text('Why Practice Answer Writing?', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                 ]),
                 const SizedBox(height: 8),
                 Text(
                   'UPSC Mains is an answer-writing exam. Practice structuring answers with introduction, body, and conclusion within time limits.',
-                  style: GoogleFonts.inter(fontSize: 12, height: 1.5, color: AppTheme.textS(context)),
+                  style: AppFonts.inter(fontSize: 12, height: 1.5, color: AppTheme.textS(context)),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
 
-          Text('Select a Topic', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+          Text('Select a Topic', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
           const SizedBox(height: 10),
 
           ..._topics.asMap().entries.map((entry) {
@@ -207,7 +207,7 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                                     color: AppTheme.accentViolet.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text(topic['paper'] as String, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.accentViolet)),
+                                  child: Text(topic['paper'] as String, style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.accentViolet)),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -215,7 +215,7 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                                     color: marksColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text('${topic['marks']} marks', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: marksColor)),
+                                  child: Text('${topic['marks']} marks', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: marksColor)),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -223,24 +223,24 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                                     color: AppTheme.primaryColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text('${topic['minutes']} min', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+                                  child: Text('${topic['minutes']} min', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
                                 ),
                               ],
                             ),
                           ),
                           if (sel) ...[
                             const SizedBox(width: 6),
-                            Icon(Icons.check_circle_rounded, color: AppTheme.primaryColor, size: 20),
+                            const Icon(Icons.check_circle_rounded, color: AppTheme.primaryColor, size: 20),
                           ],
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Text(topic['question'] as String, style: GoogleFonts.plusJakartaSans(
+                      Text(topic['question'] as String, style: AppFonts.plusJakartaSans(
                         fontSize: 14, fontWeight: FontWeight.w600,
                         color: AppTheme.textP(context), height: 1.5,
                       )),
                       const SizedBox(height: 6),
-                      Text('Word limit: ${topic['wordLimit']} words', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textT(context))),
+                      Text('Word limit: ${topic['wordLimit']} words', style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context))),
                     ],
                   ),
                 ),
@@ -264,7 +264,7 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                 children: [
                   const Icon(Icons.edit_rounded, size: 20),
                   const SizedBox(width: 8),
-                  Text('Start Writing', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                  Text('Start Writing', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
@@ -299,13 +299,13 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                         context: context,
                         builder: (_) => AlertDialog(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          title: Text('Stop Writing?', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
-                          content: Text('Your progress won\'t be saved.', style: GoogleFonts.inter()),
+                          title: Text('Stop Writing?', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+                          content: Text('Your progress won\'t be saved.', style: AppFonts.inter()),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: GoogleFonts.inter(color: AppTheme.textS(context)))),
+                            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: AppFonts.inter(color: AppTheme.textS(context)))),
                             TextButton(
                               onPressed: () { Navigator.pop(context); _stopWriting(); },
-                              child: Text('Stop', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
+                              child: Text('Stop', style: AppFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
                             ),
                           ],
                         ),
@@ -315,7 +315,7 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                   Expanded(
                     child: Column(
                       children: [
-                        Text(_formatTime(_secondsLeft), style: GoogleFonts.plusJakartaSans(
+                        Text(_formatTime(_secondsLeft), style: AppFonts.plusJakartaSans(
                           fontSize: 18, fontWeight: FontWeight.w800,
                           color: fraction > 0.3 ? AppTheme.textP(context) : AppTheme.errorRed,
                         )),
@@ -341,7 +341,7 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                       color: AppTheme.accentViolet.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text('$_wordCount words', style: GoogleFonts.inter(
+                    child: Text('$_wordCount words', style: AppFonts.inter(
                       fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accentViolet,
                     )),
                   ),
@@ -361,12 +361,12 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                         value: wordProgress,
                         minHeight: 3,
                         backgroundColor: AppTheme.accentViolet.withValues(alpha: 0.08),
-                        valueColor: AlwaysStoppedAnimation(AppTheme.accentViolet),
+                        valueColor: const AlwaysStoppedAnimation(AppTheme.accentViolet),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text('$targetWords target', style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textT(context))),
+                  Text('$targetWords target', style: AppFonts.inter(fontSize: 10, color: AppTheme.textT(context))),
                 ],
               ),
             ),
@@ -379,7 +379,7 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(topic['question'] as String, style: GoogleFonts.plusJakartaSans(
+                      child: Text(topic['question'] as String, style: AppFonts.plusJakartaSans(
                         fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.4,
                       )),
                     ),
@@ -416,7 +416,7 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Answer Structure Guide', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.warningOrange)),
+                      Text('Answer Structure Guide', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.warningOrange)),
                       const SizedBox(height: 6),
                       _guideItem('Introduction', 'Define key terms, set context (2-3 lines)'),
                       _guideItem('Body', 'Multiple dimensions — social, economic, political, environmental'),
@@ -438,10 +438,10 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
                     maxLines: null,
                     expands: true,
                     textAlignVertical: TextAlignVertical.top,
-                    style: GoogleFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(context)),
+                    style: AppFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(context)),
                     decoration: InputDecoration(
                       hintText: 'Start writing your answer here...\n\nIntroduction:\n\n\nBody:\n\n\nConclusion:',
-                      hintStyle: GoogleFonts.inter(fontSize: 14, color: AppTheme.textT(context)),
+                      hintStyle: AppFonts.inter(fontSize: 14, color: AppTheme.textT(context)),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.all(12),
                     ),
@@ -461,12 +461,12 @@ class _AnswerWritingScreenState extends State<AnswerWritingScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.arrow_right_rounded, size: 16, color: AppTheme.primaryColor),
+          const Icon(Icons.arrow_right_rounded, size: 16, color: AppTheme.primaryColor),
           Expanded(
             child: Text.rich(
               TextSpan(children: [
-                TextSpan(text: '$title: ', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-                TextSpan(text: desc, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+                TextSpan(text: '$title: ', style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                TextSpan(text: desc, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
               ]),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,

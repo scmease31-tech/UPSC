@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -46,7 +46,7 @@ class _MagazineScreenState extends State<MagazineScreen> {
               child: study.isLoading
                   ? Center(child: Lottie.asset('assets/animations/loading.json', width: 120, height: 120))
                   : study.magazines.isEmpty
-                      ? Center(child: Text('No magazines available', style: GoogleFonts.inter(color: AppTheme.textS(context))))
+                      ? Center(child: Text('No magazines available', style: AppFonts.inter(color: AppTheme.textS(context))))
                       : ListView.builder(
                           controller: _scrollController,
                           physics: const BouncingScrollPhysics(),
@@ -70,7 +70,7 @@ class _MagazineScreenState extends State<MagazineScreen> {
             HapticFeedback.lightImpact();
             Navigator.pop(context);
           }),
-          Text('Weekly Magazine', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+          Text('Weekly Magazine', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
         ],
       ),
     );
@@ -86,10 +86,9 @@ class _MagazineScreenState extends State<MagazineScreen> {
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Background image
-            SizedBox(
-              height: 160,
-              width: double.infinity,
+            // Image and overlay fill whatever height the content needs, so the
+            // banner adapts to width and font scale instead of a fixed height.
+            Positioned.fill(
               child: CachedNetworkImage(
                 imageUrl: AppImages.magazineCover,
                 fit: BoxFit.cover,
@@ -99,26 +98,27 @@ class _MagazineScreenState extends State<MagazineScreen> {
                   child: Container(color: Colors.white),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  decoration: BoxDecoration(gradient: AppTheme.heroGradient),
+                  decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
                 ),
               ),
             ),
             // Dark gradient overlay
-            Container(
-              height: 160,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft, end: Alignment.centerRight,
-                  colors: [
-                    AppTheme.primaryDark.withValues(alpha: 0.9),
-                    AppTheme.accentViolet.withValues(alpha: 0.7),
-                  ],
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft, end: Alignment.centerRight,
+                    colors: [
+                      AppTheme.primaryDark.withValues(alpha: 0.9),
+                      AppTheme.accentViolet.withValues(alpha: 0.7),
+                    ],
+                  ),
                 ),
               ),
             ),
-            // Content
+            // Content defines the banner height; 160 is now a floor.
             Container(
-              height: 160,
+              constraints: const BoxConstraints(minHeight: 160),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               child: Row(
                 children: [
@@ -135,7 +135,7 @@ class _MagazineScreenState extends State<MagazineScreen> {
                           children: [
                             const Icon(Icons.auto_stories_rounded, color: Colors.white, size: 28),
                             const SizedBox(height: 4),
-                            Text('PDF', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70)),
+                            Text('PDF', style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70)),
                           ],
                         ),
                   ),
@@ -151,14 +151,14 @@ class _MagazineScreenState extends State<MagazineScreen> {
                             color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(dateRange, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white70)),
+                          child: Text(dateRange, style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white70)),
                         ),
                         const SizedBox(height: 6),
-                        Text(mag.title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                        Text(mag.title, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                             maxLines: 2, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 3),
                         Text(mag.description, maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
+                            style: AppFonts.inter(fontSize: 11, color: Colors.white70)),
                       ],
                     ),
                   ),

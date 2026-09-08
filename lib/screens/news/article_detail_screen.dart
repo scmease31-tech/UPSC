@@ -1,7 +1,7 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -70,9 +70,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.article_outlined, size: 48, color: Colors.grey),
+              const Icon(Icons.article_outlined, size: 48, color: Colors.grey),
               const SizedBox(height: 12),
-              Text('No article data', style: GoogleFonts.inter(color: Colors.grey)),
+              Text('No article data', style: AppFonts.inter(color: Colors.grey)),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
@@ -96,9 +96,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.article_outlined, size: 48, color: Colors.grey),
+                const Icon(Icons.article_outlined, size: 48, color: Colors.grey),
                 const SizedBox(height: 12),
-                Text('Article not found', style: GoogleFonts.inter(color: Colors.grey)),
+                Text('Article not found', style: AppFonts.inter(color: Colors.grey)),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
@@ -116,9 +116,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.grey),
+              const Icon(Icons.error_outline, size: 48, color: Colors.grey),
               const SizedBox(height: 12),
-              Text('Invalid article data', style: GoogleFonts.inter(color: Colors.grey)),
+              Text('Invalid article data', style: AppFonts.inter(color: Colors.grey)),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
@@ -146,7 +146,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
     final relatedArticles = articlesProvider.getRelatedArticles(article);
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(gradient: AppTheme.scaffoldGradient(context)),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -273,7 +273,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             const SizedBox(height: 12),
                             Text(
                               article.title,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: AppFonts.plusJakartaSans(
                                 fontSize: 22, fontWeight: FontWeight.w800,
                                 color: Colors.white, height: 1.3,
                                 shadows: [
@@ -322,7 +322,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             Expanded(
                               child: Text(
                                 'Image: ${article.imageCredit}',
-                                style: GoogleFonts.inter(
+                                style: AppFonts.inter(
                                   fontSize: 11,
                                   color: AppTheme.textT(context),
                                   decoration: article.imageCreditUrl.isEmpty
@@ -357,7 +357,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                               const SizedBox(width: 8),
                               Text(
                                 'Read Original on ${article.newspaper.isNotEmpty ? article.newspaper : "Source"}',
-                                style: GoogleFonts.inter(
+                                style: AppFonts.inter(
                                   fontSize: 13, fontWeight: FontWeight.w600,
                                   color: AppTheme.accentTeal,
                                 ),
@@ -378,7 +378,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Text(
                           article.summary,
-                          style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textP(context), height: 1.7),
+                          style: AppFonts.inter(fontSize: 14, color: AppTheme.textP(context), height: 1.7),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -422,10 +422,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                     color: AppTheme.primaryColor.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(7),
                                   ),
-                                  child: Center(child: Text('${e.key + 1}', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primaryColor))),
+                                  child: Center(child: Text('${e.key + 1}', style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primaryColor))),
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(child: Text(e.value, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
+                                Expanded(child: Text(e.value, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
                               ],
                             ),
                           )).toList(),
@@ -446,9 +446,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.circle, size: 6, color: AppTheme.primaryColor),
+                                const Icon(Icons.circle, size: 6, color: AppTheme.primaryColor),
                                 const SizedBox(width: 10),
-                                Expanded(child: Text(n, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
+                                Expanded(child: Text(n, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
                               ],
                             ),
                           )).toList(),
@@ -477,7 +477,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             Expanded(
                               child: Text(
                                 article.syllabusMapping,
-                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.accentViolet, height: 1.4),
+                                style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.accentViolet, height: 1.4),
                               ),
                             ),
                           ],
@@ -498,9 +498,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.history_edu_rounded, size: 16, color: AppTheme.warningOrange),
+                                const Icon(Icons.history_edu_rounded, size: 16, color: AppTheme.warningOrange),
                                 const SizedBox(width: 10),
-                                Expanded(child: Text(q, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
+                                Expanded(child: Text(q, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
                               ],
                             ),
                           )).toList(),
@@ -520,9 +520,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(e.key, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                              Text(e.key, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                               const SizedBox(height: 4),
-                              Text(e.value, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context), height: 1.5)),
+                              Text(e.value, style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context), height: 1.5)),
                             ],
                           ),
                         ),
@@ -542,7 +542,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           children: [
                             const Icon(Icons.gavel_rounded, size: 20, color: Color(0xFFE65100)),
                             const SizedBox(width: 12),
-                            Expanded(child: Text(article.constitutionalBasis, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFBF360C), height: 1.6))),
+                            Expanded(child: Text(article.constitutionalBasis, style: AppFonts.inter(fontSize: 13, color: const Color(0xFFBF360C), height: 1.6))),
                           ],
                         ),
                       ),
@@ -561,7 +561,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           children: [
                             const Icon(Icons.policy_rounded, size: 20, color: AppTheme.successGreen),
                             const SizedBox(width: 12),
-                            Expanded(child: Text(article.governmentScheme, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1B5E20), height: 1.6))),
+                            Expanded(child: Text(article.governmentScheme, style: AppFonts.inter(fontSize: 13, color: const Color(0xFF1B5E20), height: 1.6))),
                           ],
                         ),
                       ),
@@ -579,7 +579,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           children: [
                             const Icon(Icons.edit_note_rounded, size: 20, color: AppTheme.accentViolet),
                             const SizedBox(width: 12),
-                            Expanded(child: Text(article.editorialOpinion, style: GoogleFonts.inter(fontSize: 13, fontStyle: FontStyle.italic, color: AppTheme.textP(context), height: 1.6))),
+                            Expanded(child: Text(article.editorialOpinion, style: AppFonts.inter(fontSize: 13, fontStyle: FontStyle.italic, color: AppTheme.textP(context), height: 1.6))),
                           ],
                         ),
                       ),
@@ -603,11 +603,11 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                               children: [
                                 const Icon(Icons.draw_rounded, size: 18, color: AppTheme.primaryColor),
                                 const SizedBox(width: 8),
-                                Text('How to structure your answer', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                                Text('How to structure your answer', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                               ],
                             ),
                             const SizedBox(height: 12),
-                            Text(article.answerFramework, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.7)),
+                            Text(article.answerFramework, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.7)),
                           ],
                         ),
                       ),
@@ -634,7 +634,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           children: [
                             const Icon(Icons.analytics_rounded, color: Colors.white, size: 20),
                             const SizedBox(width: 12),
-                            Expanded(child: Text(article.analysisNote, style: GoogleFonts.inter(fontSize: 13, color: Colors.white, height: 1.6))),
+                            Expanded(child: Text(article.analysisNote, style: AppFonts.inter(fontSize: 13, color: Colors.white, height: 1.6))),
                           ],
                         ),
                       ),
@@ -652,7 +652,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           children: [
                             Image.asset('assets/flaticon_pngs/brain.png', width: 24, height: 24),
                             const SizedBox(width: 12),
-                            Expanded(child: Text(article.mnemonic, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryDark, height: 1.5))),
+                            Expanded(child: Text(article.mnemonic, style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryDark, height: 1.5))),
                           ],
                         ),
                       ),
@@ -672,7 +672,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             color: AppTheme.pastelLavender.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text(t, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.accentViolet)),
+                          child: Text(t, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.accentViolet)),
                         )).toList(),
                       ),
                       const SizedBox(height: 20),
@@ -710,12 +710,12 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                       if (a.categoryTags.isNotEmpty)
                                         Text(
                                           a.categoryTags.first,
-                                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: _categoryColor(a.categoryTags.first)),
+                                          style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: _categoryColor(a.categoryTags.first)),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       const SizedBox(height: 2),
-                                      Text(a.title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                      Text(a.title, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)), maxLines: 2, overflow: TextOverflow.ellipsis),
                                     ],
                                   ),
                                 ),
@@ -750,7 +750,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           borderRadius: BorderRadius.circular(12),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
@@ -797,7 +797,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4)],
       ),
-      child: Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+      child: Text(label, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
     );
   }
 
@@ -807,15 +807,15 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       child: Row(
         children: [
           if (article.upscPaper.isNotEmpty) ...[
-            Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
+            const Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
             const SizedBox(width: 6),
-            Flexible(child: Text(article.upscPaper, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor), overflow: TextOverflow.ellipsis)),
+            Flexible(child: Text(article.upscPaper, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor), overflow: TextOverflow.ellipsis)),
             const SizedBox(width: 16),
           ],
           if (article.examRelevance.isNotEmpty) ...[
-            Icon(Icons.star_rounded, size: 16, color: AppTheme.accentViolet),
+            const Icon(Icons.star_rounded, size: 16, color: AppTheme.accentViolet),
             const SizedBox(width: 6),
-            Flexible(child: Text(article.examRelevance, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accentViolet), overflow: TextOverflow.ellipsis)),
+            Flexible(child: Text(article.examRelevance, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accentViolet), overflow: TextOverflow.ellipsis)),
           ],
         ],
       ),
@@ -827,7 +827,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       children: [
         Container(width: 4, height: 18, decoration: BoxDecoration(gradient: AppTheme.primaryGradient, borderRadius: BorderRadius.circular(2))),
         const SizedBox(width: 10),
-        Expanded(child: Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textP(context)), maxLines: 2, overflow: TextOverflow.ellipsis)),
+        Expanded(child: Text(title, style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textP(context)), maxLines: 2, overflow: TextOverflow.ellipsis)),
       ],
     );
   }
@@ -844,7 +844,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 gradient: AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Center(child: Text('${index + 1}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white))),
+              child: Center(child: Text('${index + 1}', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white))),
             ),
             if (!isLast) Container(width: 2, height: 30, color: AppTheme.primaryColor.withValues(alpha: 0.2)),
           ],
@@ -854,7 +854,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           child: GlassCard(
             padding: const EdgeInsets.all(12),
             margin: const EdgeInsets.only(bottom: 4),
-            child: Text(text, style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5)),
+            child: Text(text, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5)),
           ),
         ),
       ],
@@ -896,7 +896,7 @@ class _ReaderSizeControl extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Text(
               'A',
-              style: GoogleFonts.plusJakartaSans(
+              style: AppFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 color: AppTheme.textS(context),

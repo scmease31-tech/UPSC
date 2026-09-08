@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../config/app_fonts.dart';
 import '../config/theme.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ class QuizOptionTile extends StatelessWidget {
               child: Center(
                 child: Text(
                   _label,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: labelText,
@@ -112,7 +112,7 @@ class QuizOptionTile extends StatelessWidget {
             Expanded(
               child: Text(
                 text,
-                style: GoogleFonts.inter(
+                style: AppFonts.inter(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: textCol,

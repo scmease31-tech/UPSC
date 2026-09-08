@@ -43,28 +43,35 @@ jobs:
         run: flutter test --no-pub
 
       - name: Setup signing keystore
+        env:
+          # Set both in Settings > Secrets and variables > Actions. These were
+          # hardcoded as "android" in this file, and this repository is public.
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/upload.p12
           # Import PKCS12 into JKS, let keytool auto-assign alias
           keytool -importkeystore \
             -srckeystore /tmp/upload.p12 \
             -srcstoretype PKCS12 \
-            -srcstorepass android \
+            -srcstorepass "$KEYSTORE_PASSWORD" \
             -destkeystore android/app/upload-keystore.jks \
             -deststoretype JKS \
-            -deststorepass android \
-            -destkeypass android \
+            -deststorepass "$KEYSTORE_PASSWORD" \
+            -destkeypass "$KEY_PASSWORD" \
             -noprompt
           # Find the alias that was imported
-          ALIAS=$(keytool -list -keystore android/app/upload-keystore.jks -storepass android | grep "PrivateKeyEntry\|privatekey\|key entry" | head -1 | cut -d',' -f1)
+          ALIAS=$(keytool -list -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" | grep "PrivateKeyEntry\|privatekey\|key entry" | head -1 | cut -d',' -f1)
           echo "Detected alias: $ALIAS"
           cat > android/key.properties << EOF
-          storePassword=android
-          keyPassword=android
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
           keyAlias=$ALIAS
           storeFile=upload-keystore.jks
           EOF
-          cat android/key.properties
+          # Deliberately NOT `cat`-ing key.properties: this repo is public, so
+          # Actions logs are public, and printing it published the keystore and
+          # key passwords to anyone who looked.
 
       - name: Build APK
         run: flutter build apk --release --no-tree-shake-icons --split-per-abi

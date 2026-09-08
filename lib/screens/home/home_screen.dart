@@ -1,7 +1,7 @@
-﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -133,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             SliverToBoxAdapter(child: _buildExamCountdown(context, progress)),
 
             // Bottom padding for nav bar
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            SliverToBoxAdapter(child: SizedBox(height: AppTheme.navBarClearance(context))),
           ],
         ),
       ),
@@ -147,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildWebDashboard(BuildContext context, AuthProvider auth, ArticlesProvider articles, DailyProgressProvider progress, bool dark, DateTime now, String greeting, String firstName) {
     final w = MediaQuery.of(context).size.width;
     final isWide = w > 1100;
-    final maxWidth = 1400.0;
+    const maxWidth = 1400.0;
 
     return FadeTransition(
       opacity: _fadeAnim,
@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         padding: const EdgeInsets.all(28),
         child: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
+            constraints: const BoxConstraints(maxWidth: maxWidth),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -239,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               Text(
                 '$greeting, $name!',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppFonts.plusJakartaSans(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                   color: dark ? Colors.white : AppTheme.textPrimary,
@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SizedBox(height: 4),
               Text(
                 DateFormat('EEEE, d MMMM yyyy').format(now),
-                style: GoogleFonts.inter(
+                style: AppFonts.inter(
                   fontSize: 14,
                   color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary,
                 ),
@@ -299,19 +299,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     children: [
                       const Icon(Icons.rocket_launch_rounded, size: 14, color: Colors.white70),
                       const SizedBox(width: 6),
-                      Text("Today's Mission", style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white70)),
+                      Text("Today's Mission", style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white70)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   '${p.articlesReadToday} of 5 Tasks Completed',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 22, color: Colors.white, fontWeight: FontWeight.w700),
+                  style: AppFonts.plusJakartaSans(fontSize: 22, color: Colors.white, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   completionPct >= 100 ? 'All done! Great job today!' : 'Keep pushing — every task counts!',
-                  style: GoogleFonts.inter(fontSize: 14, color: Colors.white60),
+                  style: AppFonts.inter(fontSize: 14, color: Colors.white60),
                 ),
                 const SizedBox(height: 20),
                 ClipRRect(
@@ -327,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(width: 32),
-          Container(
+          DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
@@ -342,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               trackColor: Colors.white.withValues(alpha: 0.1),
               child: Text(
                 '$completionPct%',
-                style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
+                style: AppFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
               ),
             ),
           ),
@@ -388,8 +388,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: dark ? Colors.white : AppTheme.textPrimary)),
-              Text(label, style: GoogleFonts.inter(fontSize: 12, color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary)),
+              Text(value, style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: dark ? Colors.white : AppTheme.textPrimary)),
+              Text(label, style: AppFonts.inter(fontSize: 12, color: dark ? AppTheme.darkTextSecondary : AppTheme.textSecondary)),
             ],
           ),
         ],
@@ -412,18 +412,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildWebQuickActions(BuildContext context, bool dark) {
     final actions = [
-      _QAction(Icons.flash_on_rounded, 'Daily Challenge', AppTheme.primaryColor, '/daily-challenge'),
-      _QAction(Icons.auto_awesome_rounded, 'AI Search', const Color(0xFF7C4DFF), '/ai-search'),
-      _QAction(Icons.view_carousel_rounded, 'Flashcards', const Color(0xFFFF6B6B), '/flashcards'),
-      _QAction(Icons.explore_rounded, 'Explore', AppTheme.warmYellow, '/explore'),
-      _QAction(Icons.history_edu_rounded, 'PYQ Practice', const Color(0xFFE91E63), '/pyq'),
-      _QAction(Icons.timer_rounded, 'Study Timer', const Color(0xFF448AFF), '/study-timer'),
+      const _QAction(Icons.flash_on_rounded, 'Daily Challenge', AppTheme.primaryColor, '/daily-challenge'),
+      const _QAction(Icons.auto_awesome_rounded, 'AI Search', Color(0xFF7C4DFF), '/ai-search'),
+      const _QAction(Icons.view_carousel_rounded, 'Flashcards', Color(0xFFFF6B6B), '/flashcards'),
+      const _QAction(Icons.explore_rounded, 'Explore', AppTheme.warmYellow, '/explore'),
+      const _QAction(Icons.history_edu_rounded, 'PYQ Practice', Color(0xFFE91E63), '/pyq'),
+      const _QAction(Icons.timer_rounded, 'Study Timer', Color(0xFF448AFF), '/study-timer'),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quick Actions', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+        Text('Quick Actions', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
         const SizedBox(height: 16),
         Wrap(
           spacing: 12,
@@ -441,11 +441,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       children: [
         Row(
           children: [
-            Text('Trending Topics', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+            Text('Trending Topics', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
             const Spacer(),
             TextButton(
               onPressed: () => _navigateToTab(1),
-              child: Text('View All →', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+              child: Text('View All →', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
             ),
           ],
         ),
@@ -463,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 children: [
                   Icon(Icons.article_outlined, size: 40, color: AppTheme.textT(context)),
                   const SizedBox(height: 8),
-                  Text('No articles yet', style: GoogleFonts.inter(color: AppTheme.textS(context))),
+                  Text('No articles yet', style: AppFonts.inter(color: AppTheme.textS(context))),
                 ],
               ),
             ),
@@ -507,7 +507,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Today's Activity", style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+              Text("Today's Activity", style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
               const SizedBox(height: 16),
               ...activities.map((a) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -523,15 +523,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(a.title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
-                          Text(a.subtitle, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+                          Text(a.title, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+                          Text(a.subtitle, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
                         ],
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(color: a.color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
-                      child: Text(a.time, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: a.color)),
+                      child: Text(a.time, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: a.color)),
                     ),
                   ],
                 ),
@@ -559,11 +559,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     child: const Icon(Icons.lightbulb_rounded, color: Colors.white, size: 18),
                   ),
                   const SizedBox(width: 12),
-                  Text('Daily Insight', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white70)),
+                  Text('Daily Insight', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white70)),
                 ],
               ),
               const SizedBox(height: 14),
-              Text(todayInsight, style: GoogleFonts.inter(fontSize: 14, color: Colors.white, height: 1.5)),
+              Text(todayInsight, style: AppFonts.inter(fontSize: 14, color: Colors.white, height: 1.5)),
             ],
           ),
         ),
@@ -575,24 +575,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final w = MediaQuery.of(context).size.width;
     final cols = w > 1200 ? 6 : (w > 900 ? 4 : 3);
     final tools = [
-      _StudyTool('UPSC Must Know', 'Facts & data', Icons.lightbulb_rounded, AppTheme.primaryColor, '/upsc-must-know'),
-      _StudyTool('Previous Year Qs', 'PYQ practice', Icons.history_edu_rounded, const Color(0xFFE91E63), '/pyq'),
-      _StudyTool('Study Timer', 'Pomodoro', Icons.timer_rounded, const Color(0xFFFF6B6B), '/study-timer'),
-      _StudyTool('Quick Revision', 'Short notes', Icons.note_alt_rounded, const Color(0xFF8D6E63), '/quick-revision'),
-      _StudyTool('Answer Writing', 'Mains practice', Icons.edit_note_rounded, const Color(0xFF448AFF), '/answer-writing'),
-      _StudyTool('Content Tracker', 'Track progress', Icons.track_changes_rounded, AppTheme.accentViolet, '/content-tracker'),
-      _StudyTool('Current Affairs', 'Compilations', Icons.newspaper_rounded, const Color(0xFF00897B), '/current-affairs'),
-      _StudyTool('Syllabus Tracker', 'Preparation', Icons.checklist_rounded, const Color(0xFFEF6C00), '/syllabus-tracker'),
-      _StudyTool('Vocabulary', 'Word power', Icons.abc_rounded, const Color(0xFF5C6BC0), '/vocabulary'),
-      _StudyTool('Mock Tests', 'Prelims tests', Icons.quiz_rounded, const Color(0xFFD32F2F), '/mock-test'),
-      _StudyTool('Govt Schemes', 'Schemes DB', Icons.account_balance_rounded, const Color(0xFF388E3C), '/govt-schemes'),
-      _StudyTool('Bookmarks', 'Saved items', Icons.bookmark_rounded, const Color(0xFF0288D1), '/bookmarks'),
+      const _StudyTool('UPSC Must Know', 'Facts & data', Icons.lightbulb_rounded, AppTheme.primaryColor, '/upsc-must-know'),
+      const _StudyTool('Previous Year Qs', 'PYQ practice', Icons.history_edu_rounded, Color(0xFFE91E63), '/pyq'),
+      const _StudyTool('Study Timer', 'Pomodoro', Icons.timer_rounded, Color(0xFFFF6B6B), '/study-timer'),
+      const _StudyTool('Quick Revision', 'Short notes', Icons.note_alt_rounded, Color(0xFF8D6E63), '/quick-revision'),
+      const _StudyTool('Answer Writing', 'Mains practice', Icons.edit_note_rounded, Color(0xFF448AFF), '/answer-writing'),
+      const _StudyTool('Content Tracker', 'Track progress', Icons.track_changes_rounded, AppTheme.accentViolet, '/content-tracker'),
+      const _StudyTool('Current Affairs', 'Compilations', Icons.newspaper_rounded, Color(0xFF00897B), '/current-affairs'),
+      const _StudyTool('Syllabus Tracker', 'Preparation', Icons.checklist_rounded, Color(0xFFEF6C00), '/syllabus-tracker'),
+      const _StudyTool('Vocabulary', 'Word power', Icons.abc_rounded, Color(0xFF5C6BC0), '/vocabulary'),
+      const _StudyTool('Mock Tests', 'Prelims tests', Icons.quiz_rounded, Color(0xFFD32F2F), '/mock-test'),
+      const _StudyTool('Govt Schemes', 'Schemes DB', Icons.account_balance_rounded, Color(0xFF388E3C), '/govt-schemes'),
+      const _StudyTool('Bookmarks', 'Saved items', Icons.bookmark_rounded, Color(0xFF0288D1), '/bookmarks'),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Study Tools', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+        Text('Study Tools', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
         const SizedBox(height: 16),
         GridView.builder(
           shrinkWrap: true,
@@ -656,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           const SizedBox(width: 4),
                           Text(
                             DateFormat('EEEE, d MMM').format(now),
-                            style: GoogleFonts.inter(
+                            style: AppFonts.inter(
                               fontSize: 11,
                               color: AppTheme.primaryColor,
                               fontWeight: FontWeight.w600,
@@ -670,24 +670,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 8),
                 Text(
                     '$greeting, $name!',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppFonts.plusJakartaSans(
                       fontSize: _sf(w, 24),
                       fontWeight: FontWeight.w800,
                       color: dark ? Colors.white : AppTheme.textPrimary,
                       letterSpacing: -0.5,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   tagline,
-                  style: GoogleFonts.inter(
+                  style: AppFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textS(context),
                     fontWeight: FontWeight.w500,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -726,12 +726,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final hp = _hPad(w);
     final completion = _dailyCompletion(p);
     final completionPct = (completion * 100).round();
-    final heroH = w < 340 ? 150.0 : (w < 400 ? 165.0 : 180.0);
+    // Sized to fit a two-line subtitle ("Keep going, you're doing great!"
+    // wraps on narrow screens). The image, gradient and content layers all
+    // share this height, so they stay in sync.
+    final heroH = w < 340 ? 164.0 : (w < 400 ? 179.0 : 194.0);
     final circleSize = w < 340 ? 68.0 : (w < 400 ? 78.0 : 90.0);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(hp, 10, hp, 6),
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           boxShadow: AppTheme.cardShadow,
@@ -740,10 +743,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           borderRadius: BorderRadius.circular(22),
           child: Stack(
             children: [
-              // Background image
-              SizedBox(
-                height: heroH,
-                width: double.infinity,
+              // Image and overlay stretch to whatever height the content needs,
+              // so the card adapts to screen width and font scale rather than
+              // being pinned to one hardcoded height.
+              Positioned.fill(
                 child: CachedNetworkImage(
                   imageUrl: AppImages.homeBannerStudy,
                   fit: BoxFit.cover,
@@ -759,22 +762,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
               // Gradient overlay
-              Container(
-                height: heroH,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF0D1B2A).withValues(alpha: 0.85),
-                      AppTheme.primaryDark.withValues(alpha: 0.70),
-                    ],
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF0D1B2A).withValues(alpha: 0.85),
+                        AppTheme.primaryDark.withValues(alpha: 0.70),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              // Content
-              SizedBox(
-                height: heroH,
+              // The only non-positioned child, so it defines the card height;
+              // heroH now acts as a floor rather than a hard cap.
+              ConstrainedBox(
+                constraints: BoxConstraints(minHeight: heroH),
                 child: Padding(
                   padding: EdgeInsets.all(w < 360 ? 14 : 20),
                   child: Row(
@@ -799,7 +804,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   const SizedBox(width: 5),
                                   Text(
                                     'Today\'s Mission',
-                                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                                    style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
                                   ),
                                 ],
                               ),
@@ -807,15 +812,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             const SizedBox(height: 14),
                             Text(
                               '${p.articlesReadToday} of 5 Completed',
-                              style: GoogleFonts.plusJakartaSans(fontSize: _sf(w, 15), color: Colors.white, fontWeight: FontWeight.w700),
+                              style: AppFonts.plusJakartaSans(fontSize: _sf(w, 15), color: Colors.white, fontWeight: FontWeight.w700),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
                             Text(
                               completionPct >= 100 ? 'All done! Great job!' : 'Keep going, you\'re doing great!',
-                              style: GoogleFonts.inter(fontSize: 11, color: Colors.white60),
-                              maxLines: 1,
+                              style: AppFonts.inter(fontSize: 11, color: Colors.white60),
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 10),
@@ -835,7 +840,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                       const SizedBox(width: 20),
                       // Circular progress with glow
-                      Container(
+                      DecoratedBox(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           boxShadow: [
@@ -857,7 +862,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             children: [
                               Text(
                                 '$completionPct%',
-                                style: GoogleFonts.plusJakartaSans(fontSize: _sf(w, 24), fontWeight: FontWeight.w800, color: Colors.white),
+                                style: AppFonts.plusJakartaSans(fontSize: _sf(w, 24), fontWeight: FontWeight.w800, color: Colors.white),
                               ),
                             ],
                           ),
@@ -931,7 +936,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       colors: [AppTheme.errorRed, AppTheme.warningOrange],
                     ),
                     borderRadius: BorderRadius.circular(10),
@@ -941,7 +946,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(message, style: GoogleFonts.inter(fontSize: _sf(w, 13), fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.4),
+              child: Text(message, style: AppFonts.inter(fontSize: _sf(w, 13), fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.4),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -977,9 +982,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Icon(s.icon, color: Colors.white, size: 19),
           ),
           const SizedBox(height: 8),
-          Text(s.value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+          Text(s.value, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
           const SizedBox(height: 2),
-          Text(s.label, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context), fontWeight: FontWeight.w500)),
+          Text(s.label, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context), fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -994,10 +999,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final hp = _hPad(w);
     final dark = AppTheme.isDark(context);
     final actions = [
-      _QAction(Icons.flash_on_rounded, 'Daily\nChallenge', AppTheme.primaryColor, '/daily-challenge'),
-      _QAction(Icons.auto_awesome_rounded, 'AI\nSearch', const Color(0xFF7C4DFF), '/ai-search'),
-      _QAction(Icons.view_carousel_rounded, 'Flash\nCards', const Color(0xFFFF6B6B), '/flashcards'),
-      _QAction(Icons.explore_rounded, 'Explore\nMore', AppTheme.warmYellow, '/explore'),
+      const _QAction(Icons.flash_on_rounded, 'Daily\nChallenge', AppTheme.primaryColor, '/daily-challenge'),
+      const _QAction(Icons.auto_awesome_rounded, 'AI\nSearch', Color(0xFF7C4DFF), '/ai-search'),
+      const _QAction(Icons.view_carousel_rounded, 'Flash\nCards', Color(0xFFFF6B6B), '/flashcards'),
+      const _QAction(Icons.explore_rounded, 'Explore\nMore', AppTheme.warmYellow, '/explore'),
     ];
 
     return Padding(
@@ -1005,7 +1010,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Quick Actions', padding: EdgeInsets.zero),
+          const SectionHeader(title: 'Quick Actions', padding: EdgeInsets.zero),
           const SizedBox(height: 14),
           Row(
             children: List.generate(actions.length, (i) {
@@ -1035,7 +1040,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         const SizedBox(height: 8),
                         Text(
                           a.label,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 11, fontWeight: FontWeight.w600,
                             color: AppTheme.textP(context), height: 1.3,
                           ),
@@ -1074,7 +1079,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Padding(
       padding: EdgeInsets.fromLTRB(hp, 10, hp, 6),
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
@@ -1113,12 +1118,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   children: [
                     Text(
                       'Daily Insight',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white70),
+                      style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white70),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       todayInsight,
-                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white, height: 1.4),
+                      style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white, height: 1.4),
                     ),
                   ],
                 ),
@@ -1148,7 +1153,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Today\'s Activity', padding: EdgeInsets.zero),
+          const SectionHeader(title: 'Today\'s Activity', padding: EdgeInsets.zero),
           const SizedBox(height: 12),
           ...activities.map((a) => _activityRow(context, a)),
         ],
@@ -1176,9 +1181,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(a.title, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+                  Text(a.title, style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
                   const SizedBox(height: 2),
-                  Text(a.subtitle, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+                  Text(a.subtitle, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
                 ],
               ),
             ),
@@ -1188,7 +1193,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 color: a.color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(a.time, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: a.color)),
+              child: Text(a.time, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: a.color)),
             ),
           ],
         ),
@@ -1217,7 +1222,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Icon(Icons.article_outlined, size: 40, color: AppTheme.textT(context)),
                 ),
                 const SizedBox(height: 8),
-                Text('No articles yet', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textS(context))),
+                Text('No articles yet', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textS(context))),
               ],
             ),
           ),
@@ -1272,18 +1277,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final cols = w < 340 ? 2 : 3;
     final aspect = w < 340 ? 0.95 : (w < 400 ? 0.92 : 0.88);
     final tools = [
-      _StudyTool('UPSC Must Know', 'Facts & data', Icons.lightbulb_rounded, AppTheme.primaryColor, '/upsc-must-know'),
-      _StudyTool('Previous Year Qs', 'PYQ practice', Icons.history_edu_rounded, const Color(0xFFE91E63), '/pyq'),
-      _StudyTool('Study Timer', 'Pomodoro focus', Icons.timer_rounded, const Color(0xFFFF6B6B), '/study-timer'),
-      _StudyTool('Quick Revision', 'Short notes', Icons.note_alt_rounded, const Color(0xFF8D6E63), '/quick-revision'),
-      _StudyTool('Answer Writing', 'Mains practice', Icons.edit_note_rounded, const Color(0xFF448AFF), '/answer-writing'),
-      _StudyTool('Content Tracker', 'Track progress', Icons.track_changes_rounded, AppTheme.accentViolet, '/content-tracker'),
-      _StudyTool('Current Affairs', 'Compilations', Icons.newspaper_rounded, const Color(0xFF00897B), '/current-affairs'),
-      _StudyTool('Syllabus Tracker', 'Preparation', Icons.checklist_rounded, const Color(0xFFEF6C00), '/syllabus-tracker'),
-      _StudyTool('Vocabulary', 'Word power', Icons.abc_rounded, const Color(0xFF5C6BC0), '/vocabulary'),
-      _StudyTool('Mock Tests', 'Prelims tests', Icons.quiz_rounded, const Color(0xFFD32F2F), '/mock-test'),
-      _StudyTool('Govt Schemes', 'Schemes DB', Icons.account_balance_rounded, const Color(0xFF388E3C), '/govt-schemes'),
-      _StudyTool('Bookmarks', 'Saved items', Icons.bookmark_rounded, const Color(0xFF0288D1), '/bookmarks'),
+      const _StudyTool('UPSC Must Know', 'Facts & data', Icons.lightbulb_rounded, AppTheme.primaryColor, '/upsc-must-know'),
+      const _StudyTool('Previous Year Qs', 'PYQ practice', Icons.history_edu_rounded, Color(0xFFE91E63), '/pyq'),
+      const _StudyTool('Study Timer', 'Pomodoro focus', Icons.timer_rounded, Color(0xFFFF6B6B), '/study-timer'),
+      const _StudyTool('Quick Revision', 'Short notes', Icons.note_alt_rounded, Color(0xFF8D6E63), '/quick-revision'),
+      const _StudyTool('Answer Writing', 'Mains practice', Icons.edit_note_rounded, Color(0xFF448AFF), '/answer-writing'),
+      const _StudyTool('Content Tracker', 'Track progress', Icons.track_changes_rounded, AppTheme.accentViolet, '/content-tracker'),
+      const _StudyTool('Current Affairs', 'Compilations', Icons.newspaper_rounded, Color(0xFF00897B), '/current-affairs'),
+      const _StudyTool('Syllabus Tracker', 'Preparation', Icons.checklist_rounded, Color(0xFFEF6C00), '/syllabus-tracker'),
+      const _StudyTool('Vocabulary', 'Word power', Icons.abc_rounded, Color(0xFF5C6BC0), '/vocabulary'),
+      const _StudyTool('Mock Tests', 'Prelims tests', Icons.quiz_rounded, Color(0xFFD32F2F), '/mock-test'),
+      const _StudyTool('Govt Schemes', 'Schemes DB', Icons.account_balance_rounded, Color(0xFF388E3C), '/govt-schemes'),
+      const _StudyTool('Bookmarks', 'Saved items', Icons.bookmark_rounded, Color(0xFF0288D1), '/bookmarks'),
     ];
 
     return Padding(
@@ -1291,7 +1296,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Study Tools', padding: EdgeInsets.zero),
+          const SectionHeader(title: 'Study Tools', padding: EdgeInsets.zero),
           const SizedBox(height: 12),
           GridView.builder(
             shrinkWrap: true,
@@ -1310,7 +1315,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   HapticFeedback.lightImpact();
                   Navigator.pushNamed(context, t.route);
                 },
-                child: Container(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: dark ? AppTheme.darkCardBg : Colors.white,
                     borderRadius: BorderRadius.circular(18),
@@ -1343,7 +1348,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: Text(
                           t.title,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.textP(context),
@@ -1357,7 +1362,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 2),
                       Text(
                         t.subtitle,
-                        style: GoogleFonts.inter(
+                        style: AppFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                           color: AppTheme.textS(context),
@@ -1418,13 +1423,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                       child: Text(
                         '$doneCount/7 days active',
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+                        style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
                       ),
                     ),
                     const Spacer(),
                     Text(
                       '$pct%',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.primaryColor),
+                      style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.primaryColor),
                     ),
                   ],
                 ),
@@ -1460,7 +1465,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: isActive
-                                ? LinearGradient(
+                                ? const LinearGradient(
                                     colors: [AppTheme.primaryColor, AppTheme.primaryLight],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -1491,7 +1496,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     ? Container(
                                         width: 8,
                                         height: 8,
-                                        decoration: BoxDecoration(
+                                        decoration: const BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: AppTheme.primaryColor,
                                         ),
@@ -1502,7 +1507,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         const SizedBox(height: 8),
                         Text(
                           days[i],
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 12,
                             fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                             color: isToday
@@ -1582,11 +1587,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             children: [
                               Image.asset('assets/flaticon_pngs/target_mixed.png', width: 20, height: 20),
                               const SizedBox(width: 6),
-                              Flexible(child: Text('Prelims ${DateTime.now().year}', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                              Flexible(child: Text('Prelims ${p.prelimsExamYear}', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis)),
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Text('Keep pushing — every day counts!', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text('Every day counts!', style: AppFonts.inter(fontSize: 12, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),
@@ -1600,8 +1605,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('${p.daysToPrelimsExam}', style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
-                          Text('days left', style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
+                          Text('${p.daysToPrelimsExam}', style: AppFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
+                          Text('days left', style: AppFonts.inter(fontSize: 11, color: Colors.white70)),
                         ],
                       ),
                     ),
@@ -1642,6 +1647,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _showNotificationsSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1667,10 +1673,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                       const SizedBox(height: 20),
                       Text('Notification Settings',
-                          style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(ctx))),
+                          style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(ctx))),
                       const SizedBox(height: 4),
                       Text('Manage your daily reminders',
-                          style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(ctx))),
+                          style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(ctx))),
                       const SizedBox(height: 20),
                       _notifOption(ctx, Icons.article_rounded, 'Current Affairs', '8:00 AM', AppTheme.primaryColor),
                       _notifOption(ctx, Icons.style_rounded, 'Flashcard Reminder', '7:30 AM', AppTheme.accentViolet),
@@ -1695,7 +1701,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
-                              child: Text('Turn Off All', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
+                              child: Text('Turn Off All', style: AppFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -1716,7 +1722,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
-                              child: Text('Enable All', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                              child: Text('Enable All', style: AppFonts.inter(fontWeight: FontWeight.w600)),
                             ),
                           ),
                         ],
@@ -1756,8 +1762,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
-                  Text(time, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                  Text(title, style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
+                  Text(time, style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
                 ],
               ),
             ),
@@ -1861,7 +1867,7 @@ class _WebActionChipState extends State<_WebActionChip> {
               const SizedBox(width: 12),
               Text(
                 a.label.replaceAll('\n', ' '),
-                style: GoogleFonts.inter(
+                style: AppFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: _hovered ? a.color : AppTheme.textP(context),
@@ -1929,7 +1935,7 @@ class _WebToolCardState extends State<_WebToolCard> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
                   t.title,
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.2),
+                  style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.2),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1938,7 +1944,7 @@ class _WebToolCardState extends State<_WebToolCard> {
               const SizedBox(height: 4),
               Text(
                 t.subtitle,
-                style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context)),
+                style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context)),
                 textAlign: TextAlign.center,
               ),
             ],

@@ -1,30 +1,50 @@
 # Flaticon Attribution
 
-Icons made by various authors from [www.flaticon.com](https://www.flaticon.com)
+Icons from [www.flaticon.com](https://www.flaticon.com), used under the Flaticon
+Free Licence: free for personal and commercial use **with attribution**.
 
-Free for personal and commercial use with attribution (Flaticon License).
+The user-facing credit lives in the app at **Profile → Credits & Licences** —
+the licence requires it to be visible to end users, not only recorded here. The
+full project attribution is in [`ATTRIBUTION.md`](../../ATTRIBUTION.md) at the
+repository root.
 
-## Icons
+## Documented
 
 | File | Icon | Source |
 |------|------|--------|
 | environment.png | Environment | https://www.flaticon.com/free-icon/environment_2820612 |
-| ecosystem.png | Ecosystem | https://www.flaticon.com/free-icon/ecosystem_10041542 |
-| planet_earth.png | Planet Earth | https://www.flaticon.com/free-icon/planet-earth_1598238 |
-| eco_friendly.png | Eco Friendly | https://www.flaticon.com/free-icon/eco-friendly_9293554 |
-| trees.png | Trees | https://www.flaticon.com/free-icon/trees_8653118 |
-| sustainable.png | Sustainable | https://www.flaticon.com/free-icon/sustainable_2942555 |
-| leaf.png | Leaf | https://www.flaticon.com/free-icon/leaf_497348 |
-| climate.png | Climate | https://www.flaticon.com/free-icon/climate_2242721 |
-| ecology_environment.png | Ecology & Environment | https://www.flaticon.com/free-icon/ecology-and-environment_1716584 |
-| save_the_world.png | Save the World | https://www.flaticon.com/free-icon/save-the-world_8909309 |
-| recycle.png | Recycle | https://www.flaticon.com/free-icon/recycle_892930 |
-| green_energy.png | Green Energy | https://www.flaticon.com/free-icon/green-energy_550770 |
-| mother_earth.png | Mother Earth Day | https://www.flaticon.com/free-icon/mother-earth-day_4287570 |
-| save_planet.png | Save the Planet | https://www.flaticon.com/free-icon/save-the-planet_3937245 |
-| seeding.png | Seeding | https://www.flaticon.com/free-icon/seeding_620798 |
-| eco_world.png | Eco World | https://www.flaticon.com/free-icon/eco-world_5858057 |
-| plant.png | Plant | https://www.flaticon.com/free-icon/plant_497393 |
-| nature.png | Nature | https://www.flaticon.com/free-icon/nature_2823511 |
-| leaves.png | Leaves | https://www.flaticon.com/free-icon/leaves_1490749 |
-| growth.png | Growth | https://www.flaticon.com/free-icon/growth_1460537 |
+
+## ⚠️ Missing sources — 23 icons
+
+These ship in the app with no recorded author, which the Flaticon free licence
+does not permit. The author cannot be recovered from a PNG; the Flaticon
+account's download history lists every icon and its author.
+
+```
+brain.png            compass.png          economy.png
+fire.png             geography.png        history.png
+international.png    lightbulb.png        lightning.png
+military_badge.png   muscle.png           newspaper.png
+people_community.png polity.png           scales_justice.png
+science.png          shield.png           star.png
+target_mixed.png     theater_masks.png    thumbs_up.png
+trophy.png           wheat_agriculture.png
+```
+
+Options: recover the URLs and add them above; take a paid Flaticon plan, which
+waives attribution; or replace them with Material Icons (built into Flutter,
+Apache 2.0, no attribution needed).
+
+## Removed
+
+Nineteen icons were bundled but never referenced by any code — they added app
+size and licence obligations for nothing, and were deleted:
+
+```
+climate, eco_friendly, eco_world, ecology_environment, ecosystem, green_energy,
+growth, leaf, leaves, mother_earth, nature, planet_earth, plant, recycle,
+save_planet, save_the_world, seeding, sustainable, trees
+```
+
+Their original attributions are preserved in this file's git history if any are
+ever restored.

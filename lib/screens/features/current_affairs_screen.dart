@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
@@ -58,7 +58,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
         indicatorWeight: 3,
         labelColor: AppTheme.primaryColor,
         unselectedLabelColor: AppTheme.textS(context),
-        labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
+        labelStyle: AppFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
         isScrollable: true,
         tabAlignment: TabAlignment.start,
         tabs: const [
@@ -91,7 +91,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                         ? Colors.white.withValues(alpha: 0.06)
                         : Colors.white.withValues(alpha: 0.7),
                     selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
-                    labelStyle: GoogleFonts.inter(
+                    labelStyle: AppFonts.inter(
                       fontSize: 12,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       color: selected ? AppTheme.primaryColor : AppTheme.textS(context),
@@ -136,7 +136,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                 Lottie.asset('assets/animations/loading.json', width: 120, height: 120),
                 const SizedBox(height: 12),
                 Text('Fetching latest UPSC news...',
-                    style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+                    style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
               ],
             ),
           );
@@ -148,7 +148,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
               children: [
                 Icon(Icons.wifi_off_rounded, size: 48, color: AppTheme.textT(context)),
                 const SizedBox(height: 12),
-                Text('Could not fetch news', style: GoogleFonts.inter(color: AppTheme.textS(context))),
+                Text('Could not fetch news', style: AppFonts.inter(color: AppTheme.textS(context))),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   onPressed: () => setState(() {
@@ -178,7 +178,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                   _selectedCategory == 'All'
                       ? 'No news found. Pull to refresh.'
                       : 'No news in "$_selectedCategory"',
-                  style: GoogleFonts.inter(color: AppTheme.textS(context)),
+                  style: AppFonts.inter(color: AppTheme.textS(context)),
                 ),
               ],
             ),
@@ -215,7 +215,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                           children: [
                             const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
                             const SizedBox(width: 4),
-                            Text('Live Updates', style: GoogleFonts.inter(
+                            Text('Live Updates', style: AppFonts.inter(
                               fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white,
                             )),
                           ],
@@ -223,14 +223,14 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                       ),
                       const Spacer(),
                       Text('${filtered.length} articles',
-                          style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textT(context))),
+                          style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context))),
                       const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () => setState(() {
                           NewsApiService.clearCache();
                           _newsFuture = NewsApiService.fetchLatestNews(forceRefresh: true);
                         }),
-                        child: Icon(Icons.refresh_rounded, size: 18, color: AppTheme.primaryColor),
+                        child: const Icon(Icons.refresh_rounded, size: 18, color: AppTheme.primaryColor),
                       ),
                     ],
                   ),
@@ -258,7 +258,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
               children: [
                 Icon(Icons.cloud_off_rounded, size: 48, color: AppTheme.textT(context)),
                 const SizedBox(height: 12),
-                Text('Failed to load current affairs', style: GoogleFonts.inter(color: AppTheme.textS(context))),
+                Text('Failed to load current affairs', style: AppFonts.inter(color: AppTheme.textS(context))),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () => setState(() { _dataFuture = FirestoreContentService.getCurrentAffairs(); }),
@@ -307,7 +307,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(category,
-                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: categoryColor)),
+                      style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: categoryColor)),
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -321,37 +321,37 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                     children: [
                       Icon(Icons.language_rounded, size: 10, color: Colors.green.shade700),
                       const SizedBox(width: 2),
-                      Text('Web', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.green.shade700)),
+                      Text('Web', style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.green.shade700)),
                     ],
                   ),
                 ),
                 const Spacer(),
                 if (source.isNotEmpty)
                   Flexible(
-                    child: Text(source, style: GoogleFonts.inter(fontSize: 9, color: AppTheme.textT(context)),
+                    child: Text(source, style: AppFonts.inter(fontSize: 9, color: AppTheme.textT(context)),
                         overflow: TextOverflow.ellipsis),
                   ),
               ],
             ),
             const SizedBox(height: 10),
             Text(item['title'] ?? '',
-                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
+                style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
                 maxLines: 3, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 6),
             if ((item['summary'] as String? ?? '').isNotEmpty && item['summary'] != item['title'])
               Text(item['summary'] ?? '',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context), height: 1.5),
+                  style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context), height: 1.5),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 8),
             Row(
               children: [
                 Icon(Icons.access_time_rounded, size: 12, color: AppTheme.textT(context)),
                 const SizedBox(width: 4),
-                Text(dateStr, style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textT(context))),
+                Text(dateStr, style: AppFonts.inter(fontSize: 10, color: AppTheme.textT(context))),
                 const Spacer(),
-                Icon(Icons.open_in_new_rounded, size: 12, color: AppTheme.primaryColor),
+                const Icon(Icons.open_in_new_rounded, size: 12, color: AppTheme.primaryColor),
                 const SizedBox(width: 4),
-                Text('Tap to read', style: GoogleFonts.inter(fontSize: 10, color: AppTheme.primaryColor)),
+                Text('Tap to read', style: AppFonts.inter(fontSize: 10, color: AppTheme.primaryColor)),
               ],
             ),
           ],
@@ -396,7 +396,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                       color: categoryColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(category, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: categoryColor)),
+                    child: Text(category, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: categoryColor)),
                   ),
                   const SizedBox(width: 8),
                   if ((item['source'] as String? ?? '').isNotEmpty)
@@ -407,18 +407,18 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                           color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(item['source'] ?? '', style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(ctx)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(item['source'] ?? '', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(ctx)), maxLines: 1, overflow: TextOverflow.ellipsis),
                       ),
                     ),
                 ],
               ),
               const SizedBox(height: 16),
-              Text(item['title'] ?? '', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800)),
+              Text(item['title'] ?? '', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
-              Text(item['dateStr'] ?? '', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
+              Text(item['dateStr'] ?? '', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
               const SizedBox(height: 16),
               if ((item['summary'] as String? ?? '').isNotEmpty)
-                Text(item['summary'] ?? '', style: GoogleFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(ctx))),
+                Text(item['summary'] ?? '', style: AppFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(ctx))),
               const SizedBox(height: 20),
               // UPSC relevance hint
               Container(
@@ -433,16 +433,16 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
+                        const Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
                         const SizedBox(width: 6),
-                        Text('UPSC Relevance', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                        Text('UPSC Relevance', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text('Category: $category', style: GoogleFonts.inter(fontSize: 13, height: 1.5)),
+                    Text('Category: $category', style: AppFonts.inter(fontSize: 13, height: 1.5)),
                     const SizedBox(height: 4),
                     Text('This topic is relevant for UPSC ${_getRelevantPaper(category)} preparation.',
-                        style: GoogleFonts.inter(fontSize: 13, height: 1.5, color: AppTheme.textS(ctx))),
+                        style: AppFonts.inter(fontSize: 13, height: 1.5, color: AppTheme.textS(ctx))),
                   ],
                 ),
               ),
@@ -513,7 +513,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
             Icon(Icons.article_outlined, size: 48, color: AppTheme.textT(context)),
             const SizedBox(height: 12),
             Text('No items in this category',
-                style: GoogleFonts.inter(color: AppTheme.textS(context))),
+                style: AppFonts.inter(color: AppTheme.textS(context))),
           ],
         ),
       );
@@ -550,7 +550,7 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(item['category'] ?? '',
-                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+                      style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
                 ),
                 const SizedBox(width: 8),
                 if (important)
@@ -563,30 +563,30 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.star_rounded, size: 10, color: AppTheme.errorRed),
+                        const Icon(Icons.star_rounded, size: 10, color: AppTheme.errorRed),
                         const SizedBox(width: 2),
-                        Text('Important', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.errorRed)),
+                        Text('Important', style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.errorRed)),
                       ],
                     ),
                   ),
                 const Spacer(),
-                Text(item['date'] ?? '', style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textT(context))),
+                Text(item['date'] ?? '', style: AppFonts.inter(fontSize: 10, color: AppTheme.textT(context))),
               ],
             ),
             const SizedBox(height: 10),
             Text(item['title'] ?? '',
-                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
+                style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
                 maxLines: 3, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 6),
             Text(item['summary'] ?? '',
-                style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context), height: 1.5),
+                style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context), height: 1.5),
                 maxLines: 3, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 8),
             Row(
               children: [
                 Icon(Icons.visibility_rounded, size: 13, color: AppTheme.textT(context)),
                 const SizedBox(width: 4),
-                Text('Tap to read full analysis', style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textT(context))),
+                Text('Tap to read full analysis', style: AppFonts.inter(fontSize: 10, color: AppTheme.textT(context))),
               ],
             ),
           ],
@@ -629,19 +629,19 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(item['category'] ?? '', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+                child: Text(item['category'] ?? '', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
               ),
               const SizedBox(height: 12),
-              Text(item['title'] ?? '', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800)),
+              Text(item['title'] ?? '', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
-              Text(item['date'] ?? '', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
+              Text(item['date'] ?? '', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
               const SizedBox(height: 16),
               // Scraped bodies carry section markers ("## ", "• "); render them
               // as real sections rather than printing the markup.
               RichArticleContent(content: item['detail'] ?? ''),
               const SizedBox(height: 20),
               if (keyPoints.isNotEmpty) ...[
-                Text('Key Points for UPSC:', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                Text('Key Points for UPSC:', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                 const SizedBox(height: 10),
                 ...keyPoints.map((p) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -651,10 +651,10 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                       Container(
                         margin: const EdgeInsets.only(top: 6),
                         width: 6, height: 6,
-                        decoration: BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle),
+                        decoration: const BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 10),
-                      Expanded(child: Text(p, style: GoogleFonts.inter(fontSize: 13, height: 1.5))),
+                      Expanded(child: Text(p, style: AppFonts.inter(fontSize: 13, height: 1.5))),
                     ],
                   ),
                 )),
@@ -673,13 +673,13 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
+                          const Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
                           const SizedBox(width: 6),
-                          Text('UPSC Relevance', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                          Text('UPSC Relevance', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(upscRelevance, style: GoogleFonts.inter(fontSize: 13, height: 1.5)),
+                      Text(upscRelevance, style: AppFonts.inter(fontSize: 13, height: 1.5)),
                     ],
                   ),
                 ),

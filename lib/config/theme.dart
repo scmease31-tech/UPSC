@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/material.dart';
+import './app_fonts.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// UPSC Daily Edge — Premium Glassmorphic Theme System
@@ -327,7 +327,7 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent, foregroundColor: textPrimary,
         elevation: 0, scrolledUnderElevation: 0, centerTitle: false,
-        titleTextStyle: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: textPrimary, letterSpacing: -0.4),
+        titleTextStyle: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: textPrimary, letterSpacing: -0.4),
         iconTheme: const IconThemeData(color: textPrimary, size: 22),
       ),
       textTheme: _buildTextTheme(Brightness.light),
@@ -337,15 +337,15 @@ class AppTheme {
       chipTheme: _chipTheme(Brightness.light),
       inputDecorationTheme: _inputTheme(Brightness.light),
       dividerTheme: DividerThemeData(color: dividerColor.withValues(alpha: 0.5), thickness: 1, space: 1),
-      dialogTheme: DialogThemeData(backgroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusXl)), titleTextStyle: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w600, color: textPrimary)),
+      dialogTheme: DialogThemeData(backgroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusXl)), titleTextStyle: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w600, color: textPrimary)),
       snackBarTheme: SnackBarThemeData(behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMd))),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(backgroundColor: Colors.transparent, selectedItemColor: primaryColor, unselectedItemColor: textTertiary, type: BottomNavigationBarType.fixed, elevation: 0),
       scrollbarTheme: ScrollbarThemeData(
-        thumbVisibility: WidgetStatePropertyAll(true),
-        thickness: WidgetStatePropertyAll(4),
+        thumbVisibility: const WidgetStatePropertyAll(true),
+        thickness: const WidgetStatePropertyAll(4),
         radius: const Radius.circular(8),
         thumbColor: WidgetStatePropertyAll(primaryColor.withValues(alpha: 0.3)),
-        trackColor: WidgetStatePropertyAll(Colors.transparent),
+        trackColor: const WidgetStatePropertyAll(Colors.transparent),
         crossAxisMargin: 2,
         mainAxisMargin: 4,
         minThumbLength: 36,
@@ -370,7 +370,7 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent, foregroundColor: darkTextPrimary,
         elevation: 0, scrolledUnderElevation: 0, centerTitle: false,
-        titleTextStyle: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: darkTextPrimary, letterSpacing: -0.4),
+        titleTextStyle: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: darkTextPrimary, letterSpacing: -0.4),
         iconTheme: const IconThemeData(color: Color(0xFFF0F3F6), size: 22),
       ),
       textTheme: _buildTextTheme(Brightness.dark),
@@ -380,15 +380,15 @@ class AppTheme {
       chipTheme: _chipTheme(Brightness.dark),
       inputDecorationTheme: _inputTheme(Brightness.dark),
       dividerTheme: DividerThemeData(color: darkDividerColor.withValues(alpha: 0.5), thickness: 1, space: 1),
-      dialogTheme: DialogThemeData(backgroundColor: darkCardBg, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusXl)), titleTextStyle: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w600, color: darkTextPrimary)),
+      dialogTheme: DialogThemeData(backgroundColor: darkCardBg, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusXl)), titleTextStyle: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w600, color: darkTextPrimary)),
       snackBarTheme: SnackBarThemeData(behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMd))),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(backgroundColor: Colors.transparent, selectedItemColor: primaryColor, unselectedItemColor: darkTextTertiary, type: BottomNavigationBarType.fixed, elevation: 0),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(backgroundColor: Colors.transparent, selectedItemColor: primaryColor, unselectedItemColor: darkTextTertiary, type: BottomNavigationBarType.fixed, elevation: 0),
       scrollbarTheme: ScrollbarThemeData(
-        thumbVisibility: WidgetStatePropertyAll(true),
-        thickness: WidgetStatePropertyAll(4),
+        thumbVisibility: const WidgetStatePropertyAll(true),
+        thickness: const WidgetStatePropertyAll(4),
         radius: const Radius.circular(8),
         thumbColor: WidgetStatePropertyAll(primaryColor.withValues(alpha: 0.35)),
-        trackColor: WidgetStatePropertyAll(Colors.transparent),
+        trackColor: const WidgetStatePropertyAll(Colors.transparent),
         crossAxisMargin: 2,
         mainAxisMargin: 4,
         minThumbLength: 36,
@@ -404,15 +404,15 @@ class AppTheme {
     final tp = brightness == Brightness.dark ? darkTextPrimary : textPrimary;
     final ts = brightness == Brightness.dark ? darkTextSecondary : textSecondary;
     return TextTheme(
-      headlineLarge: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.w800, color: tp, letterSpacing: -0.5, height: 1.2),
-      headlineMedium: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w700, color: tp, letterSpacing: -0.3, height: 1.3),
-      titleLarge: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: tp, letterSpacing: -0.2),
-      titleMedium: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: tp),
-      bodyLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w400, color: tp, height: 1.6),
-      bodyMedium: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, color: ts, height: 1.5),
-      bodySmall: GoogleFonts.inter(fontSize: 12, color: ts),
-      labelLarge: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: primaryColor),
-      labelMedium: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: ts),
+      headlineLarge: AppFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.w800, color: tp, letterSpacing: -0.5, height: 1.2),
+      headlineMedium: AppFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w700, color: tp, letterSpacing: -0.3, height: 1.3),
+      titleLarge: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: tp, letterSpacing: -0.2),
+      titleMedium: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: tp),
+      bodyLarge: AppFonts.inter(fontSize: 16, fontWeight: FontWeight.w400, color: tp, height: 1.6),
+      bodyMedium: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, color: ts, height: 1.5),
+      bodySmall: AppFonts.inter(fontSize: 12, color: ts),
+      labelLarge: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: primaryColor),
+      labelMedium: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: ts),
     );
   }
 
@@ -423,7 +423,7 @@ class AppTheme {
       elevation: WidgetStateProperty.all(0),
       padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 28, vertical: 16)),
       shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMd))),
-      textStyle: WidgetStateProperty.all(GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+      textStyle: WidgetStateProperty.all(AppFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
     ),
   );
 
@@ -434,7 +434,7 @@ class AppTheme {
         foregroundColor: fg, side: BorderSide(color: fg.withValues(alpha: 0.3)),
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMd)),
-        textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+        textStyle: AppFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -444,7 +444,7 @@ class AppTheme {
     final labelColor = b == Brightness.dark ? darkTextSecondary : textSecondary;
     return ChipThemeData(
       backgroundColor: bgColor, selectedColor: primaryColor.withValues(alpha: 0.15),
-      labelStyle: GoogleFonts.inter(fontSize: 13, color: labelColor, fontWeight: FontWeight.w500),
+      labelStyle: AppFonts.inter(fontSize: 13, color: labelColor, fontWeight: FontWeight.w500),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusSm)),
       side: BorderSide.none, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     );
@@ -459,7 +459,17 @@ class AppTheme {
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(radiusMd), borderSide: BorderSide(color: b == Brightness.dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06))),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(radiusMd), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      hintStyle: GoogleFonts.inter(fontSize: 14, color: hintColor),
+      hintStyle: AppFonts.inter(fontSize: 14, color: hintColor),
     );
+  }
+
+  /// Vertical space a tab screen must reserve at the end of its scroll view so
+  /// content clears the floating bottom navigation bar. The bar is 72px tall and
+  /// is drawn over the body (the shell Scaffold sets extendBody: true), offset by
+  /// the gesture inset. A fixed spacer under-reserves on gesture-nav devices,
+  /// which left the last control on short screens permanently half-covered.
+  static double navBarClearance(BuildContext context) {
+    final inset = MediaQuery.of(context).padding.bottom;
+    return 72 + (inset > 0 ? inset : 12) + 24;
   }
 }

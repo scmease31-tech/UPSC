@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/quiz_provider.dart';
@@ -36,7 +36,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     super.initState();
     _timerCtrl = AnimationController(
       vsync: this,
-      duration: Duration(seconds: AppConstants.quizTimerSeconds),
+      duration: const Duration(seconds: AppConstants.quizTimerSeconds),
     )..forward();
 
     _cardCtrl = AnimationController(
@@ -97,7 +97,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               children: [
                 Lottie.asset('assets/animations/loading.json', width: 120, height: 120),
                 const SizedBox(height: 16),
-                Text('Loading questions...', style: GoogleFonts.inter(color: AppTheme.textS(context))),
+                Text('Loading questions...', style: AppFonts.inter(color: AppTheme.textS(context))),
               ],
             ),
           ),
@@ -115,16 +115,16 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               children: [
                 Icon(Icons.quiz_rounded, size: 56, color: AppTheme.textT(context)),
                 const SizedBox(height: 16),
-                Text('No questions available', style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                Text('No questions available', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                 const SizedBox(height: 8),
-                Text('Try again later or select a different topic', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+                Text('Try again later or select a different topic', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
                 const SizedBox(height: 24),
                 SizedBox(
                   height: 44,
                   child: ElevatedButton.icon(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                    label: Text('Go Back', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
+                    label: Text('Go Back', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
@@ -221,7 +221,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           Expanded(
             child: Text(
               'Question ${quiz.currentIndex + 1} of ${quiz.totalQuestions}',
-              style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
+              style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
               textAlign: TextAlign.center,
             ),
           ),
@@ -232,7 +232,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text('${quiz.score} pts',
-                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
           ),
         ],
       ),
@@ -248,7 +248,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           value: progress,
           minHeight: 6,
           backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.08),
-          valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+          valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
         ),
       ),
     );
@@ -278,7 +278,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
             ),
           ),
           Text('$_secondsLeft',
-              style: GoogleFonts.plusJakartaSans(
+              style: AppFonts.plusJakartaSans(
                   fontSize: 22, fontWeight: FontWeight.w800, color: color)),
         ],
       ),
@@ -304,7 +304,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(q.category.isNotEmpty ? q.category : 'General',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.accentViolet)),
+                    style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.accentViolet)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -313,13 +313,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(q.difficulty,
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: _difficultyColor(q.difficulty))),
+                    style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: _difficultyColor(q.difficulty))),
               ),
             ],
           ),
           const SizedBox(height: 14),
           Text(q.question,
-              style: GoogleFonts.plusJakartaSans(
+              style: AppFonts.plusJakartaSans(
                   fontSize: 17, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
           // Show enriched metadata if available
           if (q.syllabusArea.isNotEmpty || q.pyqYear.isNotEmpty) ...[
@@ -357,7 +357,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           Flexible(
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+              style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: color),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
@@ -389,13 +389,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb_rounded, color: AppTheme.successGreen, size: 18),
+              const Icon(Icons.lightbulb_rounded, color: AppTheme.successGreen, size: 18),
               const SizedBox(width: 8),
-              Text('Explanation', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.successGreen)),
+              Text('Explanation', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.successGreen)),
             ],
           ),
           const SizedBox(height: 8),
-          Text(q.explanation, style: GoogleFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textP(context))),
+          Text(q.explanation, style: AppFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textP(context))),
         ],
       ),
     );
@@ -425,7 +425,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
             elevation: 0,
           ),
           child: Text(isLast ? 'View Results' : 'Next Question',
-              style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+              style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
         ),
       ),
     );
@@ -436,8 +436,8 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Exit Quiz?', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
-        content: Text('Your progress will be lost.', style: GoogleFonts.inter()),
+        title: Text('Exit Quiz?', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+        content: Text('Your progress will be lost.', style: AppFonts.inter()),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
@@ -446,7 +446,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               Navigator.pop(context);
               context.read<QuizProvider>().resetQuiz();
             },
-            child: Text('Exit', style: TextStyle(color: AppTheme.errorRed)),
+            child: const Text('Exit', style: TextStyle(color: AppTheme.errorRed)),
           ),
         ],
       ),

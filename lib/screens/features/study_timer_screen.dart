@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/daily_progress_provider.dart';
@@ -141,7 +141,7 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
     final isBreakMsg = msg.contains('break') || msg.contains('Break');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        content: Text(msg, style: AppFonts.inter(fontWeight: FontWeight.w600)),
         backgroundColor: isBreakMsg ? AppTheme.accentViolet : AppTheme.primaryColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -178,7 +178,7 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
                 ),
                 child: Text(
                   _isBreak ? 'Break Time' : 'Focus Mode',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 14, fontWeight: FontWeight.w700,
                     color: _isBreak ? AppTheme.successGreen : AppTheme.primaryColor,
                   ),
@@ -216,7 +216,7 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
                             children: [
                               Text(
                                 _formatTime(_secondsLeft),
-                                style: GoogleFonts.plusJakartaSans(
+                                style: AppFonts.plusJakartaSans(
                                   fontSize: fontSize, fontWeight: FontWeight.w800,
                                   color: AppTheme.textP(context),
                                   letterSpacing: 2,
@@ -224,7 +224,7 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
                               ),
                               Text(
                                 _isBreak ? 'Relax' : 'Stay focused',
-                                style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context)),
+                                style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context)),
                               ),
                             ],
                           ),
@@ -287,7 +287,7 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Studying', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                    Text('Studying', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8, runSpacing: 8,
@@ -301,7 +301,7 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
                               color: sel ? AppTheme.primaryColor : AppTheme.primaryColor.withValues(alpha: 0.06),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text(s, style: GoogleFonts.inter(
+                            child: Text(s, style: AppFonts.inter(
                               fontSize: 12, fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
                               color: sel ? Colors.white : AppTheme.textS(context),
                             )),
@@ -320,7 +320,7 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Today\'s Progress', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                    Text('Today\'s Progress', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -345,9 +345,9 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      Icon(Icons.tips_and_updates_rounded, size: 16, color: AppTheme.accentViolet),
+                      const Icon(Icons.tips_and_updates_rounded, size: 16, color: AppTheme.accentViolet),
                       const SizedBox(width: 6),
-                      Text('Pomodoro Tips', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accentViolet)),
+                      Text('Pomodoro Tips', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accentViolet)),
                     ]),
                     const SizedBox(height: 8),
                     _tipRow('25 min focused study → 5 min break'),
@@ -377,7 +377,7 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
             child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(height: 4),
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: color)),
+          Text(label, style: AppFonts.inter(fontSize: 11, color: color)),
         ],
       ),
     );
@@ -389,8 +389,8 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
         children: [
           Icon(icon, color: color, size: 22),
           const SizedBox(height: 6),
-          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+          Text(value, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+          Text(label, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
         ],
       ),
     );
@@ -401,9 +401,9 @@ class _StudyTimerScreenState extends State<StudyTimerScreen>
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(Icons.check_circle_rounded, size: 14, color: AppTheme.successGreen),
+          const Icon(Icons.check_circle_rounded, size: 14, color: AppTheme.successGreen),
           const SizedBox(width: 8),
-          Expanded(child: Text(text, style: GoogleFonts.inter(fontSize: 12, height: 1.4, color: AppTheme.textP(context)))),
+          Expanded(child: Text(text, style: AppFonts.inter(fontSize: 12, height: 1.4, color: AppTheme.textP(context)))),
         ],
       ),
     );

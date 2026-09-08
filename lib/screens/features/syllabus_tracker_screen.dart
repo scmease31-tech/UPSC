@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../config/theme.dart';
@@ -92,7 +92,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
         indicatorWeight: 3,
         labelColor: AppTheme.primaryColor,
         unselectedLabelColor: AppTheme.textS(context),
-        labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12),
+        labelStyle: AppFonts.inter(fontWeight: FontWeight.w700, fontSize: 12),
         tabAlignment: TabAlignment.start,
         tabs: List.generate(_papers.length, (i) => Tab(text: _papers[i].shortName)),
       ),
@@ -110,16 +110,16 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
                     size: 56,
                     strokeWidth: 6,
                     child: Text('${(totalAll > 0 ? totalDone / totalAll * 100 : 0).round()}%',
-                        style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.primaryColor)),
+                        style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.primaryColor)),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Overall Progress', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                        Text('Overall Progress', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                         const SizedBox(height: 4),
-                        Text('$totalDone / $totalAll topics covered', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                        Text('$totalDone / $totalAll topics covered', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
                         const SizedBox(height: 8),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
@@ -127,7 +127,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
                             value: totalAll > 0 ? totalDone / totalAll : 0,
                             minHeight: 5,
                             backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                            valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+                            valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
                           ),
                         ),
                       ],
@@ -168,7 +168,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
                   color: paper.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text('$done / $total', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: paper.color)),
+                child: Text('$done / $total', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: paper.color)),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -218,10 +218,10 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(section.name,
-                      style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                      style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                 ),
                 Text('$sectionDone/${section.topics.length}',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: paper.color)),
+                    style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: paper.color)),
               ],
             ),
             const SizedBox(height: 10),
@@ -254,7 +254,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
                       Expanded(
                         child: Text(
                           topic,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 13,
                             color: done ? AppTheme.textT(context) : AppTheme.textP(context),
                             decoration: done ? TextDecoration.lineThrough : null,
@@ -275,7 +275,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
 
   // ── All UPSC Papers & Syllabus ──
   static final _papers = <_Paper>[
-    _Paper('GS-I', 'GS-I', AppTheme.accentViolet, [
+    const _Paper('GS-I', 'GS-I', AppTheme.accentViolet, [
       _Section('Indian Heritage & Culture', Icons.temple_hindu_rounded, [
         'Salient aspects of Art Forms, Literature, Architecture',
         'Ancient Indian History — Indus Valley to Gupta Period',
@@ -309,7 +309,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
         'Climate and weather patterns',
       ]),
     ]),
-    _Paper('GS-II', 'GS-II', const Color(0xFF448AFF), [
+    const _Paper('GS-II', 'GS-II', Color(0xFF448AFF), [
       _Section('Indian Constitution & Polity', Icons.account_balance_rounded, [
         'Constitution — historical underpinnings, evolution, features',
         'Fundamental Rights and Duties',
@@ -341,7 +341,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
         'Important International institutions, agencies — structure, mandate',
       ]),
     ]),
-    _Paper('GS-III', 'GS-III', const Color(0xFFFF6B6B), [
+    const _Paper('GS-III', 'GS-III', Color(0xFFFF6B6B), [
       _Section('Indian Economy', Icons.trending_up_rounded, [
         'Indian Economy — Planning, Mobilization of resources, Growth',
         'Inclusive growth and issues arising from it',
@@ -376,7 +376,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
         'Role of media and social networking sites in internal security',
       ]),
     ]),
-    _Paper('GS-IV (Ethics)', 'GS-IV', const Color(0xFF8D6E63), [
+    const _Paper('GS-IV (Ethics)', 'GS-IV', Color(0xFF8D6E63), [
       _Section('Ethics and Human Interface', Icons.balance_rounded, [
         'Ethics — essence, determinants and consequences of Ethics',
         'Dimensions of Ethics — private and public relationships',
@@ -398,7 +398,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
         'Accountability and ethical governance',
       ]),
     ]),
-    _Paper('Essay', 'Essay', const Color(0xFF9C27B0), [
+    const _Paper('Essay', 'Essay', Color(0xFF9C27B0), [
       _Section('Essay Practice Topics', Icons.edit_note_rounded, [
         'Philosophical/Abstract topics — Freedom, Democracy, Justice',
         'Social issues — Gender, Caste, Education, Health',
@@ -410,7 +410,7 @@ class _SyllabusTrackerScreenState extends State<SyllabusTrackerScreen>
         'Culture & Society — Diversity, Unity, Heritage',
       ]),
     ]),
-    _Paper('CSAT', 'CSAT', const Color(0xFF607D8B), [
+    const _Paper('CSAT', 'CSAT', Color(0xFF607D8B), [
       _Section('Comprehension', Icons.menu_book_rounded, [
         'Reading Comprehension — passages and inference',
         'Interpersonal skills including communication',

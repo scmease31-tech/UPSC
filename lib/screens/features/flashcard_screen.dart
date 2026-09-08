@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
@@ -82,7 +82,7 @@ class _FlashcardScreenState extends State<FlashcardScreen>
                 child: Row(
                   children: [
                     IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () => Navigator.pop(context)),
-                    Text('Flashcards', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                    Text('Flashcards', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                   ],
                 ),
               ),
@@ -104,7 +104,7 @@ class _FlashcardScreenState extends State<FlashcardScreen>
                 child: Row(
                   children: [
                     IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () => Navigator.pop(context)),
-                    Text('Flashcards', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                    Text('Flashcards', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                   ],
                 ),
               ),
@@ -115,9 +115,9 @@ class _FlashcardScreenState extends State<FlashcardScreen>
                     children: [
                       Lottie.asset('assets/animations/empty_box.json', width: 160, height: 160, repeat: true),
                       const SizedBox(height: 12),
-                      Text('No flashcards available', style: GoogleFonts.inter(fontSize: 15, color: AppTheme.textS(context))),
+                      Text('No flashcards available', style: AppFonts.inter(fontSize: 15, color: AppTheme.textS(context))),
                       const SizedBox(height: 4),
-                      Text('Check back later for new content', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textT(context))),
+                      Text('Check back later for new content', style: AppFonts.inter(fontSize: 12, color: AppTheme.textT(context))),
                     ],
                   ),
                 ),
@@ -146,7 +146,7 @@ class _FlashcardScreenState extends State<FlashcardScreen>
                     HapticFeedback.lightImpact();
                     Navigator.pop(context);
                   }),
-                  Text('Flashcards', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+                  Text('Flashcards', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -161,7 +161,7 @@ class _FlashcardScreenState extends State<FlashcardScreen>
                         const SizedBox(width: 4),
                         Text(
                           '${mastered.length}/${_flashcards.length}',
-                          style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.successGreen),
+                          style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.successGreen),
                         ),
                       ],
                     ),
@@ -188,7 +188,7 @@ class _FlashcardScreenState extends State<FlashcardScreen>
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               '${_currentIndex + 1} of ${_flashcards.length}',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textS(context)),
+              style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textS(context)),
             ),
           ),
 
@@ -367,25 +367,43 @@ class _FlashcardScreenState extends State<FlashcardScreen>
                     ),
                   ],
                 ),
-                const Spacer(),
-                Text(
-                  isBack ? 'Answer' : 'Question',
-                  style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600,
-                    color: (isBack ? Colors.white : AppTheme.textT(context)).withValues(alpha: 0.6),
+                // Long answers scroll inside the card instead of overflowing it.
+                // ConstrainedBox keeps short cards vertically centred, exactly as
+                // the previous Spacer/Spacer pair did.
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              isBack ? 'Answer' : 'Question',
+                              style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600,
+                                color: (isBack ? Colors.white : AppTheme.textT(context)).withValues(alpha: 0.6),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              isBack ? card['back']! : card['front']!,
+                              style: TextStyle(
+                                fontSize: isBack ? 15 : 20,
+                                fontWeight: FontWeight.w700,
+                                color: isBack ? Colors.white : AppTheme.textP(context),
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  isBack ? card['back']! : card['front']!,
-                  style: TextStyle(
-                    fontSize: isBack ? 15 : 20,
-                    fontWeight: FontWeight.w700,
-                    color: isBack ? Colors.white : AppTheme.textP(context),
-                    height: 1.5,
-                  ),
-                ),
-                const Spacer(),
+                const SizedBox(height: 12),
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -444,7 +462,7 @@ class _ActionButton extends StatelessWidget {
           const SizedBox(height: 6),
           SizedBox(
             width: w < 360 ? 60 : 80,
-            child: Text(label, style: GoogleFonts.inter(fontSize: w < 360 ? 9 : 10, fontWeight: FontWeight.w600, color: color), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+            child: Text(label, style: AppFonts.inter(fontSize: w < 360 ? 9 : 10, fontWeight: FontWeight.w600, color: color), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
           ),
         ],
       ),

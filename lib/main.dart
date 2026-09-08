@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, LicenseRegistry, LicenseEntryWithLineBreaks;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +25,19 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// Entry point of the UPSC Daily Edge application.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Surface the bundled fonts' licences in Flutter's licence page. Package
+  // licences are collected automatically; assets we ship ourselves are not, and
+  // the OFL requires its text to travel with the fonts.
+  LicenseRegistry.addLicense(() async* {
+    for (final entry in const <String, String>{
+      'Inter': 'assets/fonts/OFL-Inter.txt',
+      'Plus Jakarta Sans': 'assets/fonts/OFL-PlusJakartaSans.txt',
+    }.entries) {
+      final text = await rootBundle.loadString(entry.value);
+      yield LicenseEntryWithLineBreaks(<String>[entry.key], text);
+    }
+  });
 
   // Set system UI overlay style for status bar (mobile only)
   if (!kIsWeb) {
@@ -139,6 +153,23 @@ class _AppWithBookmarkSyncState extends State<_AppWithBookmarkSync> {
       themeMode: themeProvider.themeMode,
       initialRoute: AppRoutes.splash,
       routes: AppRoutes.routes,
+      // The app uses fixed-height hero cards in several places, which cannot
+      // absorb unbounded system font scaling - on "Largest" text those cards
+      // overflow on any device. Clamping keeps the app usable for people who
+      // enlarge text while keeping every layout intact. Raise the ceiling only
+      // once those cards size themselves intrinsically.
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            textScaler: mq.textScaler.clamp(
+              minScaleFactor: 0.85,
+              maxScaleFactor: 1.3,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
   }
 }

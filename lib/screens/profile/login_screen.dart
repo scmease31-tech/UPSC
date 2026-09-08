@@ -1,8 +1,8 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -65,17 +65,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               child: Image.asset(
                 'assets/images/logo.png',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, __, ___) => const DecoratedBox(
                   decoration: BoxDecoration(gradient: AppTheme.primaryGradient),
-                  child: const Icon(Icons.auto_stories_rounded, size: 48, color: Colors.white),
+                  child: Icon(Icons.auto_stories_rounded, size: 48, color: Colors.white),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Text('UPSC Daily Edge', style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+          Text('UPSC Daily Edge', style: AppFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
           const SizedBox(height: 4),
-          Text('Your Daily UPSC Companion', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
+          Text('Your Daily UPSC Companion', style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
           const SizedBox(height: 36),
         ],
 
@@ -92,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             Expanded(child: Divider(color: AppTheme.textS(context).withValues(alpha: 0.2))),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('or', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+              child: Text('or', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
             ),
             Expanded(child: Divider(color: AppTheme.textS(context).withValues(alpha: 0.2))),
           ],
@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           child: OutlinedButton.icon(
             onPressed: auth.isLoading ? null : _googleSignIn,
             icon: SvgPicture.asset('assets/icons/google_logo.svg', width: 22, height: 22),
-            label: Text('Continue with Google', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
+            label: Text('Continue with Google', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.textP(context),
               side: BorderSide(color: AppTheme.divider(context)),
@@ -122,10 +122,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Don't have an account? ", style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            Text("Don't have an account? ", style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
             GestureDetector(
               onTap: () => Navigator.pushReplacementNamed(context, '/signup'),
-              child: Text('Sign Up', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+              child: Text('Sign Up', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
             ),
           ],
         ),
@@ -135,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         // Skip
         TextButton(
           onPressed: () => Navigator.pushReplacementNamed(context, '/main'),
-          child: Text('Continue without account', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+          child: Text('Continue without account', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
         ),
       ],
     );
@@ -165,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Welcome Back', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
+          Text('Welcome Back', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
           const SizedBox(height: 20),
           TextFormField(
             controller: _emailCtrl,
@@ -187,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.errorRed), textAlign: TextAlign.center),
+            Text(_error!, style: AppFonts.inter(fontSize: 12, color: AppTheme.errorRed), textAlign: TextAlign.center),
           ],
           const SizedBox(height: 20),
           SizedBox(
@@ -207,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       children: [
                         const Icon(Icons.login_rounded, size: 20),
                         const SizedBox(width: 8),
-                        Text('Sign In', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                        Text('Sign In', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
                       ],
                     ),
             ),
@@ -224,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
       filled: true,
       fillColor: AppTheme.card(context).withValues(alpha: 0.6),
-      labelStyle: GoogleFonts.inter(fontSize: 14),
+      labelStyle: AppFonts.inter(fontSize: 14),
     );
   }
 

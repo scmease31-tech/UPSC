@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../config/app_fonts.dart';
 
 import '../config/category_style.dart';
 import '../config/theme.dart';
@@ -119,7 +119,7 @@ class _ArticleCardState extends State<ArticleCard> {
               children: [
                 Text(
                   article.title,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textP(context),
@@ -133,7 +133,7 @@ class _ArticleCardState extends State<ArticleCard> {
                   const SizedBox(height: 6),
                   Text(
                     article.summary,
-                    style: GoogleFonts.inter(
+                    style: AppFonts.inter(
                       fontSize: 12.5,
                       color: AppTheme.textS(context),
                       height: 1.45,
@@ -188,7 +188,7 @@ class _ArticleCardState extends State<ArticleCard> {
                       Flexible(
                         child: Text(
                           style.label,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: style.onSoft(context),
@@ -201,14 +201,14 @@ class _ArticleCardState extends State<ArticleCard> {
                       const SizedBox(width: 8),
                       Text(
                         _timeAgo(article.publishedDate),
-                        style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textT(context)),
+                        style: AppFonts.inter(fontSize: 10, color: AppTheme.textT(context)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 5),
                   Text(
                     article.title,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textP(context),
@@ -227,7 +227,7 @@ class _ArticleCardState extends State<ArticleCard> {
                       Expanded(
                         child: Text(
                           article.newspaper,
-                          style: GoogleFonts.inter(
+                          style: AppFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
                             color: AppTheme.textT(context),
@@ -289,7 +289,7 @@ class _ArticleCardState extends State<ArticleCard> {
                 const Spacer(),
                 Text(
                   article.title,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppFonts.plusJakartaSans(
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -313,7 +313,7 @@ class _ArticleCardState extends State<ArticleCard> {
                     ],
                     Text(
                       _timeAgo(article.publishedDate),
-                      style: GoogleFonts.inter(
+                      style: AppFonts.inter(
                         fontSize: 11,
                         color: Colors.white.withValues(alpha: 0.85),
                       ),
@@ -364,7 +364,7 @@ class _ArticleCardState extends State<ArticleCard> {
         const SizedBox(width: 8),
         Text(
           _timeAgo(article.publishedDate),
-          style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textT(context)),
+          style: AppFonts.inter(fontSize: 10, color: AppTheme.textT(context)),
         ),
         const SizedBox(width: 8),
         Container(
@@ -398,7 +398,7 @@ class _ArticleCardState extends State<ArticleCard> {
           Flexible(
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
+              style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -426,7 +426,7 @@ class _ArticleCardState extends State<ArticleCard> {
           Flexible(
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: color),
+              style: AppFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: color),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
