@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../config/app_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'notification_service.dart';
 
 /// A newer release than the one installed.
 class UpdateInfo {
@@ -30,11 +31,14 @@ class UpdateService {
   static final ValueNotifier<UpdateInfo?> available = ValueNotifier<UpdateInfo?>(null);
 
   static bool _checkedThisSession = false;
+  static String? _lastCheckError;
 
   /// Fetch the latest release and compare it with the installed build.
-  /// Returns null when up to date, offline, or on web.
+  /// Returns null when up to date, offline, or on web. [_lastCheckError]
+  /// distinguishes an actual check failure for the manual status message.
   static Future<UpdateInfo?> fetchLatest() async {
     if (kIsWeb) return null;
+    _lastCheckError = null;
 
     try {
       final info = await PackageInfo.fromPlatform();
@@ -44,7 +48,12 @@ class UpdateService {
       final res = await http
           .get(uri, headers: {'Accept': 'application/vnd.github.v3+json'})
           .timeout(const Duration(seconds: 12));
-      if (res.statusCode != 200) return null;
+      if (res.statusCode != 200) {
+        _lastCheckError = res.statusCode == 403
+            ? 'The update server is temporarily unavailable (GitHub access denied).'
+            : 'The update server returned error ${res.statusCode}.';
+        return null;
+      }
 
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final tag = (data['tag_name'] as String? ?? '').replaceFirst('v', '');
@@ -53,16 +62,17 @@ class UpdateService {
         return null;
       }
 
-      // GitHub Pages URL gives a direct download with no redirect chain.
       final update = UpdateInfo(
         version: tag,
         notes: data['body'] as String? ?? '',
         downloadUrl: 'https://$_owner.github.io/$_repo/$_apkAsset',
       );
       available.value = update;
+      await NotificationService.showUpdateAvailable(version: tag);
       return update;
-    } catch (_) {
-      // Best-effort: an update check must never break app start-up.
+    } catch (error) {
+      _lastCheckError = 'Could not reach the update server. Check your internet connection.';
+      debugPrint('Update check failed: $error');
       return null;
     }
   }
@@ -89,6 +99,10 @@ class UpdateService {
     if (!context.mounted) return;
 
     if (update == null) {
+      if (_lastCheckError != null) {
+        messenger.showSnackBar(SnackBar(content: Text(_lastCheckError!)));
+        return;
+      }
       final info = await PackageInfo.fromPlatform();
       if (!context.mounted) return;
       messenger.showSnackBar(

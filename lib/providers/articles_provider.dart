@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/article.dart';
 import '../data/dummy_data.dart';
 import '../services/notification_service.dart';
+import '../services/firebase_services.dart';
 
 /// Provides current affairs articles and manages article-related state.
 class ArticlesProvider extends ChangeNotifier {
@@ -16,7 +17,7 @@ class ArticlesProvider extends ChangeNotifier {
   List<Article>? _cachedFiltered;
   String _cacheKey = '';
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseServices.contentFirestore;
   StreamSubscription<QuerySnapshot>? _firestoreSub;
 
   List<Article> get allArticles => _articles;

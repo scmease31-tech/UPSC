@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/quiz_question.dart';
 import '../data/dummy_data.dart';
 import '../services/gemini_service.dart';
+import '../services/firebase_services.dart';
 
 /// Manages quiz state: questions, timer, scoring, and results.
 class QuizProvider extends ChangeNotifier {
@@ -15,7 +16,7 @@ class QuizProvider extends ChangeNotifier {
   bool _isLoading = false;
   List<int?> _userAnswers = [];
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseServices.contentFirestore;
 
   List<QuizQuestion> get questions => _questions;
   int get currentIndex => _currentIndex;

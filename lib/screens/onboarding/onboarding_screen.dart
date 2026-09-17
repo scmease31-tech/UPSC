@@ -8,6 +8,7 @@ import '../../config/app_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
+import '../../services/firebase_services.dart';
 import '../../widgets/glass_widgets.dart';
 
 const _apkDownloadUrl = 'https://scmease31-tech.github.io/UPSC/UPSC-Daily-Edge.apk';
@@ -565,7 +566,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               ),
               const SizedBox(height: 36),
               StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
+                stream: FirebaseServices.contentFirestore
                     .collection('articles')
                     .orderBy('publishedDate', descending: true)
                     .limit(12)

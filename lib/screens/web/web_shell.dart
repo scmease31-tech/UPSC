@@ -483,7 +483,7 @@ class _WebShellState extends State<WebShell> with SingleTickerProviderStateMixin
           _WebIconButton(
             icon: Icons.notifications_outlined,
             dark: dark,
-            onTap: () {},
+            onTap: () => widget.onIndexChanged(4),
           ),
           const SizedBox(width: 8),
           // User avatar

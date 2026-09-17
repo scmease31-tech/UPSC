@@ -4,12 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/article.dart';
 import '../models/quiz_question.dart';
+import 'firebase_services.dart';
 
 /// Centralized API service that fetches ALL content from Firestore.
 /// Replaces hardcoded data with database-first architecture.
 /// Implements aggressive caching to minimize network calls.
 class ApiContentService {
-  static final _firestore = FirebaseFirestore.instance;
+  static final _firestore = FirebaseServices.contentFirestore;
 
   // Cache TTL
   static const _shortTTL = Duration(hours: 2);    // Articles, current affairs

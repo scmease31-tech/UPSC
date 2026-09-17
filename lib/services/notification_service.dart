@@ -60,6 +60,8 @@ class NotificationService {
       navigatorKey!.currentState!.pushNamed('/explore');
     } else if (payload == 'streak') {
       navigatorKey!.currentState!.pushNamed('/content-tracker');
+    } else if (payload == 'update') {
+      navigatorKey!.currentState!.pushNamed('/main');
     } else {
       navigatorKey!.currentState!.pushNamed('/main');
     }
@@ -165,6 +167,37 @@ class NotificationService {
       details,
       payload: 'article:$articleId',
     );
+  }
+
+  static String? _lastNotifiedUpdateVersion;
+
+  /// Notify installed-app users when a newer release has been discovered.
+  static Future<void> showUpdateAvailable({required String version}) async {
+    if (kIsWeb || _lastNotifiedUpdateVersion == version) return;
+    _lastNotifiedUpdateVersion = version;
+
+    const androidDetails = AndroidNotificationDetails(
+      'app_updates',
+      'App Updates',
+      channelDescription: 'New UPSC Daily Edge release notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    const details = NotificationDetails(android: androidDetails);
+
+    try {
+      await _plugin.show(
+        50,
+        'UPSC Daily Edge update available',
+        'Version $version is ready. Tap to view the update.',
+        details,
+        payload: 'update',
+      );
+    } catch (_) {
+      // The in-app dialog and Profile banner still surface the update if local
+      // notification permission is unavailable.
+    }
   }
 
   /// Get the next occurrence of a specific time.

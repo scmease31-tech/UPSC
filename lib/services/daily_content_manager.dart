@@ -1,8 +1,8 @@
 import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/dummy_data.dart';
 import '../models/quiz_question.dart';
+import 'firebase_services.dart';
 
 /// Manages daily rotation of quiz questions, flashcards, and daily challenge.
 /// Fetches from Firestore when available; falls back to local data.
@@ -68,7 +68,7 @@ class DailyContentManager {
   /// Fetch flashcards from Firestore and cache them.
   static Future<void> fetchFlashcardsFromFirestore() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('flashcards').get();
+      final snapshot = await FirebaseServices.contentFirestore.collection('flashcards').get();
       if (snapshot.docs.isNotEmpty) {
         _cachedFirestoreFlashcards = snapshot.docs.map((doc) {
           final data = doc.data();
@@ -88,7 +88,7 @@ class DailyContentManager {
   static Future<List<Map<String, dynamic>>> fetchDailyFacts() async {
     if (_cachedDailyFacts != null) return _cachedDailyFacts!;
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('dailyFacts').get();
+      final snapshot = await FirebaseServices.contentFirestore.collection('dailyFacts').get();
       if (snapshot.docs.isNotEmpty) {
         _cachedDailyFacts = snapshot.docs.map((doc) {
           final data = doc.data();
