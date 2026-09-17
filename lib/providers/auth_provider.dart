@@ -5,12 +5,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_profile.dart';
+import '../firebase_options.dart';
+import '../services/firebase_services.dart';
 
 /// Manages authentication state, user profile data, and personalization.
 class AuthProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _auth = FirebaseServices.auth;
+  final FirebaseFirestore _firestore = FirebaseServices.userFirestore;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: DefaultFirebaseOptions.androidAuthWebClientId,
+  );
 
   late final StreamSubscription<User?> _authSub;
 

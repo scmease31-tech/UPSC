@@ -81,7 +81,7 @@ class UpdateBanner extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Version ${update.version} — tap to install',
+                        'Version ${update.version} — tap to view',
                         style: AppFonts.inter(
                           fontSize: 11.5,
                           color: Colors.white.withValues(alpha: 0.9),

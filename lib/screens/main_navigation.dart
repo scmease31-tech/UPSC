@@ -30,7 +30,7 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _currentIndex = 0;
   late AnimationController _navAnimCtrl;
 
@@ -67,6 +67,7 @@ class _MainNavigationState extends State<MainNavigation>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _navAnimCtrl = AnimationController(
       vsync: this,
       duration: AppTheme.durationMedium,
@@ -78,7 +79,15 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      UpdateService.checkForUpdate(context);
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _navAnimCtrl.dispose();
     super.dispose();
   }

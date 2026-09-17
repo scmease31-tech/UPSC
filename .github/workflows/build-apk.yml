@@ -2,6 +2,8 @@ name: Build & Release APK
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -62,6 +64,11 @@ jobs:
           # Fail here rather than midway through Gradle if the secret is stale
           # or the password is wrong.
           keytool -list -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" -alias upload > /dev/null
+          ACTUAL_SHA1=$(keytool -list -v -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" -alias upload | sed -n 's/.*SHA1: //p' | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          CONFIGURED_SHA1=$(python3 -c "import json; d=json.load(open('android/app/google-services.json')); print(next(x['android_info']['certificate_hash'] for x in d['client'][0]['oauth_client'] if x.get('client_type') == 1))")
+          if [ "$ACTUAL_SHA1" != "$CONFIGURED_SHA1" ]; then
+            echo "::warning::Google Sign-In will fail in this APK: upload key SHA-1 $ACTUAL_SHA1 is not registered in google-services.json/Firebase (configured $CONFIGURED_SHA1). Add the upload-key SHA-1 in Firebase Console and download a refreshed google-services.json."
+          fi
           cat > android/key.properties << EOF
           storePassword=$KEYSTORE_PASSWORD
           keyPassword=$KEY_PASSWORD
@@ -77,12 +84,17 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           elif [ -n "${{ github.event.inputs.version }}" ]; then
             echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
-            echo "tag=v$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+            APP_VERSION=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)
+            if [ -z "$APP_VERSION" ]; then
+              echo "::error::Could not read version from pubspec.yaml"
+              exit 1
+            fi
+            echo "tag=v$APP_VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Rename APK

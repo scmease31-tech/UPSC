@@ -509,7 +509,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Version 1.0.0', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+            Text('Version 1.5.0', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
             const SizedBox(height: 12),
             Text(
               'Your daily companion for UPSC preparation. Get curated current affairs, practice quizzes, flashcards, and track your progress — all in one app.',

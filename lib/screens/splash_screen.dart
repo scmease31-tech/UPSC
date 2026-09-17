@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/firebase_services.dart';
 import '../config/theme.dart';
 import '../services/notification_service.dart';
 
@@ -68,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen>
       Future.delayed(const Duration(milliseconds: 800), () async {
         if (!mounted) return;
         try {
-          final user = await FirebaseAuth.instance.authStateChanges().first;
+          final user = await FirebaseServices.auth.authStateChanges().first;
           if (!mounted) return;
           if (user != null) {
             Navigator.pushReplacementNamed(context, '/main');
@@ -131,7 +131,7 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(milliseconds: 1800), () async {
       if (!mounted) return;
       try {
-        final user = await FirebaseAuth.instance.authStateChanges().first;
+        final user = await FirebaseServices.auth.authStateChanges().first;
         if (!mounted) return;
         if (user != null) {
           Navigator.pushReplacementNamed(context, '/main');
@@ -435,7 +435,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: FadeTransition(
                 opacity: _loaderFade,
                 child: Text(
-                  'v1.0.0',
+                  'v1.5.0',
                   textAlign: TextAlign.center,
                   style: AppFonts.inter(
                     fontSize: 11,
