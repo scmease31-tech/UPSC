@@ -435,7 +435,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: FadeTransition(
                 opacity: _loaderFade,
                 child: Text(
-                  'v1.5.0',
+                  'v1.5.1',
                   textAlign: TextAlign.center,
                   style: AppFonts.inter(
                     fontSize: 11,

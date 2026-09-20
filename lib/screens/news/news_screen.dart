@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,13 +12,13 @@ import '../../models/article.dart';
 import '../../providers/articles_provider.dart';
 import '../../providers/bookmarks_provider.dart';
 import '../../services/news_api_service.dart';
-import '../../widgets/article_card.dart';
+import '../../widgets/editorial_news_cards.dart';
 import '../../widgets/category_chip.dart';
 import '../../utils/constants.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
-/// NewsScreen — Article feed with glassmorphic search bar, horizontal category
-/// chips, bookmark filter, and activity-tracker style list items.
+/// NewsScreen — Editorial daily briefing with a lead story, quick date strip,
+/// subject and source filters, compact reading cards, bookmarks, and more news online.
 /// ──────────────────────────────────────────────────────────────────────────────
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -129,9 +128,17 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
 
     final categories = ['All', 'Polity', 'Economy', 'Environment', 'Science & Technology', 'International Relations', 'Social Issues', 'Geography', 'History', 'Governance'];
 
-    final feedItems = _buildFeedItems(filteredArticles);
+    filteredArticles = List<Article>.from(filteredArticles)
+      ..sort((a, b) => b.publishedDate.compareTo(a.publishedDate));
 
-    Widget content = FadeTransition(
+    final leadArticle = _selectLeadArticle(filteredArticles);
+    final briefingArticles = leadArticle == null
+        ? filteredArticles
+        : filteredArticles.where((article) => article.id != leadArticle.id).toList();
+    final quickDates = _availableQuickDates(articles.allArticles);
+    final feedItems = _buildEditorialFeedItems(briefingArticles);
+
+    final Widget content = FadeTransition(
         opacity: _fadeAnim,
         child: Column(
           children: [
@@ -141,11 +148,34 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               child: Row(
                 children: [
                   if (!kIsWeb)
-                    Text(
-                      'Current Affairs',
-                      style: AppFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context)),
-                    ),
-                  const Spacer(),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Daily Briefing',
+                            style: AppFonts.plusJakartaSans(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.textP(context),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _briefingSubtitle(filteredArticles),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppFonts.inter(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textS(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    const Spacer(),
                   _iconBtn(
                     icon: Icons.tune_rounded,
                     color: (_selectedNewspaper != null || _selectedDateFrom != null || _selectedDateTo != null)
@@ -223,7 +253,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               ),
             ),
 
-            // ── STICKY CATEGORY CHIPS ──
+            // ── QUICK DATE STRIP ──
+            if (quickDates.isNotEmpty)
+              _buildQuickDateStrip(quickDates),
+
+            // ── SUBJECT FILTERS ──
             SizedBox(
               height: 46,
               child: ListView.builder(
@@ -294,6 +328,20 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   slivers: [
+                    if (leadArticle != null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildBriefingOverview(filteredArticles),
+                              const SizedBox(height: 12),
+                              EditorialLeadStory(article: leadArticle),
+                            ],
+                          ),
+                        ),
+                      ),
 
             // ═══ LIVE NEWS FROM WEB (auto-fetched, no Telegram needed) ═══
             if (!_showBookmarks && _searchQuery.isEmpty)
@@ -322,7 +370,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                     children: [
                                       const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
                                       const SizedBox(width: 4),
-                                      Text('Live from Web', style: AppFonts.inter(
+                                      Text('More News Online', style: AppFonts.inter(
                                         fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white,
                                       )),
                                     ],
@@ -374,7 +422,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                   children: [
                                     const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
                                     const SizedBox(width: 4),
-                                    Text('Live from Web', style: AppFonts.inter(
+                                    Text('More News Online', style: AppFonts.inter(
                                       fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white,
                                     )),
                                   ],
@@ -476,52 +524,184 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
   /// so the feed can be rendered lazily by a SliverList. The previous version
   /// returned one nested Column inside a SliverToBoxAdapter, which forced every
   /// card - and every network image - to be built on the first frame.
-  List<Widget> _buildFeedItems(List<Article> articles) {
+  List<Widget> _buildEditorialFeedItems(List<Article> articles) {
     final grouped = <String, List<Article>>{};
-    for (final a in articles) {
-      final key = DateFormat('yyyy-MM-dd').format(a.publishedDate);
-      grouped.putIfAbsent(key, () => []).add(a);
+    for (final article in articles) {
+      final key = DateFormat('yyyy-MM-dd').format(article.publishedDate);
+      grouped.putIfAbsent(key, () => []).add(article);
     }
     final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
 
     final items = <Widget>[];
-    for (int di = 0; di < sortedDates.length; di++) {
-      final dateKey = sortedDates[di];
-      final dayArticles = grouped[dateKey]!;
-      if (di > 0) items.add(const SizedBox(height: 8));
+    for (var index = 0; index < sortedDates.length; index++) {
+      final dateKey = sortedDates[index];
+      final dayArticles = grouped[dateKey]!
+        ..sort((a, b) {
+          if (a.isTopNews != b.isTopNews) return a.isTopNews ? -1 : 1;
+          return a.newspaper.compareTo(b.newspaper);
+        });
+      if (index > 0) items.add(const SizedBox(height: 8));
       items.add(_buildDateHeader(dateKey, dayArticles.length));
-
-      // Sub-group by source
-      final bySource = <String, List<Article>>{};
-      for (final a in dayArticles) {
-        final src = a.newspaper.isNotEmpty ? a.newspaper : 'Other';
-        bySource.putIfAbsent(src, () => []).add(a);
-      }
-      // Sorted order: Drishti IAS first, then Insights on India, then others
-      final sourceOrder = bySource.keys.toList()..sort((a, b) {
-        if (a == 'Drishti IAS') return -1;
-        if (b == 'Drishti IAS') return 1;
-        if (a == 'Insights on India') return -1;
-        if (b == 'Insights on India') return 1;
-        return a.compareTo(b);
-      });
-
-      for (int si = 0; si < sourceOrder.length; si++) {
-        final src = sourceOrder[si];
-        final srcArticles = bySource[src]!;
-        items.add(_buildSourceHeader(src, srcArticles.length));
-        for (int i = 0; i < srcArticles.length; i++) {
-          // The very first article of the newest day leads the feed as a
-          // full-bleed hero - the rest stay in the standard card rhythm.
-          items.add(ArticleCard(
-            article: srcArticles[i],
-            featured: di == 0 && si == 0 && i == 0,
-          ));
-        }
-        if (si < sourceOrder.length - 1) items.add(const SizedBox(height: 4));
+      for (final article in dayArticles) {
+        items.add(EditorialStoryCard(article: article));
       }
     }
     return items;
+  }
+
+  Article? _selectLeadArticle(List<Article> articles) {
+    if (articles.isEmpty) return null;
+    final newest = articles.first.publishedDate;
+    final newestDay = DateTime(newest.year, newest.month, newest.day);
+    final sameDay = articles.where((article) {
+      final date = article.publishedDate;
+      return DateTime(date.year, date.month, date.day) == newestDay;
+    }).toList();
+    return sameDay.firstWhere(
+      (article) => article.isTopNews,
+      orElse: () => sameDay.first,
+    );
+  }
+
+  List<DateTime> _availableQuickDates(List<Article> articles) {
+    final unique = <String, DateTime>{};
+    for (final article in articles) {
+      final date = article.publishedDate;
+      final day = DateTime(date.year, date.month, date.day);
+      unique[DateFormat('yyyy-MM-dd').format(day)] = day;
+    }
+    final dates = unique.values.toList()..sort((a, b) => b.compareTo(a));
+    return dates.take(7).toList();
+  }
+
+  bool _isQuickDateSelected(DateTime date) {
+    final key = DateFormat('yyyy-MM-dd').format(date);
+    return _selectedDateFrom == key && _selectedDateTo == key;
+  }
+
+  void _toggleQuickDate(DateTime date) {
+    final key = DateFormat('yyyy-MM-dd').format(date);
+    final selected = _isQuickDateSelected(date);
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedDateFrom = selected ? null : key;
+      _selectedDateTo = selected ? null : key;
+    });
+  }
+
+  Widget _buildQuickDateStrip(List<DateTime> dates) {
+    return SizedBox(
+      height: 62,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        itemCount: dates.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final date = dates[index];
+          final selected = _isQuickDateSelected(date);
+          return GestureDetector(
+            onTap: () => _toggleQuickDate(date),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 62,
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppTheme.primaryColor
+                    : AppTheme.card(context).withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: selected
+                      ? AppTheme.primaryColor
+                      : AppTheme.divider(context).withValues(alpha: 0.55),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    index == 0 ? 'LATEST' : DateFormat('EEE').format(date).toUpperCase(),
+                    style: AppFonts.inter(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                      color: selected ? Colors.white70 : AppTheme.textT(context),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat('d MMM').format(date),
+                    style: AppFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: selected ? Colors.white : AppTheme.textP(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _briefingSubtitle(List<Article> articles) {
+    if (articles.isEmpty) return 'Live UPSC current affairs';
+    final latest = articles.first.publishedDate;
+    return '${DateFormat('EEEE, d MMMM').format(latest)} · ${articles.length} ${articles.length == 1 ? 'story' : 'stories'}';
+  }
+
+  Widget _buildBriefingOverview(List<Article> articles) {
+    final sources = articles
+        .map((article) => article.newspaper.trim())
+        .where((source) => source.isNotEmpty)
+        .toSet();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.auto_awesome_rounded, size: 19, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your UPSC briefing',
+                  style: AppFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textP(context),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${articles.length} ${articles.length == 1 ? 'story' : 'stories'} from ${sources.isEmpty ? 'the daily feed' : '${sources.length} ${sources.length == 1 ? 'source' : 'sources'}'}',
+                  style: AppFonts.inter(fontSize: 10.5, color: AppTheme.textS(context)),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.swipe_down_rounded, size: 18, color: AppTheme.textT(context)),
+        ],
+      ),
+    );
   }
 
   String _dateLabel(String dateKey) {
@@ -575,79 +755,6 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               style: AppFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.primaryColor,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Distinct accent per source, including the newspapers that arrive through
-  /// the PDF/inbox pipeline — so an uploaded paper reads as its own section
-  /// rather than an anonymous grey block.
-  Color _sourceAccentColor(String source) {
-    final s = source.toLowerCase();
-    if (s.contains('drishti')) return const Color(0xFF0D9488); // teal
-    if (s.contains('insights')) return const Color(0xFF7C3AED); // purple
-    if (s.contains('hindu')) return const Color(0xFF1D4ED8); // deep blue
-    if (s.contains('express')) return const Color(0xFFB91C1C); // masthead red
-    if (s.contains('times of india') || s.contains('toi')) return const Color(0xFFC2410C);
-    if (s.contains('business standard')) return const Color(0xFF9A3412);
-    if (s.contains('mint')) return const Color(0xFF047857);
-    if (s.contains('economic times')) return const Color(0xFFBE185D);
-    if (s.contains('hindustan times')) return const Color(0xFF4338CA);
-    if (s.contains('pib')) return const Color(0xFF0F766E);
-    if (s.contains('editorial')) return const Color(0xFF6D28D9);
-    if (s.contains('yojana') || s.contains('kurukshetra')) return const Color(0xFF854D0E);
-    return AppTheme.primaryDark;
-  }
-
-  IconData _sourceIcon(String source) {
-    final s = source.toLowerCase();
-    if (s.contains('drishti')) return Icons.menu_book_rounded;
-    if (s.contains('insights')) return Icons.lightbulb_rounded;
-    if (s.contains('editorial')) return Icons.edit_note_rounded;
-    if (s.contains('pib')) return Icons.account_balance_rounded;
-    if (s.contains('yojana') || s.contains('kurukshetra')) return Icons.auto_stories_rounded;
-    return Icons.newspaper_rounded;
-  }
-
-  Widget _buildSourceHeader(String source, int count) {
-    final accent = _sourceAccentColor(source);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 3,
-            height: 18,
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Icon(_sourceIcon(source), size: 15, color: accent),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              source,
-              style: AppFonts.plusJakartaSans(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: accent,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$count ${count == 1 ? 'article' : 'articles'}',
-            style: AppFonts.inter(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w500,
-              color: accent.withValues(alpha: 0.7),
             ),
           ),
         ],
