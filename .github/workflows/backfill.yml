@@ -12,6 +12,10 @@ on:
         description: 'Dry run (no upload)'
         type: boolean
         default: false
+      prune_schemes:
+        description: 'Delete scheme docs whose names are not real schemes'
+        type: boolean
+        default: false
 
 jobs:
   backfill:
@@ -56,4 +60,24 @@ jobs:
             node enrich-schemes.js --dry-run
           else
             node enrich-schemes.js
+          fi
+
+      # Names are pattern-matched out of prose, so earlier, looser runs stored
+      # headings ("Conclusion The PM SHRI Scheme"), sentence fragments and
+      # organisations that are not schemes. generateSchemes now filters these at
+      # write time; this removes the ones already stored. Always audits; only
+      # deletes when prune_schemes is set.
+      - name: Audit scheme names
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          if [ "${{ github.event.inputs.prune_schemes }}" == "true" ]; then
+            if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+              node audit-schemes.js --prune --dry-run
+            else
+              node audit-schemes.js --prune
+            fi
+          else
+            node audit-schemes.js
           fi

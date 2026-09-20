@@ -6,7 +6,7 @@ import { classify as classifyUpload } from '../inbox-ingest.js';
 import { parsePyqBlock } from '../scrapers.js';
 import { isBlank, missingFieldPatch, SCHEME_DETAIL_FIELDS } from '../uploader.js';
 import { restructure, isStructured } from '../restructure.js';
-import { generateDailyQuiz, generateFlashcards, generateKeyFacts, generateSchemes } from '../generators.js';
+import { generateDailyQuiz, generateFlashcards, generateKeyFacts, generateSchemes, schemeNameProblem } from '../generators.js';
 
 const base = 'https://www.upsc.gov.in/sites/default/files/';
 
@@ -608,4 +608,160 @@ test('a doc with nothing stored gets every derivable field', () => {
     Object.keys(missingFieldPatch(thin, incoming, SCHEME_DETAIL_FIELDS)).sort(),
     ['detailedDescription', 'keyFeatures', 'ministry', 'upscRelevance']
   );
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scheme name validity
+//
+// Names are pattern-matched out of prose, which sweeps up headings, sentence
+// fragments and organisations that are not government schemes. Real examples
+// pulled from the live collection.
+// ─────────────────────────────────────────────────────────────────────────────
+
+test('real scheme names are accepted', () => {
+  for (const name of [
+    'PM-KISAN',
+    'Pradhan Mantri Awas Yojana',
+    'Ayushman Bharat PM-JAY',
+    'PM Vishwakarma Yojana',
+    'Swachh Bharat Abhiyan',
+    'Atal Pension Yojana',
+    'Sarva Shiksha Abhiyan',
+    'Gaganyaan Mission',
+    'PM SHRI Scheme',
+    'Jal Jeevan Mission',
+    'MGNREGA',
+    // No English scheme noun and no acronym — carried by the Title Case rule.
+    'Beti Bachao Beti Padhao',
+    'Digital India Land Records Modernisation',
+    // Real names that happen to start with a word the generic filter knows.
+    'Open Market Sale Scheme',
+    'National Technical Textiles Mission',
+    'Restructured Weather-Based Crop Insurance Scheme',
+    // Real two-word PM schemes. An earlier rule demanded three words or a
+    // scheme noun and silently dropped all of these.
+    'PM GatiShakti',
+    'PM SVANidhi',
+    'PM Vishwakarma',
+    'PM Vidyalaxmi',
+    // Read as verbs but are part of the real names (RDSS, RWBCIS).
+    'Revamped Distribution Sector Scheme',
+    'Revamped Khelo India Scheme',
+  ]) {
+    assert.equal(
+      schemeNameProblem(name),
+      null,
+      `wrongly rejected "${name}": ${schemeNameProblem(name)}`
+    );
+  }
+});
+
+test('headings and sentence fragments are rejected', () => {
+  // All observed in the live govtSchemes collection.
+  for (const name of [
+    'Conclusion The PM SHRI Scheme',
+    'Questions The PM SHRI Scheme',
+    'PM SHRI Schools Transform School Education',
+    'Delivering Development Through Scheme',
+    'Why in News The New Scheme',
+    'Introduction The Mission',
+    'PM Announces Fast-Track Courts',
+    'Revamped Scheme',
+  ]) {
+    assert.ok(schemeNameProblem(name), `should have been rejected: "${name}"`);
+  }
+});
+
+test('organisations that are not government schemes are rejected', () => {
+  assert.match(schemeNameProblem('Ramakrishna Mission'), /organisation/);
+  assert.match(schemeNameProblem('Red Cross Mission'), /organisation/);
+});
+
+test('generic categories are still rejected', () => {
+  for (const name of ['Government Scheme', 'National Mission', 'Various Schemes']) {
+    assert.ok(schemeNameProblem(name), `should have been rejected: "${name}"`);
+  }
+});
+
+test('names with no identity of their own are rejected', () => {
+  // Every word is a category word, so the name describes a kind of scheme.
+  for (const name of ['Technology Mission', 'Parent Scheme', 'Special Programme']) {
+    assert.match(schemeNameProblem(name), /distinctive|generic/, name);
+  }
+});
+
+test('a doubled capture is rejected so the tidied name can replace it', () => {
+  // Ids hash the name, so the tidy form is a different document. Rejecting the
+  // malformed one lets the next run store it correctly.
+  assert.match(
+    schemeNameProblem('Gaganyaan Mission Gaganyaan Mission'),
+    /malformed/
+  );
+  assert.match(schemeNameProblem('The Mission'), /malformed/);
+});
+
+test('a PM prefix plus an ordinary reporting noun is rejected', () => {
+  // The distinction against PM GatiShakti / PM Vishwakarma above is whether the
+  // word after the prefix carries identity.
+  for (const name of [
+    'PM Special',
+    'PM Visit',
+    'PM Schools',
+    'PM Fellowships',
+    'PM Address',
+  ]) {
+    assert.ok(schemeNameProblem(name), `should have been rejected: "${name}"`);
+  }
+});
+
+test('fragments ending in a report word are rejected', () => {
+  for (const name of [
+    'PM-KUSUM Target',
+    'PMAY Highlights',
+    'Jal Jeevan Mission Budget',
+  ]) {
+    assert.match(schemeNameProblem(name), /non-name word/, name);
+  }
+});
+
+test('mid-sentence lowercase captures are rejected', () => {
+  // Rejected for leading "the" (tidySchemeName strips it, so the stored form is
+  // malformed); the lowercase rule catches ones without a leading article.
+  assert.ok(schemeNameProblem('the flagship rural housing scheme'));
+  assert.match(
+    schemeNameProblem('flagship rural housing scheme for poor families'),
+    /lowercase|generic|distinctive/
+  );
+});
+
+test('degenerate input is rejected without throwing', () => {
+  for (const name of ['', '   ', 'PM', 'A B', null, undefined]) {
+    assert.ok(schemeNameProblem(name), `should have been rejected: ${name}`);
+  }
+});
+
+test('generateSchemes no longer emits the rejected shapes', () => {
+  const schemes = generateSchemes([
+    {
+      id: 'art-junk',
+      title: 'Conclusion The PM SHRI Scheme transforms school education',
+      summary:
+        'Conclusion The PM SHRI Scheme will transform school education across states.',
+      content: [
+        'Conclusion The PM SHRI Scheme aims to upgrade 14500 schools.',
+        'The Ramakrishna Mission also runs schools in the region.',
+        'Separately, the Jal Jeevan Mission provides tap water to 19 crore households.',
+      ].join(' '),
+      publishedDate: '2026-09-18',
+      categoryTags: ['Education'],
+    },
+  ]);
+
+  const names = schemes.map((s) => s.name);
+  for (const name of names) {
+    assert.equal(schemeNameProblem(name), null, `emitted a reject: "${name}"`);
+  }
+  // The genuine one in that text still comes through.
+  assert.ok(names.some((n) => /Jal Jeevan Mission/i.test(n)), `got: ${names.join(' | ')}`);
 });

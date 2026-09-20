@@ -524,16 +524,143 @@ function schemeKey(name) {
  */
 const GENERIC_SCHEME = /^(centrally sponsored|central sector|authorised use|state sponsored|government|national|new|old|special|various|other|similar|such|this|that|above|following|flagship|umbrella)\s+(scheme|mission|programme|program|yojana)s?$/i;
 
+/// Article-structure words that get swept in when a heading runs into the
+/// scheme name: "Conclusion The PM SHRI Scheme", "Questions The PM SHRI Scheme".
+const SECTION_WORD =
+  /^(conclusion|introduction|summary|overview|background|context|question|questions|answer|answers|note|notes|highlight|highlights|about|significance|challenge|challenges|way|analysis|editorial|source|sources|reference|references|prelims|mains|syllabus|topic|news|why|what|how|when|where)\b/i;
+
+/// A trailing verb phrase means the match captured a sentence, not a name:
+/// "PM SHRI Schools Transform School Education", "Delivering Development
+/// Through Scheme".
+/// Note: "Revamped", "Restructured" and "Modified" are NOT listed. They read as
+/// verbs but are part of real scheme names — the Revamped Distribution Sector
+/// Scheme (RDSS), the Restructured Weather-Based Crop Insurance Scheme. They sit
+/// in GENERIC_TOKEN instead, so "Revamped Scheme" on its own is still rejected
+/// for having no identity while the full names survive.
+const VERB_PHRASE =
+  /\b(transform|transforms|transforming|deliver|delivers|delivering|aims?|aiming|seeks?|seeking|provides?|providing|ensures?|ensuring|promotes?|promoting|strengthens?|strengthening|boosts?|boosting|covers?|covering|helps?|helping|enables?|enabling|launches|launched|approves|approved|announces|announced|extends|extended|replaces|replaced|supports?|supporting|improves?|improving|addresses|addressing|marks?|shows?|said|says)\b/i;
+
+/// Bodies and institutions that match the "... Mission/Society" shape but are
+/// not government schemes. Keeping them makes the whole list look unreliable.
+const NOT_A_SCHEME =
+  /^(ramakrishna|sri ramakrishna|aurobindo|brahmo|arya samaj|theosophical|salvation|jesuit|christian|catholic|baptist|methodist|lutheran|anglican|evangelical|mormon|scientology|red cross|rotary|lions|unesco|unicef|undp|unhcr|who|world bank|imf|asian development|oxfam|greenpeace|amnesty)\b/i;
+
+/// The words that make a name look like a government programme.
+const SCHEME_NOUN =
+  /\b(yojana|abhiyan|mission|scheme|programme|program|nidhi|kosh|bima|pension|awas|gram|sarva|shiksha|kaushal|kisan|jan|bachao|padhao|jeevan|poshan|suraksha|samman|ujjwala|saubhagya|ayushman|swachh|amrit|setu|vikas|kalyan|anna|garib|mudra|ujala|saksham)\b/i;
+
+/// Tokens that carry no identity. A name made only of these describes a
+/// category, not a scheme: "Technology Mission", "Parent Scheme", "The Mission".
+const GENERIC_TOKEN = new Set([
+  'the', 'a', 'an', 'of', 'and', 'for', 'in', 'on', 'to', 'its', 'this', 'that',
+  'new', 'old', 'existing', 'current', 'proposed', 'revised', 'revamped',
+  'restructured', 'modified', 'amended', 'extended', 'continued', 'merged',
+  'parent', 'special', 'general', 'various', 'other', 'similar', 'above',
+  'following', 'flagship', 'umbrella', 'overall', 'total', 'main', 'major',
+  'key', 'core', 'basic', 'model', 'pilot', 'phase', 'ii', 'iii', 'iv',
+  'national', 'central', 'centrally', 'state', 'government', 'union', 'public',
+  'technology', 'ecosystem', 'development', 'welfare', 'support', 'assistance',
+  'scheme', 'schemes', 'mission', 'missions', 'programme', 'program', 'yojana',
+  'abhiyan', 'plan', 'policy', 'fund', 'initiative', 'project', 'package',
+  // Common nouns that follow "PM" in ordinary reporting rather than in a scheme
+  // name: "PM Visit", "PM Schools", "PM Special". Listing them lets the
+  // PM-prefix rule stay permissive for real two-word names such as
+  // "PM GatiShakti" and "PM Vishwakarma".
+  'visit', 'visits', 'schools', 'school', 'fellowship', 'fellowships',
+  'court', 'courts', 'address', 'speech', 'meeting', 'rally', 'interview',
+  'statement', 'remarks', 'message', 'greeting', 'tribute', 'inauguration',
+]);
+
+/// Words that end a fragment rather than a name: "PM-KUSUM Target".
+const TRAILING_JUNK =
+  /\b(target|targets|highlights?|details?|features?|benefits?|eligibility|objectives?|outcomes?|status|progress|update|updates|data|report|reports|coverage|allocation|budget|outlay|funding|guidelines?|criteria|beneficiaries|implementation|launch|review)$/i;
+
+/**
+ * Why a detected scheme name should be rejected, or null when it looks usable.
+ *
+ * Returns a reason string rather than a boolean so the audit can group rejects
+ * and a human can see whether a rule is too aggressive.
+ *
+ * Exported so the generator and the Firestore audit apply ONE definition — the
+ * generator filters at write time, the audit prunes what earlier, looser runs
+ * already stored.
+ */
+export function schemeNameProblem(raw) {
+  const name = clean(raw);
+  if (!name) return 'empty';
+  if (name.length < 6) return 'too short';
+  if (name.length > 90) return 'too long';
+
+  const words = name.split(/\s+/);
+  // A lone word is usually a false positive, EXCEPT an acronym — real schemes
+  // are known by them: PM-KISAN, PMAY, MGNREGA, PM-JAY.
+  const isAcronym = (w) =>
+    /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$/.test(w) && w.replace(/-/g, '').length >= 4;
+  if (words.length < 2 && !isAcronym(words[0])) return 'single word';
+  if (words.length > 9) return 'too many words (sentence fragment)';
+
+  if (GENERIC_SCHEME.test(name)) return 'generic category, names no scheme';
+  if (SECTION_WORD.test(name)) return 'starts with an article-structure word';
+  if (VERB_PHRASE.test(name)) return 'contains a verb (sentence fragment)';
+  if (NOT_A_SCHEME.test(name)) return 'organisation, not a government scheme';
+  if (TRAILING_JUNK.test(name)) return 'ends with a non-name word';
+
+  // A stored name that tidies to something else was captured before the tidy
+  // rules existed — "Gaganyaan Mission Gaganyaan Mission". Reject it so the
+  // correctly-named doc can be written instead; ids hash the name, so the tidy
+  // form is a different document.
+  if (tidySchemeName(name) !== name) return 'malformed (tidies differently)';
+
+  // Strip the words that carry no identity. Nothing left means the name
+  // describes a category: "Technology Mission", "Parent Scheme".
+  const distinctive = words.filter(
+    (w) => !GENERIC_TOKEN.has(w.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+  );
+  if (distinctive.length === 0) return 'no distinctive name';
+
+  const hasSchemeNoun = SCHEME_NOUN.test(name);
+  const hasAcronym = /\b[A-Z]{3,}\b/.test(name) || words.some(isAcronym);
+  // A PM/Rashtriya prefix alone is not enough — "PM Special" is a fragment. It
+  // needs a scheme noun or enough words to be a real title.
+  // "PM <Name>" is a strong signal in Indian governance, so a two-word name is
+  // accepted when the word after the prefix carries identity — GatiShakti,
+  // SVANidhi, Vishwakarma, Vidyalaxmi. Dropping a real scheme is worse than
+  // keeping a doubtful one, so this errs permissive; GENERIC_TOKEN carries the
+  // reporting nouns that must NOT qualify.
+  const prefixed = /^(pm|pradhan mantri|mukhyamantri|rashtriya|atal)\b/i.test(name);
+  const tailCarriesIdentity = words
+      .slice(1)
+      .some((w) => !GENERIC_TOKEN.has(w.toLowerCase().replace(/[^a-z0-9-]/g, '')));
+  const hasKnownPrefix =
+    prefixed && (hasSchemeNoun || words.length >= 3 || tailCarriesIdentity);
+  // A three-or-more-word Title Case phrase is a proper name even when none of
+  // its words is an English scheme noun — "Beti Bachao Beti Padhao". Lowercase
+  // connectors are allowed. The verb, heading and generic rules above have
+  // already removed the fragments this would otherwise let through.
+  const isTitleCasePhrase =
+    words.length >= 3 &&
+    words.every(
+      (w) => /^[A-Z0-9]/.test(w) || /^(of|and|for|in|on|to|the|a|an)$/i.test(w)
+    );
+  if (!hasSchemeNoun && !hasAcronym && !hasKnownPrefix && !isTitleCasePhrase) {
+    return 'no scheme/programme noun';
+  }
+
+  // A name that is mostly lowercase was lifted out of mid-sentence prose.
+  const capitalised = words.filter((w) => /^[A-Z0-9]/.test(w)).length;
+  if (capitalised / words.length < 0.6) return 'mostly lowercase (mid-sentence)';
+
+  return null;
+}
+
 export function generateSchemes(articles) {
   const byName = new Map();
 
   const add = (rawName, article) => {
     const name = tidySchemeName(rawName);
-    if (!name || name.length < 6 || name.length > 90) return;
-    if (GENERIC_SCHEME.test(name)) return;
-    // Skip obvious false positives (single generic word before Scheme/Mission).
-    const words = name.split(/\s+/);
-    if (words.length < 2) return;
+    // One shared definition of "is this actually a scheme name", also used by
+    // audit-schemes.js to prune what looser earlier runs stored.
+    if (schemeNameProblem(name)) return;
 
     const key = schemeKey(name);
     if (byName.has(key)) return;
