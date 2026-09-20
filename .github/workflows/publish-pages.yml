@@ -1,0 +1,177 @@
+name: Publish stable APK to Pages
+
+# Every successful push to main builds a SIGNED release APK with a build number
+# strictly higher than any previous one, then ATOMICALLY publishes the stable
+# APK together with a schema-correct version.json to GitHub Pages. Tag pushes are
+# intentionally NOT handled here — build-apk.yml owns tagged GitHub Releases, so
+# this workflow never touches or clobbers a tagged release.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  # Serialize Pages publishes so two overlapping main pushes cannot race the
+  # gh-pages branch. Never cancel an in-flight publish half-written.
+  group: publish-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        # Fail only on real analyzer errors; the repo still carries a backlog of
+        # style lints, so warnings/infos must not block a publish.
+        run: flutter analyze --no-pub 2>&1 | tee analyze.log; ! grep -qE '^\s*error' analyze.log
+
+      - name: Test
+        run: flutter test --no-pub
+
+      - name: Compute monotonic build number
+        id: build_number
+        run: |
+          set -euo pipefail
+          # The installed binary's build number is compared as a monotonically
+          # increasing integer by the updater (UpdateConfig.currentBuildNumber /
+          # version.json "build"). GITHUB_RUN_NUMBER only ever increases for this
+          # workflow, so offsetting the pubspec base build by it guarantees each
+          # successful push to main produces a strictly higher build number than
+          # the last, without any committed state.
+          BASE_BUILD=$(sed -n 's/^version:[^+]*+\([0-9][0-9]*\).*/\1/p' pubspec.yaml)
+          if [ -z "$BASE_BUILD" ]; then
+            echo "::error::Could not read the +build suffix from pubspec.yaml version:"
+            exit 1
+          fi
+          BUILD_NUMBER=$((BASE_BUILD + GITHUB_RUN_NUMBER))
+          SEMVER=$(sed -n 's/^version:[[:space:]]*\([^+]*\)+.*/\1/p' pubspec.yaml | tr -d '[:space:]')
+          if [ -z "$SEMVER" ]; then
+            echo "::error::Could not read the semantic version from pubspec.yaml version:"
+            exit 1
+          fi
+          echo "build=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
+          echo "Publishing $SEMVER build $BUILD_NUMBER"
+
+      - name: Setup signing keystore
+        env:
+          # Existing secrets — NOT rotated. Registered SHA is left as-is.
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # Secrets first entered from Windows PowerShell may carry a trailing
+          # CR/LF; keytool treats that as part of the password. Normalize first.
+          KEYSTORE_PASSWORD=$(printf '%s' "${KEYSTORE_PASSWORD:-}" | tr -d '\r\n')
+          KEY_PASSWORD=$(printf '%s' "${KEY_PASSWORD:-}" | tr -d '\r\n')
+          export KEYSTORE_PASSWORD KEY_PASSWORD
+          if [ -z "${KEYSTORE_PASSWORD:-}" ] || [ -z "${KEY_PASSWORD:-}" ]; then
+            echo "::error::KEYSTORE_PASSWORD and KEY_PASSWORD secrets must be set."
+            exit 1
+          fi
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+          if ! KEYSTORE_LIST=$(keytool -list -v -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" 2>&1); then
+            KEYSTORE_FORMAT=$(file -b android/app/upload-keystore.jks)
+            echo "::error::Unable to open KEYSTORE_BASE64 with KEYSTORE_PASSWORD. Decoded file type: $KEYSTORE_FORMAT"
+            printf '%s\n' "$KEYSTORE_LIST" | tail -n 3
+            exit 1
+          fi
+          ALIAS=$(printf '%s\n' "$KEYSTORE_LIST" | sed -n 's/^Alias name: //p' | head -1)
+          if [ -z "$ALIAS" ]; then
+            echo "::error::No signing-key alias found in KEYSTORE_BASE64."
+            exit 1
+          fi
+          # Verify the upload-key SHA-1 matches the SHA registered in Firebase.
+          # WARN only: we must not rotate or re-register the SHA here.
+          ACTUAL_SHA1=$(printf '%s\n' "$KEYSTORE_LIST" | sed -n 's/.*SHA1: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          CONFIGURED_SHA1=$(python3 -c "import json; d=json.load(open('android/app/google-services.json')); print(next(x['android_info']['certificate_hash'] for x in d['client'][0]['oauth_client'] if x.get('client_type') == 1))")
+          if [ "$ACTUAL_SHA1" != "$CONFIGURED_SHA1" ]; then
+            echo "::warning::Google Sign-In may fail: upload key SHA-1 $ACTUAL_SHA1 is not the SHA registered in google-services.json ($CONFIGURED_SHA1). Not rotating."
+          fi
+          cat > android/key.properties << EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build signed APK
+        # --build-number stamps the same monotonic build into the binary that we
+        # advertise in version.json, keeping installed build == manifest build.
+        run: >
+          flutter build apk --release --no-tree-shake-icons
+          --build-number=${{ steps.build_number.outputs.build }}
+
+      - name: Stage APK + version.json for Pages
+        id: manifest
+        run: |
+          set -euo pipefail
+          SRC=build/app/outputs/flutter-apk/app-release.apk
+          test -f "$SRC" || { echo "::error::Release APK not found at $SRC"; exit 1; }
+
+          OUT=pages_publish/update
+          mkdir -p "$OUT"
+          cp "$SRC" "$OUT/UPSC-Daily-Edge.apk"
+
+          SHA256=$(sha256sum "$OUT/UPSC-Daily-Edge.apk" | cut -d' ' -f1)
+          SIZE=$(stat -c%s "$OUT/UPSC-Daily-Edge.apk")
+          BUILD=${{ steps.build_number.outputs.build }}
+          SEMVER=${{ steps.build_number.outputs.semver }}
+
+          # version.json MUST match the updater schema (UpdateService.fetchLatest):
+          #   version (str), build (int), notes (str), apkUrl (allowlisted HTTPS),
+          #   sha256 (str), sizeBytes (int), mandatory (bool). The apkUrl points ONLY
+          #   at the configured Pages origin, which is on UpdateConfig.allowedOrigins.
+          APK_URL="https://scmease31-tech.github.io/UPSC/update/UPSC-Daily-Edge.apk"
+          cat > "$OUT/version.json" << EOF
+          {
+            "version": "$SEMVER",
+            "build": $BUILD,
+            "notes": "Automated stable build $BUILD from main ($GITHUB_SHA).",
+            "apkUrl": "$APK_URL",
+            "sha256": "$SHA256",
+            "sizeBytes": $SIZE,
+            "mandatory": false
+          }
+          EOF
+          echo "Staged version.json:"; cat "$OUT/version.json"
+          # Sanity: the advertised apkUrl must be HTTPS and on the app's origin.
+          case "$APK_URL" in
+            https://scmease31-tech.github.io/*) : ;;
+            *) echo "::error::apkUrl is not the configured HTTPS Pages origin"; exit 1 ;;
+          esac
+
+      - name: Publish to GitHub Pages (atomic)
+        # A single commit swaps BOTH the APK and version.json into place at once,
+        # so a client can never fetch a new version.json pointing at an old APK
+        # (or vice versa). keep_files preserves everything else already on Pages
+        # (and never affects tagged Releases, which live outside gh-pages).
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./pages_publish
+          keep_files: true
+          commit_message: "Publish stable APK build ${{ steps.build_number.outputs.build }} (${{ github.sha }})"

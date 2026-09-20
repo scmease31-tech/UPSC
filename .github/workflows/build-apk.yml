@@ -1,9 +1,10 @@
 name: Build & Release APK
 
 on:
+  # Tagged releases only. Pushes to main are handled by publish-pages.yml, which
+  # builds the signed APK and atomically publishes it + version.json to Pages;
+  # this workflow owns the tagged GitHub Release so the two never collide.
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -152,15 +153,35 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Deploy APK to GitHub Pages
+      - name: Deploy APK + updater manifest to GitHub Pages
         run: |
-          cp build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk /tmp/UPSC-Daily-Edge.apk
+          set -euo pipefail
+          APK=build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk
+          SEMVER=$(sed -n 's/^version:[[:space:]]*\([^+]*\)+.*/\1/p' pubspec.yaml | tr -d '[:space:]')
+          BUILD=$(sed -n 's/^version:[^+]*+\([0-9][0-9]*\).*/\1/p' pubspec.yaml)
+          SHA256=$(sha256sum "$APK" | cut -d' ' -f1)
+          SIZE=$(stat -c%s "$APK")
+          cp "$APK" "$RUNNER_TEMP/UPSC-Daily-Edge.apk"
+          cat > "$RUNNER_TEMP/version.json" << EOF
+          {
+            "version": "$SEMVER",
+            "build": $BUILD,
+            "notes": "Frosted Scholar $SEMVER — direct in-app updates, live daily quizzes, weekly/monthly roundups, and app-wide design improvements.",
+            "apkUrl": "https://scmease31-tech.github.io/UPSC/update/UPSC-Daily-Edge.apk",
+            "sha256": "$SHA256",
+            "sizeBytes": $SIZE,
+            "mandatory": false
+          }
+          EOF
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git stash --include-untracked
           git fetch origin gh-pages
           git checkout gh-pages
-          cp /tmp/UPSC-Daily-Edge.apk UPSC-Daily-Edge.apk
-          git add UPSC-Daily-Edge.apk
-          git commit -m "Update APK to ${{ steps.version.outputs.tag }}" || true
+          mkdir -p update
+          cp "$RUNNER_TEMP/UPSC-Daily-Edge.apk" UPSC-Daily-Edge.apk
+          cp "$RUNNER_TEMP/UPSC-Daily-Edge.apk" update/UPSC-Daily-Edge.apk
+          cp "$RUNNER_TEMP/version.json" update/version.json
+          git add UPSC-Daily-Edge.apk update/UPSC-Daily-Edge.apk update/version.json
+          git commit -m "Publish updater manifest for ${{ steps.version.outputs.tag }}" || true
           git push origin gh-pages
