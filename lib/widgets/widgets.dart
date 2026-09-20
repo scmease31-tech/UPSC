@@ -15,3 +15,4 @@ export 'quiz_option_tile.dart';
 export 'scroll_to_top_fab.dart';
 export 'section_header.dart';
 export 'update_banner.dart';
+export 'update_download_dialog.dart';

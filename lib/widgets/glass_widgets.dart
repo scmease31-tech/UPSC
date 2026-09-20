@@ -92,10 +92,10 @@ class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
     required this.child,
-    this.radius = 22,
+    this.radius = 16,
     this.padding,
     this.margin,
-    this.blur = 0,
+    this.blur = 8,
     this.color,
     this.borderColor,
     this.boxShadow,
@@ -120,7 +120,7 @@ class GlassCard extends StatelessWidget {
             : Colors.white.withValues(alpha: 0.5));
 
     final content = Padding(
-      padding: padding ?? const EdgeInsets.all(16),
+      padding: padding ?? const EdgeInsets.all(14),
       child: child,
     );
 
@@ -175,7 +175,7 @@ class AnimatedGlassCard extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
-    this.radius = 22,
+    this.radius = 16,
     this.padding,
     this.margin,
     this.color,
@@ -200,8 +200,8 @@ class _AnimatedGlassCardState extends State<AnimatedGlassCard> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 120),
+        scale: _pressed ? 0.985 : 1.0,
+        duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
         child: GlassCard(
           radius: widget.radius,
