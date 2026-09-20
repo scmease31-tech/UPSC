@@ -1,9 +1,9 @@
 {
   "version": "1.6.0",
-  "build": 20,
-  "notes": "Automated stable build 20 from main (259d08096bb92e385b76f7ca5228c611348c18cf).",
+  "build": 21,
+  "notes": "Automated stable build 21 from main (fa405ba1ec5fe6b73f8e5f23e395d753db5f58e7).",
   "apkUrl": "https://scmease31-tech.github.io/UPSC/update/UPSC-Daily-Edge.apk",
-  "sha256": "27b34c24a1d2f6bc30e075f3f440aaac390768ee9e450a4e9ebd1d538ae69c9e",
+  "sha256": "514697807f7343aa84e24c1a4e406cdb3d62d837b6381f8d805b33fb009127f3",
   "sizeBytes": 86103087,
   "mandatory": false
 }
