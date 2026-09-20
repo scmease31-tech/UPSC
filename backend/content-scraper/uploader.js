@@ -239,6 +239,137 @@ export function uploadSchemes(docs, dryRun = false) {
   return uploadToCollection('govtSchemes', docs, dryRun, 'name');
 }
 
+/** True for values that carry no information and should be treated as absent. */
+export function isBlank(value) {
+  if (value === undefined || value === null) return true;
+  if (typeof value === 'string') return value.trim() === '';
+  if (Array.isArray(value)) {
+    return value.filter((v) => !isBlank(v)).length === 0;
+  }
+  if (typeof value === 'object') return Object.keys(value).length === 0;
+  return false;
+}
+
+/**
+ * The fields of [incoming] that [existing] is missing.
+ *
+ * Fill-only on purpose: a field already holding real content is never
+ * overwritten, so hand-curated text survives a re-derive and running this twice
+ * changes nothing the second time.
+ *
+ * Pure, so the semantics are unit-tested without touching Firestore.
+ */
+export function missingFieldPatch(existing, incoming, fields) {
+  const patch = {};
+  for (const field of fields) {
+    if (!isBlank(existing?.[field])) continue;
+    if (isBlank(incoming?.[field])) continue;
+    patch[field] = incoming[field];
+  }
+  return patch;
+}
+
+/**
+ * Backfill named fields onto documents that already exist, and create the ones
+ * that do not.
+ *
+ * uploadToCollection deliberately SKIPS a doc whose id is already present, which
+ * is right for "derive new content" but means a doc can never gain a field it
+ * was first written without. Scheme ids are hashed from the name alone, so every
+ * govtSchemes doc created before detailedDescription / keyFeatures /
+ * upscRelevance / ministry existed would have kept its thin shape permanently
+ * and the app's detail sheet would have stayed near-empty forever.
+ */
+export async function enrichCollection(
+  collectionName,
+  docs,
+  { dryRun = false, labelField = 'title', fields = [] } = {}
+) {
+  const stats = { created: 0, enriched: 0, unchanged: 0, errors: 0 };
+  if (!docs || docs.length === 0 || fields.length === 0) {
+    console.log(`  [${collectionName}] Nothing to enrich`);
+    return stats;
+  }
+
+  if (!db) initFirebase();
+  const collection = db.collection(collectionName);
+  const BATCH_SIZE = 400;
+
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const chunk = docs.slice(i, i + BATCH_SIZE);
+    const batch = db.batch();
+    let writes = 0;
+
+    for (const doc of chunk) {
+      if (!doc.id) {
+        console.error(`  [err] ${collectionName}: doc missing id`);
+        stats.errors++;
+        continue;
+      }
+      const label = String(doc[labelField] || doc.id).slice(0, 60);
+      const docRef = collection.doc(doc.id);
+      try {
+        const snap = await docRef.get();
+        if (!snap.exists) {
+          const { id, ...data } = doc;
+          if (!dryRun) {
+            batch.set(docRef, { ...data, createdAt: FieldValue.serverTimestamp() });
+            writes++;
+          }
+          stats.created++;
+          console.log(`  [add] ${collectionName}: ${label}`);
+          continue;
+        }
+
+        const patch = missingFieldPatch(snap.data(), doc, fields);
+        if (Object.keys(patch).length === 0) {
+          stats.unchanged++;
+          continue;
+        }
+        if (!dryRun) {
+          batch.update(docRef, { ...patch, enrichedAt: FieldValue.serverTimestamp() });
+          writes++;
+        }
+        stats.enriched++;
+        console.log(
+          `  [fill] ${collectionName}: ${label} → ${Object.keys(patch).join(', ')}`
+        );
+      } catch (e) {
+        console.error(`  [err] ${collectionName}/${doc.id}: ${e.message}`);
+        stats.errors++;
+      }
+    }
+
+    if (writes > 0) {
+      try {
+        await batch.commit();
+      } catch (e) {
+        console.error(`[Firebase] Batch commit failed for ${collectionName}: ${e.message}`);
+        stats.errors += writes;
+      }
+    }
+  }
+
+  return stats;
+}
+
+/** Fields the app's scheme detail sheet renders beyond the card's own. */
+export const SCHEME_DETAIL_FIELDS = [
+  'detailedDescription',
+  'keyFeatures',
+  'upscRelevance',
+  'ministry',
+];
+
+/** Fill scheme detail onto existing `govtSchemes` docs. */
+export function enrichSchemes(docs, dryRun = false) {
+  return enrichCollection('govtSchemes', docs, {
+    dryRun,
+    labelField: 'name',
+    fields: SCHEME_DETAIL_FIELDS,
+  });
+}
+
 /**
  * Upload key-fact docs to the `dailyFacts` collection, which the "UPSC Must
  * Know" screen merges with its built-in bank. Nothing wrote this collection

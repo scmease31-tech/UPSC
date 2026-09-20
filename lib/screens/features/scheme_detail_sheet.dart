@@ -58,6 +58,18 @@ class SchemeDetailSheet extends StatelessWidget {
       _list(scheme, 'keyFeatures').isEmpty &&
       _str(scheme, 'upscRelevance').isEmpty;
 
+  /// Splits "GS-II — Issues relating to…" into its paper label and the rest, so
+  /// the paper can be shown as a badge instead of buried in a paragraph. Returns
+  /// a null label when the text does not start with a recognisable paper.
+  static ({String? paper, String rest}) splitRelevance(String relevance) {
+    final match = RegExp(
+      r'^\s*(GS-[IV]+(?:\s*/\s*GS-[IV]+)*)\s*[—–-]\s*(.*)$',
+      dotAll: true,
+    ).firstMatch(relevance);
+    if (match == null) return (paper: null, rest: relevance.trim());
+    return (paper: match.group(1)!.trim(), rest: match.group(2)!.trim());
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = _str(scheme, 'name');
@@ -128,22 +140,37 @@ class SchemeDetailSheet extends StatelessWidget {
             ],
           ),
 
-          // Empty values used to render as blank pills and a bare "Year: ".
+          // At a glance: the three facts most often asked about a scheme, each
+          // labelled so they read as answers rather than loose pills. Empty
+          // values are skipped — they used to render as blank pills and a bare
+          // "Year: ".
           if (sector.isNotEmpty || year.isNotEmpty || ministry.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (sector.isNotEmpty) _badge(sector, color),
-                if (year.isNotEmpty) _badge('Year: $year', AppTheme.textTertiary),
-                if (ministry.isNotEmpty) _badge(ministry, AppTheme.accentViolet),
+            const SizedBox(height: 18),
+            _GlanceGrid(
+              color: color,
+              rows: [
+                if (ministry.isNotEmpty)
+                  (
+                    icon: Icons.account_balance_rounded,
+                    label: 'Administered by',
+                    value: ministry
+                  ),
+                if (sector.isNotEmpty)
+                  (icon: Icons.category_rounded, label: 'Sector', value: sector),
+                if (year.isNotEmpty)
+                  (
+                    icon: Icons.event_rounded,
+                    label: 'In coverage from',
+                    value: year
+                  ),
               ],
             ),
           ],
 
           if (body.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            _SectionLabel(text: 'Overview', color: color),
+            const SizedBox(height: 8),
             Text(
               body,
               style: AppFonts.inter(
@@ -155,85 +182,27 @@ class SchemeDetailSheet extends StatelessWidget {
           ],
 
           if (keyFeatures.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Key Features',
-              style: AppFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.primaryColor,
-              ),
+            const SizedBox(height: 22),
+            _SectionLabel(
+              text: 'Key Features',
+              color: color,
+              trailing: '${keyFeatures.length}',
             ),
-            const SizedBox(height: 10),
-            ...keyFeatures.map(
-              (f) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 6),
-                      width: 6,
-                      height: 6,
-                      decoration:
-                          BoxDecoration(color: color, shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        f,
-                        style: AppFonts.inter(
-                          fontSize: 13,
-                          height: 1.5,
-                          color: AppTheme.textP(context),
-                        ),
-                      ),
-                    ),
-                  ],
+            const SizedBox(height: 12),
+            // Numbered cards rather than bare bullets: these are revision points,
+            // and a number gives them a handle ("the third feature").
+            ...keyFeatures.asMap().entries.map(
+                  (e) => _FeatureCard(
+                    index: e.key + 1,
+                    text: e.value,
+                    color: color,
+                  ),
                 ),
-              ),
-            ),
           ],
 
           if (upscRelevance.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    const Icon(Icons.school_rounded,
-                        size: 16, color: AppTheme.primaryColor),
-                    const SizedBox(width: 6),
-                    Text(
-                      'UPSC Relevance',
-                      style: AppFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 8),
-                  Text(
-                    upscRelevance,
-                    style: AppFonts.inter(
-                      fontSize: 13,
-                      height: 1.5,
-                      color: AppTheme.textP(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 22),
+            _RelevanceCard(relevance: upscRelevance),
           ],
 
           // A scraper-derived scheme can legitimately have nothing but a name
@@ -267,20 +236,254 @@ class SchemeDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _badge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: AppFonts.inter(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: color,
+}
+
+/// A small capitalised section heading with an accent rule, so the sheet reads as
+/// distinct sections instead of one continuous column of text.
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.text, required this.color, this.trailing});
+
+  final String text;
+  final Color color;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 15,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
+        const SizedBox(width: 8),
+        Text(
+          text.toUpperCase(),
+          style: AppFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+            color: AppTheme.textP(context),
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              trailing!,
+              style: AppFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Label/value rows for the facts a scheme is most often examined on.
+class _GlanceGrid extends StatelessWidget {
+  const _GlanceGrid({required this.rows, required this.color});
+
+  final List<({IconData icon, String label, String value})> rows;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.textT(context).withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0)
+              Divider(
+                height: 1,
+                color: AppTheme.textT(context).withValues(alpha: 0.12),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 11),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(rows[i].icon, size: 16, color: color),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          rows[i].label,
+                          style: AppFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                            color: AppTheme.textT(context),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          rows[i].value,
+                          style: AppFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            height: 1.35,
+                            color: AppTheme.textP(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One numbered revision point.
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({
+    required this.index,
+    required this.text,
+    required this.color,
+  });
+
+  final int index;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.16)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Text(
+                '$index',
+                style: AppFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(
+                text,
+                style: AppFonts.inter(
+                  fontSize: 13,
+                  height: 1.55,
+                  color: AppTheme.textP(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// UPSC relevance, with the GS paper lifted out of the prose into a badge.
+class _RelevanceCard extends StatelessWidget {
+  const _RelevanceCard({required this.relevance});
+
+  final String relevance;
+
+  @override
+  Widget build(BuildContext context) {
+    final split = SchemeDetailSheet.splitRelevance(relevance);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.school_rounded,
+                  size: 16, color: AppTheme.primaryColor),
+              const SizedBox(width: 6),
+              Text(
+                'UPSC Relevance',
+                style: AppFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              if (split.paper != null) ...[
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    split.paper!,
+                    style: AppFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 9),
+          Text(
+            split.rest,
+            style: AppFonts.inter(
+              fontSize: 13,
+              height: 1.55,
+              color: AppTheme.textP(context),
+            ),
+          ),
+        ],
       ),
     );
   }

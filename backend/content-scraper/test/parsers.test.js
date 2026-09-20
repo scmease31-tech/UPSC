@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { classifyPaper, parsePrelimsPaper, parseMainsPaper } from '../upsc-papers.js';
 import { classify as classifyUpload } from '../inbox-ingest.js';
 import { parsePyqBlock } from '../scrapers.js';
+import { isBlank, missingFieldPatch, SCHEME_DETAIL_FIELDS } from '../uploader.js';
 import { restructure, isStructured } from '../restructure.js';
 import { generateDailyQuiz, generateFlashcards, generateKeyFacts, generateSchemes } from '../generators.js';
 
@@ -531,4 +532,80 @@ test('scheme generation stays deterministic across runs', () => {
   const a = generateSchemes([schemeArticle]);
   const b = generateSchemes([schemeArticle]);
   assert.deepEqual(a, b);
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enriching existing docs
+//
+// uploadToCollection skips any id that already exists, so a doc can never gain a
+// field it was first written without. Scheme ids hash the name alone, so schemes
+// stored before generateSchemes produced detail fields kept their thin shape
+// permanently. missingFieldPatch is the fill-only rule that fixes that.
+// ─────────────────────────────────────────────────────────────────────────────
+
+test('blank detection covers the shapes Firestore actually returns', () => {
+  for (const v of [undefined, null, '', '   ', [], ['', '  '], {}]) {
+    assert.equal(isBlank(v), true, `expected blank: ${JSON.stringify(v)}`);
+  }
+  for (const v of ['x', ['a'], { a: 1 }, 0, false]) {
+    assert.equal(isBlank(v), false, `expected not blank: ${JSON.stringify(v)}`);
+  }
+});
+
+test('missing fields are filled and populated ones are left alone', () => {
+  const existing = {
+    name: 'PM Vishwakarma Yojana',
+    description: 'Short card line.',
+    detailedDescription: '',
+    keyFeatures: [],
+    upscRelevance: 'Hand-written relevance worth keeping.',
+  };
+  const incoming = {
+    detailedDescription: 'A fuller derived body.',
+    keyFeatures: ['Provides credit up to 3 lakh rupees.'],
+    upscRelevance: 'Derived relevance that must NOT win.',
+    ministry: 'Ministry of Micro, Small and Medium Enterprises',
+  };
+
+  const patch = missingFieldPatch(existing, incoming, SCHEME_DETAIL_FIELDS);
+
+  assert.deepEqual(Object.keys(patch).sort(), [
+    'detailedDescription',
+    'keyFeatures',
+    'ministry',
+  ]);
+  assert.equal(patch.detailedDescription, 'A fuller derived body.');
+  assert.ok(!('upscRelevance' in patch), 'curated text was overwritten');
+});
+
+test('a second run changes nothing', () => {
+  const incoming = {
+    detailedDescription: 'body',
+    keyFeatures: ['a'],
+    upscRelevance: 'rel',
+    ministry: 'Ministry of Health',
+  };
+  const filled = { ...incoming };
+  assert.deepEqual(missingFieldPatch(filled, incoming, SCHEME_DETAIL_FIELDS), {});
+});
+
+test('a blank incoming value never clears an existing one', () => {
+  const existing = { ministry: 'Ministry of Health' };
+  const incoming = { ministry: '', keyFeatures: [] };
+  assert.deepEqual(missingFieldPatch(existing, incoming, SCHEME_DETAIL_FIELDS), {});
+});
+
+test('a doc with nothing stored gets every derivable field', () => {
+  const thin = { name: 'Sagarmala Mission', description: 'x' };
+  const incoming = {
+    detailedDescription: 'body',
+    keyFeatures: ['f'],
+    upscRelevance: 'rel',
+    ministry: 'Ministry of Ports',
+  };
+  assert.deepEqual(
+    Object.keys(missingFieldPatch(thin, incoming, SCHEME_DETAIL_FIELDS)).sort(),
+    ['detailedDescription', 'keyFeatures', 'ministry', 'upscRelevance']
+  );
 });
