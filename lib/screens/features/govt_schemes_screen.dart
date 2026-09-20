@@ -49,6 +49,21 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
     }
   }
 
+  /// Pull-to-refresh. Goes through FirestoreContentService.refresh so BOTH the
+  /// in-memory and the 6-hour SharedPreferences cache are dropped — plain
+  /// getGovtSchemes() would hand back the same cached list and the gesture would
+  /// look broken. Without this there was no way to pick up corrected scheme data
+  /// for up to six hours.
+  Future<void> _refreshSchemes() async {
+    try {
+      final data = await FirestoreContentService.refresh('govtSchemes');
+      if (mounted) setState(() { _schemes = data; _hasError = false; });
+    } catch (e) {
+      debugPrint('Failed to refresh schemes: $e');
+      if (mounted) setState(() => _hasError = _schemes.isEmpty);
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -172,17 +187,33 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
               ],
             ),
           ),
-          // Scheme list
+          // Scheme list. Wrapped in a RefreshIndicator even when empty, so a
+          // user looking at "No schemes found" can still pull to retry.
           Expanded(
-            child: schemes.isEmpty
-                ? Center(child: Text('No schemes found', style: AppFonts.inter(color: AppTheme.textS(context))))
-                : ListView.builder(
-                    controller: _scrollController,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                    itemCount: schemes.length,
-                    itemBuilder: (context, i) => _buildSchemeCard(schemes[i]),
-                  ),
+            child: RefreshIndicator(
+              onRefresh: _refreshSchemes,
+              color: AppTheme.primaryColor,
+              child: schemes.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(height: MediaQuery.sizeOf(context).height * 0.25),
+                        Center(
+                          child: Text(
+                            'No schemes found',
+                            style: AppFonts.inter(color: AppTheme.textS(context)),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                      itemCount: schemes.length,
+                      itemBuilder: (context, i) => _buildSchemeCard(schemes[i]),
+                    ),
+            ),
           ),
         ],
       ),
