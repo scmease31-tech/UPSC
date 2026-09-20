@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -10,9 +9,11 @@ import '../../config/app_images.dart';
 import '../../providers/study_provider.dart';
 import '../../widgets/glass_widgets.dart';
 import '../../models/subject.dart';
+import 'package:upsc_daily_edge/design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// SubjectDetailScreen — Notes list with PDF downloads and content viewer.
+/// Migrated to the Frosted Scholar design system (tokens + primitives).
 /// ──────────────────────────────────────────────────────────────────────────────
 class SubjectDetailScreen extends StatefulWidget {
   const SubjectDetailScreen({super.key});
@@ -43,7 +44,13 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           child: Column(
             children: [
               _backBar(context, 'Subject'),
-              const Expanded(child: Center(child: Text('Subject not found'))),
+              const Expanded(
+                child: FsEmptyState(
+                  icon: Icons.search_off_rounded,
+                  title: 'Subject not found',
+                  message: 'This subject may have been removed or is unavailable.',
+                ),
+              ),
             ],
           ),
         ),
@@ -60,7 +67,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               child: ListView(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                padding: const EdgeInsets.fromLTRB(
+                    FsSpace.lg, FsSpace.xs, FsSpace.lg, 100),
                 children: [
                   _buildHeader(context, subject),
                   ...subject.notes.map((note) => _buildNoteCard(context, note)),
@@ -75,14 +83,22 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
   Widget _backBar(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xs, FsSpace.xs, FsSpace.lg, 0),
       child: Row(
         children: [
-          IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          }),
-          Expanded(child: Text(title, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context)))),
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+            },
+          ),
+          Expanded(
+            child: Text(title,
+                style: FsType.title(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
         ],
       ),
     );
@@ -90,13 +106,14 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
   Widget _buildHeader(BuildContext context, Subject subject) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: FsSpace.lg),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(FsRadii.lg),
         child: Stack(
           children: [
             SizedBox(
-              height: 180, width: double.infinity,
+              height: 180,
+              width: double.infinity,
               child: CachedNetworkImage(
                 imageUrl: AppImages.categoryImage(subject.name),
                 fit: BoxFit.cover,
@@ -114,27 +131,30 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               height: 180,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
                     AppTheme.primaryDark.withValues(alpha: 0.5),
                     AppTheme.primaryColor.withValues(alpha: 0.85),
                   ],
                 ),
               ),
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(FsSpace.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(subject.name, style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
-                  const SizedBox(height: 6),
-                  Text(subject.description, style: AppFonts.inter(fontSize: 13, color: Colors.white70, height: 1.5),
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
-                    child: Text('${subject.notes.length} study notes', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                  Text(subject.name,
+                      style: FsType.display(context).copyWith(color: Colors.white)),
+                  const SizedBox(height: FsSpace.xs),
+                  Text(subject.description,
+                      style: FsType.caption(context).copyWith(color: Colors.white70),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: FsSpace.md),
+                  FsTag(
+                    label: '${subject.notes.length} study notes',
+                    color: Colors.white,
                   ),
                 ],
               ),
@@ -147,10 +167,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
   Widget _buildNoteCard(BuildContext context, StudyNote note) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: AnimatedGlassCard(
+      padding: const EdgeInsets.only(bottom: FsSpace.md),
+      child: FsCard(
         onTap: () => _showNoteDetail(context, note),
-        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -158,30 +177,28 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               children: [
                 Expanded(
                   child: Text(note.title,
-                      style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
+                      style: FsType.subtitle(context),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
                 ),
                 if (note.pdfUrl != null && note.pdfUrl!.isNotEmpty)
-                  GestureDetector(
-                    onTap: () => _openPdf(note.pdfUrl!),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.errorRed.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.picture_as_pdf_rounded, color: AppTheme.errorRed, size: 20),
-                    ),
+                  FsIconButton(
+                    icon: Icons.picture_as_pdf_rounded,
+                    color: FsColors.danger,
+                    size: 36,
+                    tooltip: 'Open PDF',
+                    onPressed: () => _openPdf(note.pdfUrl!),
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: FsSpace.xs),
             Text(note.content,
-                maxLines: 3, overflow: TextOverflow.ellipsis,
-                style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context), height: 1.5)),
-            const SizedBox(height: 8),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: FsType.caption(context)),
+            const SizedBox(height: FsSpace.xs),
             Text('Updated ${_formatDate(note.lastUpdated)}',
-                style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context).withValues(alpha: 0.6))),
+                style: FsType.label(context)),
           ],
         ),
       ),
@@ -200,34 +217,32 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         builder: (_, ctrl) => DecoratedBox(
           decoration: BoxDecoration(
             color: AppTheme.scaffold(context),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(FsRadii.lg)),
           ),
           child: ListView(
             controller: ctrl,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(FsSpace.xxl),
             children: [
               Center(
-                child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: FsColors.divider(context),
+                        borderRadius: BorderRadius.circular(2))),
               ),
-              const SizedBox(height: 20),
-              Text(note.title, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
-              const SizedBox(height: 16),
-              Text(note.content, style: AppFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(context))),
+              const SizedBox(height: FsSpace.xl),
+              Text(note.title, style: FsType.display(context)),
+              const SizedBox(height: FsSpace.lg),
+              Text(note.content, style: FsType.body(context)),
               if (note.pdfUrl != null && note.pdfUrl!.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openPdf(note.pdfUrl!),
-                    icon: const Icon(Icons.picture_as_pdf_rounded),
-                    label: Text('Open PDF', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.errorRed,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
+                const SizedBox(height: FsSpace.xxl),
+                FsButton(
+                  label: 'Open PDF',
+                  icon: Icons.picture_as_pdf_rounded,
+                  color: FsColors.danger,
+                  expand: true,
+                  onPressed: () => _openPdf(note.pdfUrl!),
                 ),
               ],
             ],

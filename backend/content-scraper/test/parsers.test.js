@@ -5,7 +5,7 @@ import { classifyPaper, parsePrelimsPaper, parseMainsPaper } from '../upsc-paper
 import { classify as classifyUpload } from '../inbox-ingest.js';
 import { parsePyqBlock } from '../scrapers.js';
 import { restructure, isStructured } from '../restructure.js';
-import { generateFlashcards, generateKeyFacts } from '../generators.js';
+import { generateDailyQuiz, generateFlashcards, generateKeyFacts } from '../generators.js';
 
 const base = 'https://www.upsc.gov.in/sites/default/files/';
 
@@ -380,4 +380,48 @@ test('key facts skip articles with nothing memorable', () => {
     summary: 'Officials met to discuss the matter.',
   };
   assert.equal(generateKeyFacts([vague]).length, 0);
+});
+
+
+test('daily news quiz is deterministic, valid, and changes by date', () => {
+  const categories = ['Polity', 'Economy', 'Environment', 'Science & Technology'];
+  const terms = [
+    ['Constitutional morality', 'A principle requiring public power to follow constitutional values and institutional limits.'],
+    ['Fiscal consolidation', 'A policy process that reduces fiscal deficits and stabilises public debt over time.'],
+    ['Carbon sink', 'A natural or artificial reservoir that absorbs more carbon dioxide than it releases.'],
+    ['Quantum communication', 'Communication that uses quantum states to detect interception and protect information.'],
+  ];
+  const articles = categories.map((category, index) => ({
+    ...sampleArticle,
+    id: `article-${index}`,
+    title: `${category} development ${index + 1}`,
+    categoryTags: [category],
+    upscPaper: index < 2 ? 'GS-II' : 'GS-III',
+    keyTerms: { [terms[index][0]]: terms[index][1] },
+    keyPoints: [`${category} policy includes a distinct verified finding number ${index + 1} for UPSC preparation.`],
+    sourceUrl: `https://example.com/${index}`,
+  }));
+
+  const first = generateDailyQuiz(articles, '2026-09-20', { limit: 10 });
+  const repeat = generateDailyQuiz(articles, '2026-09-20', { limit: 10 });
+  const nextDay = generateDailyQuiz(articles, '2026-09-21', { limit: 10 });
+
+  assert.deepEqual(first, repeat, 'same date and articles must regenerate identically');
+  assert.ok(first.length >= 6, `expected a useful daily set, got ${first.length}`);
+  assert.equal(new Set(first.map((question) => question.id)).size, first.length);
+  assert.notDeepEqual(first.map((question) => question.id), nextDay.map((question) => question.id));
+  for (const question of first) {
+    assert.equal(question.options.length, 4);
+    assert.ok(question.correctAnswerIndex >= 0 && question.correctAnswerIndex < 4);
+    assert.equal(question.publishedDate, '2026-09-20');
+    assert.equal(question.source, 'daily_news');
+    assert.ok(question.explanation.length >= 20);
+    assert.ok(question.articleRef);
+  }
+});
+
+test('daily news quiz handles sparse publication days without throwing', () => {
+  const sparse = generateDailyQuiz([{ ...sampleArticle, id: 'only-one' }], '2026-09-20');
+  assert.ok(Array.isArray(sparse));
+  assert.ok(sparse.length <= 10);
 });

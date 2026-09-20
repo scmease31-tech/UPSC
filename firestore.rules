@@ -17,6 +17,8 @@ service cloud.firestore {
     // these rules, so public writes stay disabled.
     match /articles/{doc}         { allow read: if true; allow write: if false; }
     match /quizQuestions/{doc}    { allow read: if true; allow write: if false; }
+    match /dailyQuizzes/{doc}     { allow read: if true; allow write: if false; }
+    match /currentAffairsRoundups/{doc} { allow read: if true; allow write: if false; }
     match /vocabulary/{doc}       { allow read: if true; allow write: if false; }
     match /govtSchemes/{doc}      { allow read: if true; allow write: if false; }
     match /flashcards/{doc}       { allow read: if true; allow write: if false; }

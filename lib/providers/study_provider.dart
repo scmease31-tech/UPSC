@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/subject.dart';
 import '../models/weekly_magazine.dart';
 import '../data/dummy_data.dart';
+import '../services/firebase_services.dart';
 
 /// Provides study material and weekly magazine data.
 class StudyProvider extends ChangeNotifier {
@@ -10,7 +11,7 @@ class StudyProvider extends ChangeNotifier {
   List<WeeklyMagazine> _magazines = [];
   bool _isLoading = false;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseServices.contentFirestore;
 
   List<Subject> get subjects => _subjects;
   List<WeeklyMagazine> get magazines => _magazines;

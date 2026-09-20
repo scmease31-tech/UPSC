@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/quiz_question.dart';
 import '../data/dummy_data.dart';
 import '../services/gemini_service.dart';
+import '../services/firebase_services.dart';
 
 /// Manages quiz state: questions, timer, scoring, and results.
 class QuizProvider extends ChangeNotifier {
@@ -15,7 +16,7 @@ class QuizProvider extends ChangeNotifier {
   bool _isLoading = false;
   List<int?> _userAnswers = [];
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseServices.contentFirestore;
 
   List<QuizQuestion> get questions => _questions;
   int get currentIndex => _currentIndex;
@@ -28,6 +29,64 @@ class QuizProvider extends ChangeNotifier {
   int get totalQuestions => _questions.length;
   List<int?> get userAnswers => _userAnswers;
   bool get isLoading => _isLoading;
+
+  /// Load the quiz generated from extracted news for [date] (today by default).
+  /// Falls back to the latest generated daily bundle, then the regular quiz bank.
+  Future<void> loadDailyQuiz({DateTime? date}) async {
+    _isLoading = true;
+    notifyListeners();
+    final target = date ?? DateTime.now();
+    final key = '${target.year}-${target.month.toString().padLeft(2, '0')}-${target.day.toString().padLeft(2, '0')}';
+
+    try {
+      Map<String, dynamic>? data;
+      final exact = await _firestore.collection('dailyQuizzes').doc(key).get();
+      if (exact.exists) {
+        data = exact.data();
+      } else {
+        final latest = await _firestore
+            .collection('dailyQuizzes')
+            .orderBy('date', descending: true)
+            .limit(1)
+            .get();
+        if (latest.docs.isNotEmpty) data = latest.docs.first.data();
+      }
+      final raw = (data?['questions'] as List<dynamic>?) ?? const [];
+      _questions = raw
+          .whereType<Map>()
+          .map((item) {
+            final map = item.map((k, v) => MapEntry(k.toString(), v));
+            return QuizQuestion.fromMap(map, (map['id'] ?? '').toString());
+          })
+          .where((question) =>
+              question.question.isNotEmpty &&
+              question.options.length == 4 &&
+              question.correctAnswerIndex >= 0 &&
+              question.correctAnswerIndex < 4)
+          .toList();
+    } catch (error) {
+      debugPrint('[QuizProvider] Daily quiz load error: $error');
+      _questions = [];
+    }
+
+    if (_questions.isEmpty) {
+      await loadQuiz();
+      return;
+    }
+    _questions.shuffle();
+    _resetSession();
+  }
+
+  void _resetSession() {
+    _currentIndex = 0;
+    _score = 0;
+    _selectedOptionIndex = null;
+    _answered = false;
+    _quizComplete = false;
+    _isLoading = false;
+    _userAnswers = List.filled(_questions.length, null);
+    notifyListeners();
+  }
 
   /// Load quiz questions from Firestore → AI generation → dummy data fallback.
   /// Optionally filter by [category]. Pass null or empty for all categories.

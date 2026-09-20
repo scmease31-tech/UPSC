@@ -27,6 +27,7 @@ import '../screens/features/syllabus_tracker_screen.dart';
 import '../screens/features/vocabulary_screen.dart';
 import '../screens/features/mock_test_screen.dart';
 import '../screens/features/govt_schemes_screen.dart';
+import '../screens/features/bookmarks_screen.dart';
 import '../screens/search/ai_search_screen.dart';
 import '../screens/profile/credits_screen.dart';
 import '../screens/web/web_wrappers.dart';
@@ -62,6 +63,7 @@ class AppRoutes {
   static const String vocabulary = '/vocabulary';
   static const String mockTest = '/mock-test';
   static const String govtSchemes = '/govt-schemes';
+  static const String bookmarks = '/bookmarks';
   static const String aiSearch = '/ai-search';
   static const String credits = '/credits';
 
@@ -108,6 +110,7 @@ class AppRoutes {
       vocabulary: (_) => _featureWrap(const VocabularyBuilderScreen(), 'Vocabulary'),
       mockTest: (_) => _featureWrap(const MockTestScreen(), 'Mock Test'),
       govtSchemes: (_) => _featureWrap(const GovtSchemesScreen(), 'Govt Schemes'),
+      bookmarks: (_) => _featureWrap(const BookmarksScreen(), 'Bookmarks'),
       aiSearch: (_) => _featureWrap(const AiSearchScreen(), 'AI Search'),
       credits: (_) => const CreditsScreen(),
     };

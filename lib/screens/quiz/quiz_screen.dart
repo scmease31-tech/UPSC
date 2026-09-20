@@ -12,6 +12,7 @@ import '../../providers/quiz_provider.dart';
 import '../../providers/daily_progress_provider.dart';
 import '../../widgets/glass_widgets.dart';
 import '../../widgets/section_header.dart';
+import 'package:upsc_daily_edge/design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// QuizScreen — Quiz dashboard with glassmorphic score card, accuracy ring,
@@ -66,7 +67,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
       const _QuizTopic('Mixed', '${_ib}target_mixed.png', AppTheme.warningOrange, null),
     ];
 
-    Widget content = FadeTransition(
+    final Widget content = FadeTransition(
         opacity: _fadeCurve,
         child: CustomScrollView(
           controller: _scrollController,
@@ -76,8 +77,8 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             if (!kIsWeb)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Text('Quiz Arena', style: AppFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
+                  padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.lg, FsSpace.lg, FsSpace.xs),
+                  child: Text('Quiz Arena', style: FsType.display(context)),
                 ),
               ),
 
@@ -89,7 +90,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
 
             // Topic Grid
             const SliverToBoxAdapter(
-              child: SectionHeader(title: 'Choose Topic', padding: EdgeInsets.fromLTRB(20, 12, 20, 6)),
+              child: SectionHeader(title: 'Choose Topic', padding: EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.md, FsSpace.lg, FsSpace.xxs)),
             ),
             SliverToBoxAdapter(child: _buildTopicGrid(context, categories)),
 
@@ -110,14 +111,14 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
   Widget _buildScoreCard(BuildContext context, DailyProgressProvider p, bool dark) {
     final accuracy = p.weeklyAccuracy;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.xs, FsSpace.lg, FsSpace.xs),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           boxShadow: AppTheme.cardShadow,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           child: Stack(
             children: [
               // Image and overlay stretch to whatever height the content needs,
@@ -157,7 +158,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
               ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 160),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(FsSpace.xl),
                   child: Row(
                     children: [
                       CircularProgressWidget(
@@ -213,13 +214,13 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
 
   Widget _buildStatsRow(BuildContext context, DailyProgressProvider p) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.xxs, FsSpace.lg, FsSpace.xxs),
       child: Row(
         children: [
           Expanded(child: _statTile(context, 'Weekly', '${p.quizzesThisWeek}', Icons.format_list_numbered_rounded, AppTheme.primaryColor)),
-          const SizedBox(width: 10),
+          const SizedBox(width: FsSpace.xs),
           Expanded(child: _statTile(context, 'Streak', '${p.currentStreak}d', Icons.local_fire_department_rounded, AppTheme.errorRed)),
-          const SizedBox(width: 10),
+          const SizedBox(width: FsSpace.xs),
           Expanded(child: _statTile(context, 'XP', '${p.dailyChallengeTotalXp}', Icons.bolt_rounded, AppTheme.warningOrange)),
         ],
       ),
@@ -235,14 +236,14 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             width: 40, height: 40,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(FsRadii.control),
             ),
             child: Icon(icon, color: color, size: 19),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: FsSpace.xs),
           Text(value, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textP(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 2),
-          Text(label, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context), fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(label, style: FsType.label(context), maxLines: 1, overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -250,12 +251,12 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
 
   Widget _buildTopicGrid(BuildContext context, List<_QuizTopic> topics) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: FsSpace.lg),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.8,
+          crossAxisCount: 4, mainAxisSpacing: FsSpace.md, crossAxisSpacing: FsSpace.md, childAspectRatio: 0.8,
         ),
         itemCount: topics.length,
         itemBuilder: (context, i) {
@@ -272,17 +273,17 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                   canPop: false,
                   child: Center(
                     child: Container(
-                    padding: const EdgeInsets.all(28),
+                    padding: const EdgeInsets.all(FsSpace.xxl),
                     decoration: BoxDecoration(
                       color: Theme.of(context).scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(FsRadii.lg),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Lottie.asset('assets/animations/loading.json', width: 100, height: 100),
-                        const SizedBox(height: 12),
-                        Text('Loading ${t.name}...', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w500)),
+                        const SizedBox(height: FsSpace.md),
+                        Text('Loading ${t.name}...', style: FsType.caption(context).copyWith(fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ),
@@ -305,7 +306,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             },
             child: DecoratedBox(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(FsRadii.card),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -320,7 +321,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset(t.iconPath, width: 30, height: 30, color: Colors.white),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: FsSpace.xxs),
                   Text(
                     t.name,
                     style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
@@ -339,7 +340,7 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
 
   Widget _buildQuickStart(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.md, FsSpace.lg, FsSpace.xs),
       child: GestureDetector(
         onTap: () async {
           try {
@@ -349,23 +350,23 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
             barrierDismissible: false,
             builder: (_) => Center(
               child: Container(
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(FsSpace.xxl),
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(FsRadii.lg),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Lottie.asset('assets/animations/loading.json', width: 100, height: 100),
-                    const SizedBox(height: 12),
-                    Text('Preparing quiz...', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: FsSpace.md),
+                    Text("Preparing today's news quiz...", style: FsType.caption(context).copyWith(fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
             ),
           );
-          await context.read<QuizProvider>().loadQuiz();
+          await context.read<QuizProvider>().loadDailyQuiz();
           if (context.mounted) {
             Navigator.pop(context); // dismiss loading
             Navigator.pushNamed(context, '/quiz-play');
@@ -380,14 +381,14 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
           }
         },
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(FsSpace.xl),
           decoration: AppTheme.gradientButton(),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
-              const SizedBox(width: 12),
-              Text('Start Quick Quiz', style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
+              const SizedBox(width: FsSpace.md),
+              Text("Start Today's News Quiz", style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
             ],
           ),
         ),
@@ -397,15 +398,15 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
 
   Widget _buildLeaderboard(BuildContext context, DailyProgressProvider p) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.xs, FsSpace.lg, FsSpace.xs),
       child: Container(
         height: 90,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           boxShadow: AppTheme.softShadow,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -432,11 +433,11 @@ class _QuizScreenState extends State<QuizScreen> with SingleTickerProviderStateM
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(FsSpace.xl),
                 child: Row(
                   children: [
                     Image.asset('assets/flaticon_pngs/trophy.png', width: 36, height: 36),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: FsSpace.lg),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

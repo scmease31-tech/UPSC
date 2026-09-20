@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/pyq_bank.dart';
 import '../models/pyq_question.dart';
+import 'firebase_services.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// PyqService — supplies the Previous Year Questions tab.
@@ -41,7 +41,7 @@ class PyqService {
     }
 
     try {
-      final snap = await FirebaseFirestore.instance
+      final snap = await FirebaseServices.contentFirestore
           .collection('pyqs')
           .orderBy('year', descending: true)
           .limit(600)

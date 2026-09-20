@@ -2,12 +2,12 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/glass_widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// LoginScreen — Glassmorphic auth with Google + email/password sign-in.
@@ -72,33 +72,33 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text('UPSC Daily Edge', style: AppFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
-          const SizedBox(height: 4),
-          Text('Your Daily UPSC Companion', style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
-          const SizedBox(height: 36),
+          const SizedBox(height: FsSpace.md),
+          Text('UPSC Daily Edge', style: FsType.display(context)),
+          const SizedBox(height: FsSpace.xxs),
+          Text('Your Daily UPSC Companion', style: FsType.caption(context)),
+          const SizedBox(height: FsSpace.xxl),
         ],
 
         // Form card
         kIsWeb
             ? _buildFormBody(auth)
-            : GlassCard(padding: const EdgeInsets.all(24), child: _buildFormBody(auth)),
+            : GlassCard(padding: FsSpacing.cardPadding, child: _buildFormBody(auth)),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: FsSpace.xl),
 
         // Divider
         Row(
           children: [
-            Expanded(child: Divider(color: AppTheme.textS(context).withValues(alpha: 0.2))),
+            Expanded(child: Divider(color: FsColors.textSecondary(context).withValues(alpha: 0.2))),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('or', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+              padding: const EdgeInsets.symmetric(horizontal: FsSpace.lg),
+              child: Text('or', style: FsType.caption(context)),
             ),
-            Expanded(child: Divider(color: AppTheme.textS(context).withValues(alpha: 0.2))),
+            Expanded(child: Divider(color: FsColors.textSecondary(context).withValues(alpha: 0.2))),
           ],
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: FsSpace.xl),
 
         // Google sign in
         SizedBox(
@@ -107,35 +107,35 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           child: OutlinedButton.icon(
             onPressed: auth.isLoading ? null : _googleSignIn,
             icon: SvgPicture.asset('assets/icons/google_logo.svg', width: 22, height: 22),
-            label: Text('Continue with Google', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
+            label: Text('Continue with Google', style: FsType.subtitle(context)),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.textP(context),
-              side: BorderSide(color: AppTheme.divider(context)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              foregroundColor: FsColors.textPrimary(context),
+              side: BorderSide(color: FsColors.divider(context)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
             ),
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: FsSpace.xl),
 
         // Sign up link
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Don't have an account? ", style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            Text("Don't have an account? ", style: FsType.caption(context)),
             GestureDetector(
               onTap: () => Navigator.pushReplacementNamed(context, '/signup'),
-              child: Text('Sign Up', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+              child: Text('Sign Up', style: FsType.button(FsColors.accent(context))),
             ),
           ],
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: FsSpace.lg),
 
         // Skip
         TextButton(
           onPressed: () => Navigator.pushReplacementNamed(context, '/main'),
-          child: Text('Continue without account', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+          child: Text('Continue without account', style: FsType.label(context)),
         ),
       ],
     );
@@ -165,15 +165,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Welcome Back', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-          const SizedBox(height: 20),
+          Text('Welcome Back', style: FsType.title(context)),
+          const SizedBox(height: FsSpace.xl),
           TextFormField(
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
             decoration: _inputDec('Email', Icons.email_rounded),
             validator: (v) => v != null && v.contains('@') ? null : 'Enter a valid email',
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: FsSpace.md),
           TextFormField(
             controller: _passwordCtrl,
             obscureText: _obscure,
@@ -186,18 +186,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             validator: (v) => v != null && v.length >= 6 ? null : 'At least 6 characters',
           ),
           if (_error != null) ...[
-            const SizedBox(height: 12),
-            Text(_error!, style: AppFonts.inter(fontSize: 12, color: AppTheme.errorRed), textAlign: TextAlign.center),
+            const SizedBox(height: FsSpace.md),
+            Text(_error!, style: FsType.caption(context).copyWith(color: FsColors.danger), textAlign: TextAlign.center),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: FsSpace.xl),
           SizedBox(
             height: 52,
             child: ElevatedButton(
               onPressed: auth.isLoading ? null : _signIn,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                backgroundColor: FsColors.accent(context),
+                foregroundColor: FsColors.onAccent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
                 elevation: 0,
               ),
               child: auth.isLoading
@@ -206,8 +206,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(Icons.login_rounded, size: 20),
-                        const SizedBox(width: 8),
-                        Text('Sign In', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                        const SizedBox(width: FsSpace.xs),
+                        Text('Sign In', style: FsType.button(FsColors.onAccent).copyWith(fontSize: 16, fontWeight: FontWeight.w700)),
                       ],
                     ),
             ),
@@ -221,10 +221,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon, size: 20),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(FsRadii.control), borderSide: BorderSide.none),
       filled: true,
       fillColor: AppTheme.card(context).withValues(alpha: 0.6),
-      labelStyle: AppFonts.inter(fontSize: 14),
+      labelStyle: FsType.body(context),
     );
   }
 

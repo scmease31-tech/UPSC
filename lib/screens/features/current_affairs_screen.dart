@@ -27,6 +27,8 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
   String _selectedCategory = 'All';
   late Future<List<Map<String, dynamic>>> _dataFuture;
   late Future<List<Map<String, dynamic>>> _newsFuture;
+  late Future<Map<String, dynamic>?> _weeklyRoundupFuture;
+  late Future<Map<String, dynamic>?> _monthlyRoundupFuture;
 
   static const _categories = [
     'All', 'Polity', 'Economy', 'International', 'Environment',
@@ -39,6 +41,8 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
     _tabCtrl = TabController(length: 4, vsync: this);
     _dataFuture = FirestoreContentService.getCurrentAffairs();
     _newsFuture = NewsApiService.fetchLatestNews();
+    _weeklyRoundupFuture = FirestoreContentService.getLatestRoundup('weekly');
+    _monthlyRoundupFuture = FirestoreContentService.getLatestRoundup('monthly');
   }
 
   @override
@@ -276,7 +280,26 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
           case 'important': items = FirestoreContentService.getImportantAffairs(all); break;
           default: items = all;
         }
-        return _buildAffairsList(items);
+        final roundupFuture = type == 'weekly'
+            ? _weeklyRoundupFuture
+            : type == 'monthly'
+                ? _monthlyRoundupFuture
+                : null;
+        if (roundupFuture == null) return _buildAffairsList(items);
+        return Column(
+          children: [
+            FutureBuilder<Map<String, dynamic>?>(
+              future: roundupFuture,
+              builder: (context, roundupSnap) {
+                final roundup = roundupSnap.data;
+                return roundup == null
+                    ? const SizedBox.shrink()
+                    : _buildRoundupSummary(roundup);
+              },
+            ),
+            Expanded(child: _buildAffairsList(items)),
+          ],
+        );
       },
     );
   }
@@ -498,6 +521,74 @@ class _CurrentAffairsScreenState extends State<CurrentAffairsScreen>
       case 'Government Schemes': return 'GS-II (Governance & Welfare)';
       default: return 'General Studies';
     }
+  }
+
+  Widget _buildRoundupSummary(Map<String, dynamic> roundup) {
+    final categories = Map<String, dynamic>.from(roundup['categoryCounts'] as Map? ?? const {});
+    final sortedCategories = categories.entries.toList()
+      ..sort((a, b) => (b.value as num).compareTo(a.value as num));
+    final reviewQuestions = (roundup['reviewQuestions'] as List<dynamic>?) ?? const [];
+    final stories = (roundup['keyStories'] as List<dynamic>?) ?? const [];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: GlassCard(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 19),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (roundup['title'] ?? 'Current Affairs Roundup').toString(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        '${roundup['storyCount'] ?? stories.length} stories · ${reviewQuestions.length} review questions',
+                        style: AppFonts.inter(fontSize: 10.5, color: AppTheme.textS(context)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (sortedCategories.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: sortedCategories.take(4).map((entry) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${entry.key} ${entry.value}',
+                    style: AppFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                  ),
+                )).toList(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildAffairsList(List<Map<String, dynamic>> items) {

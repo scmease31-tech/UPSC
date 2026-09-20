@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,17 +8,19 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
+import '../../design_system/frosted_scholar.dart';
 import '../../models/article.dart';
 import '../../providers/articles_provider.dart';
 import '../../providers/bookmarks_provider.dart';
 import '../../services/news_api_service.dart';
-import '../../widgets/article_card.dart';
+import 'news_feed_query.dart';
+import '../../widgets/editorial_news_cards.dart';
 import '../../widgets/category_chip.dart';
 import '../../utils/constants.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
-/// NewsScreen — Article feed with glassmorphic search bar, horizontal category
-/// chips, bookmark filter, and activity-tracker style list items.
+/// NewsScreen — Editorial daily briefing with a lead story, quick date strip,
+/// subject and source filters, compact reading cards, bookmarks, and more news online.
 /// ──────────────────────────────────────────────────────────────────────────────
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -43,6 +44,16 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
 
   @override
   bool get wantKeepAlive => true;
+
+  /// The current filter state as a pure, testable query object.
+  NewsFeedQuery get _query => NewsFeedQuery(
+        searchQuery: _searchQuery,
+        selectedCategory: _selectedCategory,
+        selectedNewspaper: _selectedNewspaper,
+        selectedDateFrom: _selectedDateFrom,
+        selectedDateTo: _selectedDateTo,
+        showBookmarks: _showBookmarks,
+      );
 
   @override
   void initState() {
@@ -68,70 +79,27 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     final bookmarks = context.watch<BookmarksProvider>();
     final dark = AppTheme.isDark(context);
 
-    var filteredArticles = articles.articles;
-
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      final queryWords = q.split(RegExp(r'\s+')).where((w) => w.length > 1).toList();
-      filteredArticles = filteredArticles
-          .where((a) {
-            final searchableText = [
-              a.title,
-              a.summary,
-              a.content,
-              a.newspaper,
-              a.upscPaper,
-              a.syllabusMapping,
-              a.analysisNote,
-              ...a.categoryTags,
-              ...a.relatedTopics,
-              ...a.keyPoints,
-              ...a.shortNotes,
-              ...a.keyTerms.keys,
-              ...a.keyTerms.values,
-            ].join(' ').toLowerCase();
-            return queryWords.every((word) => searchableText.contains(word));
-          })
-          .toList();
-    }
-
-    if (_selectedCategory != null) {
-      filteredArticles = filteredArticles
-          .where((a) => a.categoryTags.any((t) => t.toLowerCase() == _selectedCategory!.toLowerCase()))
-          .toList();
-    }
-
-    if (_selectedNewspaper != null) {
-      filteredArticles = filteredArticles
-          .where((a) => a.newspaper.toLowerCase() == _selectedNewspaper!.toLowerCase())
-          .toList();
-    }
-
-    if (_selectedDateFrom != null || _selectedDateTo != null) {
-      filteredArticles = filteredArticles.where((a) {
-        final d = DateTime(a.publishedDate.year, a.publishedDate.month, a.publishedDate.day);
-        if (_selectedDateFrom != null) {
-          final from = DateTime.parse(_selectedDateFrom!);
-          if (d.isBefore(from)) return false;
-        }
-        if (_selectedDateTo != null) {
-          final to = DateTime.parse(_selectedDateTo!);
-          if (d.isAfter(to)) return false;
-        }
-        return true;
-      }).toList();
-    }
-
-    if (_showBookmarks) {
-      final bmIds = bookmarks.bookmarkedIds;
-      filteredArticles = filteredArticles.where((a) => bmIds.contains(a.id)).toList();
-    }
+    // Selection logic lives in NewsFeedQuery so it can be tested without a
+    // provider tree or a rendered frame. See test/news_feed_test.dart.
+    final filteredArticles = _query.apply(
+      articles.articles,
+      bookmarkedIds: bookmarks.bookmarkedIds,
+    );
 
     final categories = ['All', 'Polity', 'Economy', 'Environment', 'Science & Technology', 'International Relations', 'Social Issues', 'Geography', 'History', 'Governance'];
 
-    final feedItems = _buildFeedItems(filteredArticles);
+    final leadArticle = NewsFeedQuery.selectLeadArticle(filteredArticles);
+    final briefingArticles = leadArticle == null
+        ? filteredArticles
+        : filteredArticles.where((article) => article.id != leadArticle.id).toList();
+    final quickDates = NewsFeedQuery.availableQuickDates(articles.allArticles);
+    final feedDisplay = NewsFeedQuery.resolveDisplay(
+      isLoading: articles.isLoading,
+      filteredCount: filteredArticles.length,
+    );
+    final feedItems = _buildEditorialFeedItems(briefingArticles);
 
-    Widget content = FadeTransition(
+    final Widget content = FadeTransition(
         opacity: _fadeAnim,
         child: Column(
           children: [
@@ -141,11 +109,34 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               child: Row(
                 children: [
                   if (!kIsWeb)
-                    Text(
-                      'Current Affairs',
-                      style: AppFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context)),
-                    ),
-                  const Spacer(),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Daily Briefing',
+                            style: AppFonts.plusJakartaSans(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.textP(context),
+                            ),
+                          ),
+                          const SizedBox(height: FsSpace.xxs),
+                          Text(
+                            _briefingSubtitle(filteredArticles),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppFonts.inter(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textS(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    const Spacer(),
                   _iconBtn(
                     icon: Icons.tune_rounded,
                     color: (_selectedNewspaper != null || _selectedDateFrom != null || _selectedDateTo != null)
@@ -153,7 +144,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                         : AppTheme.textS(context),
                     onTap: () => _showFilterSheet(context, dark),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: FsSpace.xs),
                   _iconBtn(
                     icon: _showBookmarks ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
                     color: _showBookmarks ? AppTheme.primaryColor : AppTheme.textS(context),
@@ -223,13 +214,17 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               ),
             ),
 
-            // ── STICKY CATEGORY CHIPS ──
+            // ── QUICK DATE STRIP ──
+            if (quickDates.isNotEmpty)
+              _buildQuickDateStrip(quickDates),
+
+            // ── SUBJECT FILTERS ──
             SizedBox(
               height: 46,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: FsSpacing.screenH,
                 itemCount: categories.length,
                 itemBuilder: (context, i) {
                   final cat = categories[i];
@@ -279,7 +274,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                 ),
               ),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: FsSpace.xxs),
 
             // ── SCROLLABLE CONTENT ──
             Expanded(
@@ -294,6 +289,20 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   slivers: [
+                    if (leadArticle != null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildBriefingOverview(filteredArticles),
+                              const SizedBox(height: FsSpace.md),
+                              EditorialLeadStory(article: leadArticle),
+                            ],
+                          ),
+                        ),
+                      ),
 
             // ═══ LIVE NEWS FROM WEB (auto-fetched, no Telegram needed) ═══
             if (!_showBookmarks && _searchQuery.isEmpty)
@@ -301,7 +310,13 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                 child: FutureBuilder<List<Map<String, dynamic>>>(
                   future: _liveNewsFuture,
                   builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
+                    final live = NewsFeedQuery.resolveLiveNews(
+                      waiting:
+                          snap.connectionState == ConnectionState.waiting,
+                      data: snap.data,
+                      selectedCategory: _selectedCategory,
+                    );
+                    if (live.isLoading) {
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
                         child: Column(
@@ -315,44 +330,37 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                     gradient: LinearGradient(
                                       colors: [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.7)],
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(FsRadii.sm),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
-                                      const SizedBox(width: 4),
-                                      Text('Live from Web', style: AppFonts.inter(
+                                      const SizedBox(width: FsSpace.xxs),
+                                      Text('More News Online', style: AppFonts.inter(
                                         fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white,
                                       )),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: FsSpace.xs),
                                 const SizedBox(width: 14, height: 14,
                                   child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor)),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: FsSpace.xs),
                             _buildShimmerCard(dark),
                           ],
                         ),
                       );
                     }
 
-                    final allLiveNews = snap.data ?? [];
-                    // Apply category filter
-                    final liveNews = _selectedCategory == null
-                        ? allLiveNews
-                        : allLiveNews.where((n) {
-                            final cat = (n['category'] as String? ?? '').toLowerCase();
-                            return cat == _selectedCategory!.toLowerCase();
-                          }).toList();
+                    // A failed fetch resolves to hidden: the supplementary
+                    // strip disappears and the Firestore feed above is
+                    // untouched.
+                    if (live.isHidden) return const SizedBox.shrink();
 
-                    if (liveNews.isEmpty) return const SizedBox.shrink();
-
-                    // Show up to 10 live news items as a horizontal scrollable + vertical list
-                    final displayNews = liveNews.take(15).toList();
+                    final displayNews = live.items;
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,24 +375,24 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                   gradient: LinearGradient(
                                     colors: [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.7)],
                                   ),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(FsRadii.sm),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
-                                    const SizedBox(width: 4),
-                                    Text('Live from Web', style: AppFonts.inter(
+                                    const SizedBox(width: FsSpace.xxs),
+                                    Text('More News Online', style: AppFonts.inter(
                                       fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white,
                                     )),
                                   ],
                                 ),
                               ),
                               const Spacer(),
-                              Text('${liveNews.length} updates', style: AppFonts.inter(
+                              Text('${live.matchCount} updates', style: AppFonts.inter(
                                 fontSize: 11, color: AppTheme.textT(context),
                               )),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: FsSpace.xs),
                               GestureDetector(
                                 onTap: () {
                                   NewsApiService.clearCache();
@@ -401,12 +409,12 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: FsSpacing.screenH,
                             itemCount: displayNews.length,
                             itemBuilder: (context, i) => _buildLiveNewsCard(displayNews[i], dark),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: FsSpace.xs),
                       ],
                     );
                   },
@@ -414,14 +422,14 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               ),
 
             // Article list
-            if (articles.isLoading && filteredArticles.isEmpty)
+            if (feedDisplay == NewsFeedDisplay.loading)
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (_, __) => _buildShimmerCard(dark),
                   childCount: 4,
                 ),
               )
-            else if (filteredArticles.isEmpty)
+            else if (feedDisplay == NewsFeedDisplay.empty)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
@@ -433,11 +441,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                         height: 160,
                         repeat: true,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: FsSpace.lg),
                       Text('No articles found', style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textS(context))),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: FsSpace.xs),
                       Text(
-                        _showBookmarks ? 'You haven\'t bookmarked any articles yet' : 'Try a different search or category',
+                        _query.emptyStateHint,
                         style: AppFonts.inter(fontSize: 13, color: AppTheme.textT(context)),
                         textAlign: TextAlign.center,
                       ),
@@ -447,7 +455,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: FsSpacing.screenH,
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) => feedItems[i],
@@ -476,52 +484,144 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
   /// so the feed can be rendered lazily by a SliverList. The previous version
   /// returned one nested Column inside a SliverToBoxAdapter, which forced every
   /// card - and every network image - to be built on the first frame.
-  List<Widget> _buildFeedItems(List<Article> articles) {
-    final grouped = <String, List<Article>>{};
-    for (final a in articles) {
-      final key = DateFormat('yyyy-MM-dd').format(a.publishedDate);
-      grouped.putIfAbsent(key, () => []).add(a);
-    }
-    final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-
+  List<Widget> _buildEditorialFeedItems(List<Article> articles) {
     final items = <Widget>[];
-    for (int di = 0; di < sortedDates.length; di++) {
-      final dateKey = sortedDates[di];
-      final dayArticles = grouped[dateKey]!;
-      if (di > 0) items.add(const SizedBox(height: 8));
-      items.add(_buildDateHeader(dateKey, dayArticles.length));
-
-      // Sub-group by source
-      final bySource = <String, List<Article>>{};
-      for (final a in dayArticles) {
-        final src = a.newspaper.isNotEmpty ? a.newspaper : 'Other';
-        bySource.putIfAbsent(src, () => []).add(a);
-      }
-      // Sorted order: Drishti IAS first, then Insights on India, then others
-      final sourceOrder = bySource.keys.toList()..sort((a, b) {
-        if (a == 'Drishti IAS') return -1;
-        if (b == 'Drishti IAS') return 1;
-        if (a == 'Insights on India') return -1;
-        if (b == 'Insights on India') return 1;
-        return a.compareTo(b);
-      });
-
-      for (int si = 0; si < sourceOrder.length; si++) {
-        final src = sourceOrder[si];
-        final srcArticles = bySource[src]!;
-        items.add(_buildSourceHeader(src, srcArticles.length));
-        for (int i = 0; i < srcArticles.length; i++) {
-          // The very first article of the newest day leads the feed as a
-          // full-bleed hero - the rest stay in the standard card rhythm.
-          items.add(ArticleCard(
-            article: srcArticles[i],
-            featured: di == 0 && si == 0 && i == 0,
-          ));
-        }
-        if (si < sourceOrder.length - 1) items.add(const SizedBox(height: 4));
+    final days = NewsFeedQuery.groupByDay(articles);
+    for (var index = 0; index < days.length; index++) {
+      final day = days[index];
+      if (index > 0) items.add(const SizedBox(height: FsSpace.xs));
+      items.add(_buildDateHeader(day.dateKey, day.articles.length));
+      for (final article in day.articles) {
+        items.add(EditorialStoryCard(article: article));
       }
     }
     return items;
+  }
+
+  bool _isQuickDateSelected(DateTime date) => _query.isQuickDateSelected(date);
+
+  void _toggleQuickDate(DateTime date) {
+    final next = _query.toggleQuickDate(date);
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedDateFrom = next.selectedDateFrom;
+      _selectedDateTo = next.selectedDateTo;
+    });
+  }
+
+  Widget _buildQuickDateStrip(List<DateTime> dates) {
+    return SizedBox(
+      height: 62,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        itemCount: dates.length,
+        separatorBuilder: (_, __) => const SizedBox(width: FsSpace.xs),
+        itemBuilder: (context, index) {
+          final date = dates[index];
+          final selected = _isQuickDateSelected(date);
+          return GestureDetector(
+            onTap: () => _toggleQuickDate(date),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 62,
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppTheme.primaryColor
+                    : AppTheme.card(context).withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(FsRadii.control),
+                border: Border.all(
+                  color: selected
+                      ? AppTheme.primaryColor
+                      : AppTheme.divider(context).withValues(alpha: 0.55),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    index == 0 ? 'LATEST' : DateFormat('EEE').format(date).toUpperCase(),
+                    style: AppFonts.inter(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                      color: selected ? Colors.white70 : AppTheme.textT(context),
+                    ),
+                  ),
+                  const SizedBox(height: FsSpace.xxs),
+                  Text(
+                    DateFormat('d MMM').format(date),
+                    style: AppFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: selected ? Colors.white : AppTheme.textP(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _briefingSubtitle(List<Article> articles) {
+    if (articles.isEmpty) return 'Live UPSC current affairs';
+    final latest = articles.first.publishedDate;
+    return '${DateFormat('EEEE, d MMMM').format(latest)} · ${articles.length} ${articles.length == 1 ? 'story' : 'stories'}';
+  }
+
+  Widget _buildBriefingOverview(List<Article> articles) {
+    final sources = articles
+        .map((article) => article.newspaper.trim())
+        .where((source) => source.isNotEmpty)
+        .toSet();
+    return Container(
+      padding: FsSpacing.input,
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(FsRadii.card),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+              borderRadius: BorderRadius.circular(FsRadii.control),
+            ),
+            child: const Icon(Icons.auto_awesome_rounded, size: 19, color: Colors.white),
+          ),
+          const SizedBox(width: FsSpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your UPSC briefing',
+                  style: AppFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textP(context),
+                  ),
+                ),
+                const SizedBox(height: FsSpace.xxs),
+                Text(
+                  '${articles.length} ${articles.length == 1 ? 'story' : 'stories'} from ${sources.isEmpty ? 'the daily feed' : '${sources.length} ${sources.length == 1 ? 'source' : 'sources'}'}',
+                  style: AppFonts.inter(fontSize: 10.5, color: AppTheme.textS(context)),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.swipe_down_rounded, size: 18, color: AppTheme.textT(context)),
+        ],
+      ),
+    );
   }
 
   String _dateLabel(String dateKey) {
@@ -549,7 +649,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: FsSpace.xs),
           Expanded(
             child: Text(
               _dateLabel(dateKey),
@@ -563,7 +663,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: FsSpace.xs),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
@@ -582,79 +682,6 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     );
   }
 
-  /// Distinct accent per source, including the newspapers that arrive through
-  /// the PDF/inbox pipeline — so an uploaded paper reads as its own section
-  /// rather than an anonymous grey block.
-  Color _sourceAccentColor(String source) {
-    final s = source.toLowerCase();
-    if (s.contains('drishti')) return const Color(0xFF0D9488); // teal
-    if (s.contains('insights')) return const Color(0xFF7C3AED); // purple
-    if (s.contains('hindu')) return const Color(0xFF1D4ED8); // deep blue
-    if (s.contains('express')) return const Color(0xFFB91C1C); // masthead red
-    if (s.contains('times of india') || s.contains('toi')) return const Color(0xFFC2410C);
-    if (s.contains('business standard')) return const Color(0xFF9A3412);
-    if (s.contains('mint')) return const Color(0xFF047857);
-    if (s.contains('economic times')) return const Color(0xFFBE185D);
-    if (s.contains('hindustan times')) return const Color(0xFF4338CA);
-    if (s.contains('pib')) return const Color(0xFF0F766E);
-    if (s.contains('editorial')) return const Color(0xFF6D28D9);
-    if (s.contains('yojana') || s.contains('kurukshetra')) return const Color(0xFF854D0E);
-    return AppTheme.primaryDark;
-  }
-
-  IconData _sourceIcon(String source) {
-    final s = source.toLowerCase();
-    if (s.contains('drishti')) return Icons.menu_book_rounded;
-    if (s.contains('insights')) return Icons.lightbulb_rounded;
-    if (s.contains('editorial')) return Icons.edit_note_rounded;
-    if (s.contains('pib')) return Icons.account_balance_rounded;
-    if (s.contains('yojana') || s.contains('kurukshetra')) return Icons.auto_stories_rounded;
-    return Icons.newspaper_rounded;
-  }
-
-  Widget _buildSourceHeader(String source, int count) {
-    final accent = _sourceAccentColor(source);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 3,
-            height: 18,
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Icon(_sourceIcon(source), size: 15, color: accent),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              source,
-              style: AppFonts.plusJakartaSans(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: accent,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$count ${count == 1 ? 'article' : 'articles'}',
-            style: AppFonts.inter(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w500,
-              color: accent.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _iconBtn({required IconData icon, required Color color, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -662,7 +689,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
         width: 40, height: 40,
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(FsRadii.control),
         ),
         child: Icon(icon, color: color, size: 20),
       ),
@@ -675,7 +702,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
     Widget bar(double w, double h) => Container(
           width: w,
           height: h,
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: FsSpace.xs),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
         );
 
@@ -698,11 +725,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   children: [
                     bar(double.infinity, 14),
                     bar(200, 14),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: FsSpace.xxs),
                     bar(double.infinity, 10),
                     bar(150, 10),
-                    const SizedBox(height: 6),
-                    Row(children: [bar(56, 16), const SizedBox(width: 8), bar(72, 16)]),
+                    const SizedBox(height: FsSpace.xs),
+                    Row(children: [bar(56, 16), const SizedBox(width: FsSpace.xs), bar(72, 16)]),
                   ],
                 ),
               ),
@@ -723,7 +750,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
 
     return Container(
       width: 280,
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: FsSpace.md),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -731,14 +758,14 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
             HapticFeedback.lightImpact();
             _showLiveNewsDetail(item);
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(FsRadii.card),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: FsSpacing.cardPadding,
             decoration: BoxDecoration(
               color: dark
                   ? Colors.white.withValues(alpha: 0.06)
                   : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(FsRadii.card),
               border: Border.all(
                 color: dark
                     ? Colors.white.withValues(alpha: 0.08)
@@ -767,7 +794,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                         fontSize: 9, fontWeight: FontWeight.w700, color: categoryColor,
                       )),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: FsSpace.xxs),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
@@ -796,7 +823,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                       ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: FsSpace.xs),
                 Expanded(
                   child: Text(title, style: AppFonts.plusJakartaSans(
                     fontSize: 13, fontWeight: FontWeight.w700,
@@ -806,14 +833,14 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                   // instead of ellipsising.
                   ), maxLines: 3, overflow: TextOverflow.ellipsis),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: FsSpace.xs),
                 Row(
                   children: [
                     Icon(Icons.access_time_rounded, size: 11, color: AppTheme.textT(context)),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: FsSpace.xxs),
                     Text(dateStr, style: AppFonts.inter(fontSize: 9, color: AppTheme.textT(context))),
                     if (source.isNotEmpty) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: FsSpace.xs),
                       Flexible(
                         child: Text('• $source', style: AppFonts.inter(
                           fontSize: 9, color: AppTheme.textT(context),
@@ -857,43 +884,43 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                 child: Container(width: 40, height: 4,
                     decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: FsSpace.lg),
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: categoryColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(FsRadii.sm),
                     ),
                     child: Text(category, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: categoryColor)),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: FsSpace.xs),
                   if ((item['source'] as String? ?? '').isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.grey.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(FsRadii.sm),
                       ),
                       child: Text(item['source'] ?? '', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(ctx))),
                     ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: FsSpace.lg),
               Text(item['title'] ?? '', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
+              const SizedBox(height: FsSpace.xs),
               Text(item['dateStr'] ?? '', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
-              const SizedBox(height: 16),
+              const SizedBox(height: FsSpace.lg),
               if ((item['summary'] as String? ?? '').isNotEmpty &&
                   item['summary'] != item['title'])
                 Text(item['summary'] ?? '', style: AppFonts.inter(fontSize: 14, height: 1.7, color: AppTheme.textP(ctx))),
-              const SizedBox(height: 20),
+              const SizedBox(height: FsSpace.lg),
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: FsSpacing.cardPadding,
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(FsRadii.control),
                   border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
                 ),
                 child: Column(
@@ -902,20 +929,20 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                     Row(
                       children: [
                         const Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: FsSpace.xxs),
                         Text('UPSC Relevance', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: FsSpace.xs),
                     Text('Category: $category', style: AppFonts.inter(fontSize: 13, height: 1.5)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: FsSpace.xxs),
                     Text('This topic is relevant for UPSC ${_getRelevantPaper(category)} preparation.',
                         style: AppFonts.inter(fontSize: 13, height: 1.5, color: AppTheme.textS(ctx))),
                   ],
                 ),
               ),
               if (url.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: FsSpace.lg),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -929,12 +956,12 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                     label: const Text('Read Full Article'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
                     ),
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: FsSpace.xxl),
             ],
           ),
         ),
@@ -998,19 +1025,19 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: AppTheme.primaryColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(FsRadii.sm),
         border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: AppTheme.primaryColor),
-          const SizedBox(width: 5),
+          const SizedBox(width: FsSpace.xxs),
           Text(
             label,
             style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: FsSpace.xxs),
           GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
@@ -1076,7 +1103,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                 curve: Curves.easeInOut,
                 child: Column(
                   children: [
-                    const SizedBox(height: 12),
+                    const SizedBox(height: FsSpace.md),
                     // Month navigation
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1092,7 +1119,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                             width: 32, height: 32,
                             decoration: BoxDecoration(
                               color: (sheetDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(FsRadii.sm),
                             ),
                             child: Icon(Icons.chevron_left_rounded, color: AppTheme.textS(ctx), size: 20),
                           ),
@@ -1112,14 +1139,14 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                             width: 32, height: 32,
                             decoration: BoxDecoration(
                               color: (sheetDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(FsRadii.sm),
                             ),
                             child: Icon(Icons.chevron_right_rounded, color: AppTheme.textS(ctx), size: 20),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: FsSpace.md),
 
                     // Weekday headers
                     Row(
@@ -1132,7 +1159,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                               ))
                           .toList(),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: FsSpace.xs),
 
                     // Day grid
                     ...List.generate(weeks, (week) {
@@ -1191,7 +1218,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                         : isInRange
                                             ? AppTheme.primaryColor.withValues(alpha: 0.10)
                                             : null,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(FsRadii.sm),
                                     border: isToday && !isSelected
                                         ? Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4), width: 1)
                                         : null,
@@ -1251,7 +1278,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Handle
-                  const SizedBox(height: 10),
+                  const SizedBox(height: FsSpace.xs),
                   Container(
                     width: 36, height: 4,
                     decoration: BoxDecoration(
@@ -1259,11 +1286,11 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: FsSpace.lg),
 
                   // Title
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: FsSpacing.screenH,
                     child: Row(
                       children: [
                         Text(
@@ -1289,14 +1316,14 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                       ],
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: FsSpace.xs),
                   Divider(height: 1, color: (sheetDark ? Colors.white : Colors.black).withValues(alpha: 0.06)),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: FsSpace.lg),
 
                   // Content
                   Flexible(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: FsSpacing.screenH,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1306,7 +1333,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                               'SOURCE',
                               style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textT(ctx), letterSpacing: 0.8),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: FsSpace.xs),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -1324,7 +1351,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                       color: isSelected
                                           ? AppTheme.primaryColor.withValues(alpha: 0.12)
                                           : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(FsRadii.sm),
                                       border: Border.all(
                                         color: isSelected
                                             ? AppTheme.primaryColor
@@ -1344,7 +1371,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                 );
                               }).toList(),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: FsSpace.lg),
                           ],
 
                           // ── Date range section ── Two fields: From / To
@@ -1353,7 +1380,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                               'DATE RANGE',
                               style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textT(ctx), letterSpacing: 0.8),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: FsSpace.xs),
                             Row(
                               children: [
                                 // FROM field
@@ -1372,7 +1399,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                         color: activePickerField == 'from'
                                             ? AppTheme.primaryColor.withValues(alpha: 0.06)
                                             : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(FsRadii.sm),
                                         border: Border.all(
                                           color: activePickerField == 'from' || tempDateFrom != null
                                               ? AppTheme.primaryColor.withValues(alpha: 0.5)
@@ -1387,12 +1414,12 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                             'From',
                                             style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textT(ctx), letterSpacing: 0.3),
                                           ),
-                                          const SizedBox(height: 4),
+                                          const SizedBox(height: FsSpace.xxs),
                                           Row(
                                             children: [
                                               Icon(Icons.calendar_today_rounded, size: 14,
                                                   color: tempDateFrom != null ? AppTheme.primaryColor : AppTheme.textT(ctx)),
-                                              const SizedBox(width: 6),
+                                              const SizedBox(width: FsSpace.xxs),
                                               Expanded(
                                                 child: Text(
                                                   tempDateFrom != null
@@ -1421,7 +1448,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: FsSpace.xs),
                                 // TO field
                                 Expanded(
                                   child: GestureDetector(
@@ -1438,7 +1465,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                         color: activePickerField == 'to'
                                             ? AppTheme.primaryColor.withValues(alpha: 0.06)
                                             : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(FsRadii.sm),
                                         border: Border.all(
                                           color: activePickerField == 'to' || tempDateTo != null
                                               ? AppTheme.primaryColor.withValues(alpha: 0.5)
@@ -1453,12 +1480,12 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                                             'To',
                                             style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textT(ctx), letterSpacing: 0.3),
                                           ),
-                                          const SizedBox(height: 4),
+                                          const SizedBox(height: FsSpace.xxs),
                                           Row(
                                             children: [
                                               Icon(Icons.calendar_today_rounded, size: 14,
                                                   color: tempDateTo != null ? AppTheme.primaryColor : AppTheme.textT(ctx)),
-                                              const SizedBox(width: 6),
+                                              const SizedBox(width: FsSpace.xxs),
                                               Expanded(
                                                 child: Text(
                                                   tempDateTo != null
@@ -1490,7 +1517,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                               ],
                             ),
                             if (activePickerField != null) buildCalendar(),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: FsSpace.lg),
                           ],
                         ],
                       ),
@@ -1523,7 +1550,7 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
                           elevation: 0,
                         ),
                         child: Text(

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
-import '../../config/theme.dart';
 import '../../widgets/glass_widgets.dart';
 import '../../widgets/quiz_option_tile.dart';
 import '../../services/daily_content_manager.dart';
+import 'package:upsc_daily_edge/design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// DailyPracticeScreen — PYQ-style practice questions (daily rotation).
+/// Migrated to the Frosted Scholar design system (tokens + primitives).
 /// ──────────────────────────────────────────────────────────────────────────────
 class DailyPracticeScreen extends StatefulWidget {
   const DailyPracticeScreen({super.key});
@@ -52,9 +52,15 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
     }
 
     if (_questions.isEmpty) {
-      return GradientScaffold(
+      return const GradientScaffold(
         showAppBar: false,
-        child: SafeArea(child: Center(child: Text('No questions available', style: AppFonts.inter(color: AppTheme.textS(context))))),
+        child: SafeArea(
+          child: FsEmptyState(
+            icon: Icons.quiz_outlined,
+            title: 'No questions available',
+            message: 'Daily practice questions will appear here once published.',
+          ),
+        ),
       );
     }
 
@@ -72,19 +78,20 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                padding: const EdgeInsets.fromLTRB(
+                    FsSpace.lg, FsSpace.lg, FsSpace.lg, FsSpace.xl),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GlassCard(
-                      padding: const EdgeInsets.all(20),
+                      padding: FsSpacing.cardPadding,
                       child: Text(q['q'] ?? '',
-                          style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
+                          style: FsType.subtitle(context).copyWith(fontSize: 16, height: 1.5)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: FsSpace.lg),
                     ...List.generate(options.length, (i) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.only(bottom: FsSpace.xs),
                         child: QuizOptionTile(
                           index: i,
                           text: options[i],
@@ -96,25 +103,27 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
                       );
                     }),
                     if (_answered && q['explain'] != null) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
                         gradient: LinearGradient(colors: [
-                          AppTheme.successGreen.withValues(alpha: 0.06),
-                          AppTheme.primaryColor.withValues(alpha: 0.04),
+                          FsColors.success.withValues(alpha: 0.06),
+                          FsColors.accent(context).withValues(alpha: 0.04),
                         ]),
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.lightbulb_rounded, color: AppTheme.successGreen, size: 18),
-                                const SizedBox(width: 8),
-                                Text('Explanation', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.successGreen)),
+                                const Icon(Icons.lightbulb_rounded, color: FsColors.success, size: 18),
+                                const SizedBox(width: FsSpace.xs),
+                                Text('Explanation', style: FsType.subtitle(context).copyWith(
+                                    fontSize: 14, fontWeight: FontWeight.w700, color: FsColors.success)),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(q['explain'], style: AppFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textP(context))),
+                            const SizedBox(height: FsSpace.xs),
+                            Text(q['explain'], style: FsType.caption(context).copyWith(
+                                height: 1.6, color: FsColors.textPrimary(context))),
                           ],
                         ),
                       ),
@@ -132,7 +141,7 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
 
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xs, FsSpace.xs, FsSpace.lg, 0),
       child: Row(
         children: [
           IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () {
@@ -140,12 +149,15 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
             Navigator.pop(context);
           }),
           Expanded(
-            child: Text('Daily Practice', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context)), textAlign: TextAlign.center),
+            child: Text('Daily Practice', style: FsType.title(context), textAlign: TextAlign.center),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: AppTheme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-            child: Text('$_score/${_questions.length}', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+            padding: FsSpacing.chip,
+            decoration: BoxDecoration(
+                color: FsColors.accent(context).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(FsRadii.pill)),
+            child: Text('$_score/${_questions.length}',
+                style: FsType.button(FsColors.accent(context)).copyWith(fontSize: 13, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -154,14 +166,14 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
 
   Widget _buildProgress(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.md, FsSpace.lg, 0),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(FsRadii.sm),
         child: LinearProgressIndicator(
           value: (_current + 1) / _questions.length,
           minHeight: 5,
-          backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.08),
-          valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
+          backgroundColor: FsColors.accent(context).withValues(alpha: 0.08),
+          valueColor: AlwaysStoppedAnimation(FsColors.accent(context)),
         ),
       ),
     );
@@ -179,30 +191,21 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
   Widget _buildNextButton(BuildContext context) {
     final isLast = _current >= _questions.length - 1;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
-          onPressed: () {
-            if (isLast) {
-              _showCompletionDialog(context);
-            } else {
-              setState(() {
-                _current++;
-                _selected = null;
-                _answered = false;
-              });
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-          ),
-          child: Text(isLast ? 'Finish' : 'Next', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
-        ),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.xs, FsSpace.lg, FsSpace.lg),
+      child: FsButton(
+        label: isLast ? 'Finish' : 'Next',
+        expand: true,
+        onPressed: () {
+          if (isLast) {
+            _showCompletionDialog(context);
+          } else {
+            setState(() {
+              _current++;
+              _selected = null;
+              _answered = false;
+            });
+          }
+        },
       ),
     );
   }
@@ -215,33 +218,29 @@ class _DailyPracticeScreenState extends State<DailyPracticeScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(grade, style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w800), textAlign: TextAlign.center),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.lg)),
+        title: Text(grade, style: FsType.display(context), textAlign: TextAlign.center),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               '$_score / ${_questions.length}',
-              style: AppFonts.plusJakartaSans(fontSize: 36, fontWeight: FontWeight.w800, color: AppTheme.primaryColor),
+              style: FsType.display(context).copyWith(fontSize: 36, color: FsColors.accent(context)),
             ),
-            const SizedBox(height: 8),
-            Text('questions correct', style: AppFonts.inter(color: AppTheme.textS(context))),
+            const SizedBox(height: FsSpace.xs),
+            Text('questions correct', style: FsType.caption(context)),
           ],
         ),
         actions: [
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: FsButton(
+              label: 'Done',
+              expand: true,
               onPressed: () {
                 Navigator.pop(ctx);
                 Navigator.pop(context);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Done'),
             ),
           ),
         ],

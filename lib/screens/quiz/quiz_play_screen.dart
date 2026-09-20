@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/app_fonts.dart';
@@ -11,6 +10,7 @@ import '../../widgets/glass_widgets.dart';
 import 'package:lottie/lottie.dart';
 import '../../widgets/quiz_option_tile.dart';
 import '../../utils/constants.dart';
+import 'package:upsc_daily_edge/design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// QuizPlayScreen — Active quiz with timer ring, question card, and option tiles.
@@ -96,8 +96,8 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Lottie.asset('assets/animations/loading.json', width: 120, height: 120),
-                const SizedBox(height: 16),
-                Text('Loading questions...', style: AppFonts.inter(color: AppTheme.textS(context))),
+                const SizedBox(height: FsSpace.lg),
+                Text('Loading questions...', style: FsType.body(context).copyWith(color: FsColors.textSecondary(context))),
               ],
             ),
           ),
@@ -114,13 +114,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.quiz_rounded, size: 56, color: AppTheme.textT(context)),
-                const SizedBox(height: 16),
-                Text('No questions available', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-                const SizedBox(height: 8),
-                Text('Try again later or select a different topic', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
-                const SizedBox(height: 24),
+                const SizedBox(height: FsSpace.lg),
+                Text('No questions available', style: FsType.title(context)),
+                const SizedBox(height: FsSpace.xs),
+                Text('Try again later or select a different topic', style: FsType.caption(context)),
+                const SizedBox(height: FsSpace.xxl),
                 SizedBox(
-                  height: 44,
+                  height: FsA11y.minTouchTarget,
                   child: ElevatedButton.icon(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_rounded, size: 18),
@@ -128,7 +128,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
                     ),
                   ),
                 ),
@@ -150,7 +150,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
             _buildTopBar(context, quiz),
             // Progress
             _buildProgress(context, quiz, progress),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             // Timer ring + question
             Expanded(
               child: FadeTransition(
@@ -159,13 +159,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                   position: _cardSlide,
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: FsSpace.lg),
                     child: Column(
                       children: [
                         _buildTimerRing(context),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: FsSpace.lg),
                         _buildQuestionCard(context, q, quiz),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: FsSpace.lg),
                         ...List.generate(q.options.length, (i) {
                           return QuizOptionTile(
                               index: i,
@@ -191,10 +191,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                           );
                         }),
                         if (quiz.answered) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: FsSpace.xs),
                           _buildExplanation(context, q),
                         ],
-                        const SizedBox(height: 20),
+                        const SizedBox(height: FsSpace.xl),
                       ],
                     ),
                   ),
@@ -211,7 +211,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
 
   Widget _buildTopBar(BuildContext context, QuizProvider quiz) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xs, FsSpace.xs, FsSpace.lg, 0),
       child: Row(
         children: [
           IconButton(
@@ -226,10 +226,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: FsSpacing.chip,
             decoration: BoxDecoration(
               color: AppTheme.primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(FsRadii.pill),
             ),
             child: Text('${quiz.score} pts',
                 style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
@@ -241,9 +241,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
 
   Widget _buildProgress(BuildContext context, QuizProvider quiz, double progress) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.md, FsSpace.lg, 0),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(FsRadii.sm),
         child: LinearProgressIndicator(
           value: progress,
           minHeight: 6,
@@ -289,44 +289,34 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     final dark = AppTheme.isDark(context);
     return GlassCard(
       color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.95),
-      padding: const EdgeInsets.all(20),
+      padding: FsSpacing.cardPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Wrap(
-            spacing: 8,
+            spacing: FsSpace.xs,
             runSpacing: 6,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentViolet.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(q.category.isNotEmpty ? q.category : 'General',
-                    style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.accentViolet)),
+              FsTag(
+                label: q.category.isNotEmpty ? q.category : 'General',
+                color: FsColors.accentSecondary(context),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _difficultyColor(q.difficulty).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(q.difficulty,
-                    style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: _difficultyColor(q.difficulty))),
+              FsTag(
+                label: q.difficulty,
+                color: _difficultyColor(q.difficulty),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: FsSpace.md),
           Text(q.question,
               style: AppFonts.plusJakartaSans(
                   fontSize: 17, fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.5)),
           // Show enriched metadata if available
           if (q.syllabusArea.isNotEmpty || q.pyqYear.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: FsSpace.xs),
             Wrap(
               spacing: 6,
-              runSpacing: 4,
+              runSpacing: FsSpace.xxs,
               children: [
                 if (q.syllabusArea.isNotEmpty)
                   _metaChip(q.syllabusArea, AppTheme.accentViolet, Icons.menu_book_rounded),
@@ -343,17 +333,17 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
   Widget _metaChip(String label, Color color, IconData icon) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 280),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: FsSpace.xs, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(FsRadii.sm),
         border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 11, color: color),
-          const SizedBox(width: 4),
+          const SizedBox(width: FsSpace.xxs),
           Flexible(
             child: Text(
               label,
@@ -383,18 +373,18 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
       gradient: LinearGradient(
         colors: [AppTheme.successGreen.withValues(alpha: 0.06), AppTheme.primaryColor.withValues(alpha: 0.04)],
       ),
-      padding: const EdgeInsets.all(16),
+      padding: FsSpacing.cardPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Icon(Icons.lightbulb_rounded, color: AppTheme.successGreen, size: 18),
-              const SizedBox(width: 8),
+              const SizedBox(width: FsSpace.xs),
               Text('Explanation', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.successGreen)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: FsSpace.xs),
           Text(q.explanation, style: AppFonts.inter(fontSize: 13, height: 1.6, color: AppTheme.textP(context))),
         ],
       ),
@@ -404,7 +394,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
   Widget _buildNextButton(BuildContext context, QuizProvider quiz) {
     final isLast = quiz.currentIndex >= quiz.totalQuestions - 1;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.xs, FsSpace.lg, FsSpace.lg),
       child: SizedBox(
         width: double.infinity,
         height: 52,
@@ -421,7 +411,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.card)),
             elevation: 0,
           ),
           child: Text(isLast ? 'View Results' : 'Next Question',
@@ -435,7 +425,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.lg)),
         title: Text('Exit Quiz?', style: AppFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
         content: Text('Your progress will be lost.', style: AppFonts.inter()),
         actions: [

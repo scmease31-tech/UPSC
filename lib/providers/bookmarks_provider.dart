@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/article.dart';
 import '../data/dummy_data.dart';
+import '../services/firebase_services.dart';
 
 /// Manages bookmarked articles with Firestore sync per user.
 class BookmarksProvider extends ChangeNotifier {
@@ -9,7 +9,8 @@ class BookmarksProvider extends ChangeNotifier {
   List<Article> _allArticles = [];
   String? _userId;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _userFirestore = FirebaseServices.userFirestore;
+  final _contentFirestore = FirebaseServices.contentFirestore;
 
   bool _isLoading = false;
 
@@ -23,7 +24,7 @@ class BookmarksProvider extends ChangeNotifier {
     _isLoading = true;
     _userId = userId;
     try {
-      final doc = await _firestore.collection('users').doc(userId).get();
+      final doc = await _userFirestore.collection('users').doc(userId).get();
       if (doc.exists) {
         final ids = List<String>.from(doc.data()?['bookmarkedArticleIds'] ?? []);
         _bookmarkedIds.clear();
@@ -59,7 +60,7 @@ class BookmarksProvider extends ChangeNotifier {
   Future<void> _syncToFirestore() async {
     if (_userId == null) return;
     try {
-      await _firestore.collection('users').doc(_userId).update({
+      await _userFirestore.collection('users').doc(_userId).update({
         'bookmarkedArticleIds': _bookmarkedIds.toList(),
       });
     } catch (e) {
@@ -82,7 +83,7 @@ class BookmarksProvider extends ChangeNotifier {
 
   Future<void> _loadArticlesCache() async {
     try {
-      final snapshot = await _firestore.collection('articles').get();
+      final snapshot = await _contentFirestore.collection('articles').get();
       if (snapshot.docs.isNotEmpty) {
         _allArticles = snapshot.docs
             .map((doc) => Article.fromMap(doc.data(), doc.id))

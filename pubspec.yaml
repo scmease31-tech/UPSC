@@ -3,7 +3,7 @@ description: UPSC Daily Edge - Daily Current Affairs & Exam Preparation App
 
 publish_to: 'none'
 
-version: 1.4.0+16
+version: 1.6.0+19
 
 environment:
   sdk: '>=3.1.0 <4.0.0'
@@ -44,11 +44,20 @@ dependencies:
   lottie: ^3.3.2
   package_info_plus: ^9.0.1
 
+  # In-app sideload updater: download APK (path_provider for the cache dir),
+  # verify SHA-256 (crypto), hand off to the Android system installer (open_filex).
+  crypto: 3.0.7
+  path_provider: 2.1.5
+  open_filex: 4.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
   flutter_launcher_icons: ^0.14.3
+  # Route audit mocks firebase_core so providers can construct their Firestore
+  # handles offline. Pinned to the version already resolved transitively.
+  firebase_core_platform_interface: 6.0.2
 
 flutter_launcher_icons:
   android: true

@@ -28,8 +28,10 @@ import {
   uploadSchemes,
   uploadPyqs,
   uploadKeyFacts,
+  uploadDailyQuiz,
+  rebuildRoundups,
 } from './uploader.js';
-import { generateAll } from './generators.js';
+import { generateAll, generateDailyQuiz } from './generators.js';
 import { extractDailyVocabulary } from './vocab-extract.js';
 
 function getDateStr(date) {
@@ -168,6 +170,11 @@ async function scrapeForDate(dateStr, dryRun) {
   const schemeStats = await uploadSchemes(derived.schemes, dryRun);
   const factStats = await uploadKeyFacts(derived.keyFacts, dryRun);
 
+  const dailyQuiz = generateDailyQuiz(mergedArticles, dateStr, { limit: 10 });
+  console.log(`[Generate] dailyQuiz=${dailyQuiz.length}`);
+  const dailyQuizStats = await uploadDailyQuiz(dateStr, dailyQuiz, dryRun);
+  const roundupStats = await rebuildRoundups(dateStr, dryRun);
+
   console.log(
     `\n[Done] ${dateStr}: ` +
     `articles(+${stats.uploaded}/~${stats.skipped}${stats.upgraded ? `/^${stats.upgraded}` : ''}) ` +
@@ -175,13 +182,14 @@ async function scrapeForDate(dateStr, dryRun) {
     `vocab(+${vocabStats.uploaded}/~${vocabStats.skipped}) ` +
     `flashcards(+${flashStats.uploaded}/~${flashStats.skipped}) ` +
     `schemes(+${schemeStats.uploaded}/~${schemeStats.skipped}) ` +
-    `facts(+${factStats.uploaded}/~${factStats.skipped})`
+    `facts(+${factStats.uploaded}/~${factStats.skipped}) ` +
+    `dailyQuiz(+${dailyQuizStats.uploaded}) roundups(+${roundupStats.uploaded})`
   );
 
   return {
-    uploaded: stats.uploaded + pyqStats.uploaded + vocabStats.uploaded + flashStats.uploaded + schemeStats.uploaded + factStats.uploaded,
-    skipped: stats.skipped + pyqStats.skipped + vocabStats.skipped + flashStats.skipped + schemeStats.skipped + factStats.skipped,
-    errors: stats.errors + pyqStats.errors + vocabStats.errors + flashStats.errors + schemeStats.errors + factStats.errors,
+    uploaded: stats.uploaded + pyqStats.uploaded + vocabStats.uploaded + flashStats.uploaded + schemeStats.uploaded + factStats.uploaded + dailyQuizStats.uploaded + roundupStats.uploaded,
+    skipped: stats.skipped + pyqStats.skipped + vocabStats.skipped + flashStats.skipped + schemeStats.skipped + factStats.skipped + dailyQuizStats.skipped + roundupStats.skipped,
+    errors: stats.errors + pyqStats.errors + vocabStats.errors + flashStats.errors + schemeStats.errors + factStats.errors + dailyQuizStats.errors + roundupStats.errors,
   };
 }
 

@@ -2,12 +2,14 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/offline_content.dart';
+import 'firebase_services.dart';
 
 /// Unified service for fetching content from Firestore with TTL-based caching.
 /// All feature screens (Current Affairs, Mock Tests, Vocabulary, Govt Schemes,
 /// Quick Revision) use this service instead of hardcoded data.
 class FirestoreContentService {
-  static final _firestore = FirebaseFirestore.instance;
+  static final _firestore = FirebaseServices.contentFirestore;
 
   // In-memory caches
   static List<Map<String, dynamic>>? _currentAffairs;
@@ -15,6 +17,7 @@ class FirestoreContentService {
   static List<Map<String, dynamic>>? _vocabulary;
   static List<Map<String, dynamic>>? _govtSchemes;
   static List<Map<String, dynamic>>? _revisionNotes;
+  static List<Map<String, dynamic>>? _roundups;
 
   // Cache TTL = 6 hours
   static const _cacheTTL = Duration(hours: 6);
@@ -29,6 +32,9 @@ class FirestoreContentService {
     // Important tabs show real, recent current affairs.
     if (data.isEmpty) {
       data = await _articlesAsCurrentAffairs();
+    }
+    if (data.isEmpty) {
+      data = _copyFallback(OfflineContent.currentAffairs);
     }
     _currentAffairs = data;
     return _currentAffairs ?? [];
@@ -78,12 +84,25 @@ class FirestoreContentService {
   static List<Map<String, dynamic>> getImportantAffairs(List<Map<String, dynamic>> all) =>
       all.where((a) => a['important'] == true).toList();
 
+  static Future<Map<String, dynamic>?> getLatestRoundup(String period) async {
+    _roundups ??= await _fetchWithCache('currentAffairsRoundups');
+    final matches = _roundups!
+        .where((roundup) => roundup['period'] == period)
+        .toList()
+      ..sort((a, b) =>
+          (b['endDate'] ?? '').toString().compareTo((a['endDate'] ?? '').toString()));
+    return matches.isEmpty ? null : matches.first;
+  }
+
   // ─── Mock Tests ──────────────────────────────────────────────────────
 
   static Future<List<Map<String, dynamic>>> getMockTests() async {
     if (_mockTests != null) return _mockTests!;
-    _mockTests = await _fetchWithCache('mockTests');
-    return _mockTests ?? [];
+    final remote = await _fetchWithCache('mockTests');
+    _mockTests = remote.isNotEmpty
+        ? remote
+        : _copyFallback(OfflineContent.mockTests);
+    return _mockTests!;
   }
 
   // ─── Vocabulary ──────────────────────────────────────────────────────
@@ -98,17 +117,27 @@ class FirestoreContentService {
 
   static Future<List<Map<String, dynamic>>> getGovtSchemes() async {
     if (_govtSchemes != null) return _govtSchemes!;
-    _govtSchemes = await _fetchWithCache('govtSchemes');
-    return _govtSchemes ?? [];
+    final remote = await _fetchWithCache('govtSchemes');
+    _govtSchemes = remote.isNotEmpty
+        ? remote
+        : _copyFallback(OfflineContent.govtSchemes);
+    return _govtSchemes!;
   }
 
   // ─── Revision Notes ──────────────────────────────────────────────────
 
   static Future<List<Map<String, dynamic>>> getRevisionNotes() async {
     if (_revisionNotes != null) return _revisionNotes!;
-    _revisionNotes = await _fetchWithCache('revisionNotes');
-    return _revisionNotes ?? [];
+    final remote = await _fetchWithCache('revisionNotes');
+    _revisionNotes = remote.isNotEmpty
+        ? remote
+        : _copyFallback(OfflineContent.revisionNotes);
+    return _revisionNotes!;
   }
+
+  static List<Map<String, dynamic>> _copyFallback(
+    List<Map<String, dynamic>> source,
+  ) => source.map((item) => Map<String, dynamic>.from(item)).toList();
 
   /// Group revision notes by paper.
   static Map<String, List<Map<String, dynamic>>> groupByPaper(
@@ -212,6 +241,7 @@ class FirestoreContentService {
       case 'vocabulary': _vocabulary = null; return getVocabulary();
       case 'govtSchemes': _govtSchemes = null; return getGovtSchemes();
       case 'revisionNotes': _revisionNotes = null; return getRevisionNotes();
+      case 'currentAffairsRoundups': _roundups = null; return _fetchWithCache(collection);
       default: return _fetchWithCache(collection);
     }
   }

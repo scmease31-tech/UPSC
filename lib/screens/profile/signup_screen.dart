@@ -2,12 +2,12 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/app_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/glass_widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// SignupScreen — Registration form with glassmorphic card.
@@ -73,21 +73,21 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text('Create Account', style: AppFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
-          const SizedBox(height: 4),
-          Text('Start your UPSC journey', style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
-          const SizedBox(height: 28),
+          const SizedBox(height: FsSpace.xs),
+          Text('Create Account', style: FsType.display(context)),
+          const SizedBox(height: FsSpace.xxs),
+          Text('Start your UPSC journey', style: FsType.caption(context)),
+          const SizedBox(height: FsSpace.xxl),
         ],
 
         kIsWeb
             ? _buildFormBody(auth)
             : GlassCard(
-                padding: const EdgeInsets.all(24),
+                padding: FsSpacing.cardPadding,
                 child: _buildFormBody(auth),
               ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: FsSpace.xl),
 
         // Google
         SizedBox(
@@ -96,28 +96,28 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
           child: OutlinedButton.icon(
             onPressed: auth.isLoading ? null : _googleSignIn,
             icon: SvgPicture.asset('assets/icons/google_logo.svg', width: 22, height: 22),
-            label: Text('Sign up with Google', style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w600)),
+            label: Text('Sign up with Google', style: FsType.subtitle(context)),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.textP(context),
-              side: BorderSide(color: AppTheme.textS(context).withValues(alpha: 0.2)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              foregroundColor: FsColors.textPrimary(context),
+              side: BorderSide(color: FsColors.textSecondary(context).withValues(alpha: 0.2)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
             ),
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: FsSpace.xl),
 
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Already have an account? ', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            Text('Already have an account? ', style: FsType.caption(context)),
             GestureDetector(
               onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-              child: Text('Sign In', style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+              child: Text('Sign In', style: FsType.button(FsColors.accent(context))),
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: FsSpace.xxl),
       ],
     );
 
@@ -146,24 +146,24 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (kIsWeb) ...[
-            Text('Create Account', style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
-            const SizedBox(height: 4),
-            Text('Start your UPSC journey', style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context))),
-            const SizedBox(height: 24),
+            Text('Create Account', style: FsType.display(context)),
+            const SizedBox(height: FsSpace.xxs),
+            Text('Start your UPSC journey', style: FsType.caption(context)),
+            const SizedBox(height: FsSpace.xxl),
           ],
           TextFormField(
             controller: _nameCtrl,
             decoration: _inputDec('Full Name', Icons.person_rounded),
             validator: (v) => v != null && v.trim().isNotEmpty ? null : 'Enter your name',
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: FsSpace.md),
           TextFormField(
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
             decoration: _inputDec('Email', Icons.email_rounded),
             validator: (v) => v != null && v.contains('@') ? null : 'Enter a valid email',
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: FsSpace.md),
           TextFormField(
             controller: _passwordCtrl,
             obscureText: _obscure,
@@ -176,18 +176,18 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
             validator: (v) => v != null && v.length >= 6 ? null : 'At least 6 characters',
           ),
           if (_error != null) ...[
-            const SizedBox(height: 12),
-            Text(_error!, style: AppFonts.inter(fontSize: 12, color: AppTheme.errorRed), textAlign: TextAlign.center),
+            const SizedBox(height: FsSpace.md),
+            Text(_error!, style: FsType.caption(context).copyWith(color: FsColors.danger), textAlign: TextAlign.center),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: FsSpace.xl),
           SizedBox(
             height: 50,
             child: ElevatedButton(
               onPressed: auth.isLoading ? null : _signUp,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                backgroundColor: FsColors.accent(context),
+                foregroundColor: FsColors.onAccent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
                 elevation: 0,
               ),
               child: auth.isLoading
@@ -196,8 +196,8 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(Icons.person_add_rounded, size: 20),
-                        const SizedBox(width: 8),
-                        Text('Create Account', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                        const SizedBox(width: FsSpace.xs),
+                        Text('Create Account', style: FsType.button(FsColors.onAccent).copyWith(fontSize: 16, fontWeight: FontWeight.w700)),
                       ],
                     ),
             ),
@@ -211,10 +211,10 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon, size: 20),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(FsRadii.control), borderSide: BorderSide.none),
       filled: true,
       fillColor: AppTheme.card(context).withValues(alpha: 0.6),
-      labelStyle: AppFonts.inter(fontSize: 14),
+      labelStyle: FsType.body(context),
     );
   }
 

@@ -1,6 +1,9 @@
 name: Build & Release APK
 
 on:
+  # Tagged releases only. Pushes to main are handled by publish-pages.yml, which
+  # builds the signed APK and atomically publishes it + version.json to Pages;
+  # this workflow owns the tagged GitHub Release so the two never collide.
   push:
     tags:
       - 'v*'
@@ -49,6 +52,12 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
+          # Secrets first entered from Windows PowerShell may contain a trailing
+          # CR/LF. keytool treats that as part of the password and reports only
+          # exit code 1, so normalize line endings before validation.
+          KEYSTORE_PASSWORD=$(printf '%s' "${KEYSTORE_PASSWORD:-}" | tr -d '\r\n')
+          KEY_PASSWORD=$(printf '%s' "${KEY_PASSWORD:-}" | tr -d '\r\n')
+          export KEYSTORE_PASSWORD KEY_PASSWORD
           if [ -z "${KEYSTORE_PASSWORD:-}" ] || [ -z "${KEY_PASSWORD:-}" ]; then
             echo "::error::KEYSTORE_PASSWORD and KEY_PASSWORD secrets must be set."
             exit 1
@@ -59,13 +68,29 @@ jobs:
           # of which existed only because the original secret happened to be a
           # .p12. The alias is known ("upload"), so none of that is needed.
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
-          # Fail here rather than midway through Gradle if the secret is stale
-          # or the password is wrong.
-          keytool -list -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" -alias upload > /dev/null
+          # Verify the keystore password and detect its existing private-key
+          # alias. Historical releases used alias "1" while a later workflow
+          # assumed "upload"; hardcoding either one breaks the other.
+          if ! KEYSTORE_LIST=$(keytool -list -v -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" 2>&1); then
+            KEYSTORE_FORMAT=$(file -b android/app/upload-keystore.jks)
+            echo "::error::Unable to open KEYSTORE_BASE64 with KEYSTORE_PASSWORD. Decoded file type: $KEYSTORE_FORMAT"
+            printf '%s\n' "$KEYSTORE_LIST" | tail -n 3
+            exit 1
+          fi
+          ALIAS=$(printf '%s\n' "$KEYSTORE_LIST" | sed -n 's/^Alias name: //p' | head -1)
+          if [ -z "$ALIAS" ]; then
+            echo "::error::No signing-key alias found in KEYSTORE_BASE64."
+            exit 1
+          fi
+          ACTUAL_SHA1=$(printf '%s\n' "$KEYSTORE_LIST" | sed -n 's/.*SHA1: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          CONFIGURED_SHA1=$(python3 -c "import json; d=json.load(open('android/app/google-services.json')); print(next(x['android_info']['certificate_hash'] for x in d['client'][0]['oauth_client'] if x.get('client_type') == 1))")
+          if [ "$ACTUAL_SHA1" != "$CONFIGURED_SHA1" ]; then
+            echo "::warning::Google Sign-In will fail in this APK: upload key SHA-1 $ACTUAL_SHA1 is not registered in google-services.json/Firebase (configured $CONFIGURED_SHA1). Add the upload-key SHA-1 in Firebase Console and download a refreshed google-services.json."
+          fi
           cat > android/key.properties << EOF
           storePassword=$KEYSTORE_PASSWORD
           keyPassword=$KEY_PASSWORD
-          keyAlias=upload
+          keyAlias=$ALIAS
           storeFile=upload-keystore.jks
           EOF
           # Deliberately NOT `cat`-ing key.properties: this repo is public, so
@@ -77,12 +102,17 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           elif [ -n "${{ github.event.inputs.version }}" ]; then
             echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
-            echo "tag=v$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+            APP_VERSION=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)
+            if [ -z "$APP_VERSION" ]; then
+              echo "::error::Could not read version from pubspec.yaml"
+              exit 1
+            fi
+            echo "tag=v$APP_VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Rename APK
@@ -97,6 +127,12 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "UPSC Daily Edge ${{ steps.version.outputs.tag }}"
           body: |
+            ## Installing
+
+            Prefer the in-app update prompt, or the download on the project page. Those deliver the universal APK the in-app updater manages.
+
+            If version 1.4.0 or older is installed, uninstall it once first — Android signing was reset after that release, so an update over it will be refused. Nothing else needs a reinstall, and later updates install normally from the in-app prompt.
+
             ## UPSC Daily Edge - Android App
 
             ### What's included:
@@ -119,15 +155,29 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Deploy APK to GitHub Pages
+      # Refreshes ONLY the legacy root download. This workflow deliberately does
+      # NOT write update/version.json or update/UPSC-Daily-Edge.apk —
+      # publish-pages.yml is the single owner of the in-app updater channel.
+      #
+      # Two reasons it must stay that way. The updater treats `build` as
+      # monotonic, and this workflow's build number comes from pubspec (19)
+      # whereas publish-pages derives a always-increasing one; writing the
+      # manifest here would advertise a LOWER build than Pages already serves.
+      # And these APKs are built --split-per-abi, which offsets versionCode per
+      # ABI, so their versionCode does not line up with the universal APK the
+      # updater installs. Android refuses to install an APK whose versionCode is
+      # below the installed one, so mixing the two channels strands users.
+      - name: Refresh the legacy root APK download on GitHub Pages
         run: |
-          cp build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk /tmp/UPSC-Daily-Edge.apk
+          set -euo pipefail
+          APK=build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk
+          cp "$APK" "$RUNNER_TEMP/UPSC-Daily-Edge.apk"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git stash --include-untracked
           git fetch origin gh-pages
           git checkout gh-pages
-          cp /tmp/UPSC-Daily-Edge.apk UPSC-Daily-Edge.apk
+          cp "$RUNNER_TEMP/UPSC-Daily-Edge.apk" UPSC-Daily-Edge.apk
           git add UPSC-Daily-Edge.apk
-          git commit -m "Update APK to ${{ steps.version.outputs.tag }}" || true
+          git commit -m "Update root APK to ${{ steps.version.outputs.tag }}" || true
           git push origin gh-pages

@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -81,7 +80,7 @@ class _StudyScreenState extends State<StudyScreen> with SingleTickerProviderStat
     final w = MediaQuery.of(context).size.width;
     final hp = _hPad(w);
 
-    Widget content = FadeTransition(
+    final Widget content = FadeTransition(
         opacity: _fadeCurve,
         child: CustomScrollView(
           controller: _scrollController,

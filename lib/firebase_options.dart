@@ -49,6 +49,8 @@ class DefaultFirebaseOptions {
     }
   }
 
+  /// Android Firebase app used for live content, Google authentication, and
+  /// user profiles. The daily scraper service account writes to this project.
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDgTUysddSs22iwBc-zjGxeaDwpODzBt8U',
     appId: '1:906645524405:android:838f1c73e83ff7a0dc53fc',
@@ -57,6 +59,16 @@ class DefaultFirebaseOptions {
     storageBucket: 'upsc-app-e2475-e5c95.firebasestorage.app',
   );
 
+  /// Kept as a semantic alias for authentication call sites.
+  static const FirebaseOptions androidAuth = android;
+
+  /// OAuth web client paired with the Android sign-in project.
+  static const String androidAuthWebClientId =
+      '906645524405-ifrp69c4lq4m2e5umjlpk428d099nn0h.apps.googleusercontent.com';
+
+  /// Registered web Firebase app. Android remains the authoritative live feed;
+  /// this valid web app is retained until a matching web app is registered in
+  /// the live Firebase project.
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyCuoe1xWtNkHtFQhQx8Cq2rP9jywgnuseY',
     appId: '1:787232499240:web:60e803c2749c0a092af71d',
