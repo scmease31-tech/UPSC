@@ -17,6 +17,7 @@ class FirestoreContentService {
   static List<Map<String, dynamic>>? _vocabulary;
   static List<Map<String, dynamic>>? _govtSchemes;
   static List<Map<String, dynamic>>? _revisionNotes;
+  static List<Map<String, dynamic>>? _roundups;
 
   // Cache TTL = 6 hours
   static const _cacheTTL = Duration(hours: 6);
@@ -82,6 +83,16 @@ class FirestoreContentService {
 
   static List<Map<String, dynamic>> getImportantAffairs(List<Map<String, dynamic>> all) =>
       all.where((a) => a['important'] == true).toList();
+
+  static Future<Map<String, dynamic>?> getLatestRoundup(String period) async {
+    _roundups ??= await _fetchWithCache('currentAffairsRoundups');
+    final matches = _roundups!
+        .where((roundup) => roundup['period'] == period)
+        .toList()
+      ..sort((a, b) =>
+          (b['endDate'] ?? '').toString().compareTo((a['endDate'] ?? '').toString()));
+    return matches.isEmpty ? null : matches.first;
+  }
 
   // ─── Mock Tests ──────────────────────────────────────────────────────
 
@@ -230,6 +241,7 @@ class FirestoreContentService {
       case 'vocabulary': _vocabulary = null; return getVocabulary();
       case 'govtSchemes': _govtSchemes = null; return getGovtSchemes();
       case 'revisionNotes': _revisionNotes = null; return getRevisionNotes();
+      case 'currentAffairsRoundups': _roundups = null; return _fetchWithCache(collection);
       default: return _fetchWithCache(collection);
     }
   }

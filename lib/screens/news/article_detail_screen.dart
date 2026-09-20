@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/category_style.dart';
 import '../../config/theme.dart';
+import '../../design_system/frosted_scholar.dart';
 import '../../models/article.dart';
 import '../../providers/bookmarks_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -71,9 +72,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.article_outlined, size: 48, color: Colors.grey),
-              const SizedBox(height: 12),
+              const SizedBox(height: FsSpace.md),
               Text('No article data', style: AppFonts.inter(color: Colors.grey)),
-              const SizedBox(height: 12),
+              const SizedBox(height: FsSpace.md),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Go Back'),
@@ -97,9 +98,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.article_outlined, size: 48, color: Colors.grey),
-                const SizedBox(height: 12),
+                const SizedBox(height: FsSpace.md),
                 Text('Article not found', style: AppFonts.inter(color: Colors.grey)),
-                const SizedBox(height: 12),
+                const SizedBox(height: FsSpace.md),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Go Back'),
@@ -117,9 +118,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-              const SizedBox(height: 12),
+              const SizedBox(height: FsSpace.md),
               Text('Invalid article data', style: AppFonts.inter(color: Colors.grey)),
-              const SizedBox(height: 12),
+              const SizedBox(height: FsSpace.md),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Go Back'),
@@ -175,8 +176,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         SnackBar(
                           content: const Text('Please sign in to bookmark articles'),
                           behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          margin: const EdgeInsets.all(16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
+                          margin: FsSpacing.screen,
                         ),
                       );
                       return;
@@ -189,21 +190,21 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           content: Row(
                             children: [
                               Icon(isBookmarked ? Icons.bookmark_remove_rounded : Icons.bookmark_added_rounded, color: Colors.white, size: 18),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: FsSpace.xs),
                               Text(isBookmarked ? 'Removed from bookmarks' : 'Saved to bookmarks'),
                             ],
                           ),
                           duration: const Duration(seconds: 1),
                           behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          margin: const EdgeInsets.all(16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
+                          margin: FsSpacing.screen,
                         ),
                       );
                     }
                   },
                   color: isBookmarked ? AppTheme.primaryColor : null,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
               ],
               // Reading progress indicator
               bottom: PreferredSize(
@@ -270,7 +271,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                   _imageTag(article.newspaper, AppTheme.accentViolet),
                               ],
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: FsSpace.md),
                             Text(
                               article.title,
                               style: AppFonts.plusJakartaSans(
@@ -294,7 +295,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             // Content
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: FsSpacing.screen,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -305,7 +306,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                     // Attribution for openly-licensed artwork we sourced
                     // ourselves (the publisher shipped none).
                     if (article.imageCredit.isNotEmpty) ...[
-                      const SizedBox(height: 10),
+                      const SizedBox(height: FsSpace.xs),
                       GestureDetector(
                         onTap: article.imageCreditUrl.isEmpty
                             ? null
@@ -318,7 +319,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         child: Row(
                           children: [
                             Icon(Icons.photo_camera_outlined, size: 13, color: AppTheme.textT(context)),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: FsSpace.xxs),
                             Expanded(
                               child: Text(
                                 'Image: ${article.imageCredit}',
@@ -340,7 +341,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
                     // Source URL button
                     if (article.sourceUrl.isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: FsSpace.md),
                       GestureDetector(
                         onTap: () async {
                           final uri = Uri.tryParse(article.sourceUrl);
@@ -354,7 +355,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.open_in_new_rounded, size: 16, color: AppTheme.accentTeal),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: FsSpace.xs),
                               Text(
                                 'Read Original on ${article.newspaper.isNotEmpty ? article.newspaper : "Source"}',
                                 style: AppFonts.inter(
@@ -368,20 +369,20 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                       ),
                     ],
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: FsSpace.lg),
 
                     // Summary
                     if (article.summary.isNotEmpty) ...[
                       _sectionTitle('Summary'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Text(
                           article.summary,
                           style: AppFonts.inter(fontSize: 14, color: AppTheme.textP(context), height: 1.7),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Content — rendered as a real reading layout (headings,
@@ -396,23 +397,23 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
                         padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
                         child: RichArticleContent(content: article.content, scale: _textScale),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Key Points
                     if (article.keyPoints.isNotEmpty) ...[
                       _sectionTitle('Key Points'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Column(
                           children: article.keyPoints.asMap().entries.map((e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.only(bottom: FsSpace.xs),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -420,60 +421,60 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                   width: 24, height: 24,
                                   decoration: BoxDecoration(
                                     color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(7),
+                                    borderRadius: BorderRadius.circular(FsRadii.sm),
                                   ),
                                   child: Center(child: Text('${e.key + 1}', style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primaryColor))),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: FsSpace.md),
                                 Expanded(child: Text(e.value, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
                               ],
                             ),
                           )).toList(),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Short Notes
                     if (article.shortNotes.isNotEmpty) ...[
                       _sectionTitle('Quick Notes'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Column(
                           children: article.shortNotes.map((n) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.only(bottom: FsSpace.xs),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Icon(Icons.circle, size: 6, color: AppTheme.primaryColor),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: FsSpace.xs),
                                 Expanded(child: Text(n, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
                               ],
                             ),
                           )).toList(),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Syllabus Mapping
                     if (article.syllabusMapping.isNotEmpty) ...[
                       _sectionTitle('UPSC Syllabus Mapping'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: AppTheme.accentViolet.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(FsRadii.sm),
                               ),
                               child: const Icon(Icons.account_tree_rounded, size: 18, color: AppTheme.accentViolet),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: FsSpace.md),
                             Expanded(
                               child: Text(
                                 article.syllabusMapping,
@@ -483,214 +484,214 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Previous Year Questions
                     if (article.previousYearQs.isNotEmpty) ...[
                       _sectionTitle('Previous Year Questions'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Column(
                           children: article.previousYearQs.map((q) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.only(bottom: FsSpace.xs),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Icon(Icons.history_edu_rounded, size: 16, color: AppTheme.warningOrange),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: FsSpace.xs),
                                 Expanded(child: Text(q, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5))),
                               ],
                             ),
                           )).toList(),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Key Terms & Definitions
                     if (article.keyTerms.isNotEmpty) ...[
                       _sectionTitle('Key Terms'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       ...article.keyTerms.entries.map((e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.only(bottom: FsSpace.xs),
                         child: GlassCard(
-                          padding: const EdgeInsets.all(14),
+                          padding: FsSpacing.cardPadding,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(e.key, style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: FsSpace.xxs),
                               Text(e.value, style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context), height: 1.5)),
                             ],
                           ),
                         ),
                       )),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: FsSpace.md),
                     ],
 
                     // Constitutional/Legal Basis
                     if (article.constitutionalBasis.isNotEmpty) ...[
                       _sectionTitle('Constitutional Basis'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
                         color: const Color(0xFFFFF3E0),
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Icon(Icons.gavel_rounded, size: 20, color: Color(0xFFE65100)),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: FsSpace.md),
                             Expanded(child: Text(article.constitutionalBasis, style: AppFonts.inter(fontSize: 13, color: const Color(0xFFBF360C), height: 1.6))),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Government Scheme
                     if (article.governmentScheme.isNotEmpty) ...[
                       _sectionTitle('Related Government Scheme'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
                         color: const Color(0xFFE8F5E9),
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Icon(Icons.policy_rounded, size: 20, color: AppTheme.successGreen),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: FsSpace.md),
                             Expanded(child: Text(article.governmentScheme, style: AppFonts.inter(fontSize: 13, color: const Color(0xFF1B5E20), height: 1.6))),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Editorial Opinion
                     if (article.editorialOpinion.isNotEmpty) ...[
                       _sectionTitle('Editorial Perspective'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Icon(Icons.edit_note_rounded, size: 20, color: AppTheme.accentViolet),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: FsSpace.md),
                             Expanded(child: Text(article.editorialOpinion, style: AppFonts.inter(fontSize: 13, fontStyle: FontStyle.italic, color: AppTheme.textP(context), height: 1.6))),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Answer Framework
                     if (article.answerFramework.isNotEmpty) ...[
                       _sectionTitle('Mains Answer Framework'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
                         gradient: LinearGradient(
                           colors: [AppTheme.primaryColor.withValues(alpha: 0.05), AppTheme.accentViolet.withValues(alpha: 0.05)],
                           begin: Alignment.topLeft, end: Alignment.bottomRight,
                         ),
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
                                 const Icon(Icons.draw_rounded, size: 18, color: AppTheme.primaryColor),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: FsSpace.xs),
                                 Text('How to structure your answer', style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
                               ],
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: FsSpace.md),
                             Text(article.answerFramework, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.7)),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Flowchart
                     if (article.flowchartSteps.isNotEmpty) ...[
                       _sectionTitle('Flowchart'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       ...article.flowchartSteps.asMap().entries.map((e) => _flowchartStep(context, e.key, e.value, e.key == article.flowchartSteps.length - 1)),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Analysis Note
                     if (article.analysisNote.isNotEmpty) ...[
                       _sectionTitle('Analysis'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
                         gradient: AppTheme.heroGradient,
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Icon(Icons.analytics_rounded, color: Colors.white, size: 20),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: FsSpace.md),
                             Expanded(child: Text(article.analysisNote, style: AppFonts.inter(fontSize: 13, color: Colors.white, height: 1.6))),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Mnemonic
                     if (article.mnemonic.isNotEmpty) ...[
                       _sectionTitle('Memory Aid'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       GlassCard(
                         color: AppTheme.pastelMint.withValues(alpha: 0.5),
-                        padding: const EdgeInsets.all(16),
+                        padding: FsSpacing.cardPadding,
                         child: Row(
                           children: [
                             Image.asset('assets/flaticon_pngs/brain.png', width: 24, height: 24),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: FsSpace.md),
                             Expanded(child: Text(article.mnemonic, style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryDark, height: 1.5))),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Related Topics
                     if (article.relatedTopics.isNotEmpty) ...[
                       _sectionTitle('Related Topics'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: article.relatedTopics.map((t) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: FsSpacing.chip,
                           decoration: BoxDecoration(
                             color: AppTheme.pastelLavender.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(FsRadii.sm),
                           ),
                           child: Text(t, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.accentViolet)),
                         )).toList(),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                     ],
 
                     // Related Articles
                     if (relatedArticles.isNotEmpty) ...[
                       _sectionTitle('Related Articles'),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       ...relatedArticles.take(3).map((a) => GestureDetector(
                         onTap: () {
                           HapticFeedback.selectionClick();
                           Navigator.pushNamed(context, '/article-detail', arguments: a);
                         },
                         child: Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.only(bottom: FsSpace.xs),
                           child: GlassCard(
-                            padding: const EdgeInsets.all(12),
+                            padding: FsSpacing.cardPaddingTight,
                             child: Row(
                               children: [
                                 // Thumbnail
@@ -700,9 +701,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                   category: a.categoryTags.isNotEmpty ? a.categoryTags.first : '',
                                   width: 56,
                                   height: 56,
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(FsRadii.sm),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: FsSpace.md),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,7 +715,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: FsSpace.xxs),
                                       Text(a.title, style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)), maxLines: 2, overflow: TextOverflow.ellipsis),
                                     ],
                                   ),
@@ -727,7 +728,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                       )),
                     ],
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: FsSpace.huge),
                   ],
                 ),
               ),
@@ -747,13 +748,13 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           Navigator.pop(context);
         },
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(FsRadii.control),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(FsRadii.control),
               ),
               child: const Icon(Icons.arrow_back_rounded, size: 20),
             ),
@@ -772,14 +773,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           onTap();
         },
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(FsRadii.control),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
               width: 38, height: 38,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(FsRadii.control),
               ),
               child: Icon(icon, size: 18, color: color),
             ),
@@ -794,7 +795,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(FsRadii.sm),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4)],
       ),
       child: Text(label, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
@@ -803,18 +804,18 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
   Widget _infoBar(Article article, bool dark) {
     return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: FsSpacing.listItem,
       child: Row(
         children: [
           if (article.upscPaper.isNotEmpty) ...[
             const Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
-            const SizedBox(width: 6),
+            const SizedBox(width: FsSpace.xxs),
             Flexible(child: Text(article.upscPaper, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor), overflow: TextOverflow.ellipsis)),
             const SizedBox(width: 16),
           ],
           if (article.examRelevance.isNotEmpty) ...[
             const Icon(Icons.star_rounded, size: 16, color: AppTheme.accentViolet),
-            const SizedBox(width: 6),
+            const SizedBox(width: FsSpace.xxs),
             Flexible(child: Text(article.examRelevance, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accentViolet), overflow: TextOverflow.ellipsis)),
           ],
         ],
@@ -826,8 +827,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     return Row(
       children: [
         Container(width: 4, height: 18, decoration: BoxDecoration(gradient: AppTheme.primaryGradient, borderRadius: BorderRadius.circular(2))),
-        const SizedBox(width: 10),
-        Expanded(child: Text(title, style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: AppTheme.textP(context)), maxLines: 2, overflow: TextOverflow.ellipsis)),
+        const SizedBox(width: FsSpace.xs),
+        Expanded(child: Text(title, style: FsType.title(context), maxLines: 2, overflow: TextOverflow.ellipsis)),
       ],
     );
   }
@@ -842,18 +843,18 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               width: 32, height: 32,
               decoration: BoxDecoration(
                 gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(FsRadii.sm),
               ),
               child: Center(child: Text('${index + 1}', style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white))),
             ),
             if (!isLast) Container(width: 2, height: 30, color: AppTheme.primaryColor.withValues(alpha: 0.2)),
           ],
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: FsSpace.md),
         Expanded(
           child: GlassCard(
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 4),
+            padding: FsSpacing.cardPaddingTight,
+            margin: const EdgeInsets.only(bottom: FsSpace.xxs),
             child: Text(text, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context), height: 1.5)),
           ),
         ),
@@ -917,7 +918,7 @@ class _ReaderSizeControl extends StatelessWidget {
               HapticFeedback.selectionClick();
               onTap();
             },
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(FsRadii.sm),
       child: Padding(
         padding: const EdgeInsets.all(6),
         child: Icon(

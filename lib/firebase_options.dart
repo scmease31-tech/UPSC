@@ -66,6 +66,9 @@ class DefaultFirebaseOptions {
   static const String androidAuthWebClientId =
       '906645524405-ifrp69c4lq4m2e5umjlpk428d099nn0h.apps.googleusercontent.com';
 
+  /// Registered web Firebase app. Android remains the authoritative live feed;
+  /// this valid web app is retained until a matching web app is registered in
+  /// the live Firebase project.
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyCuoe1xWtNkHtFQhQx8Cq2rP9jywgnuseY',
     appId: '1:787232499240:web:60e803c2749c0a092af71d',
