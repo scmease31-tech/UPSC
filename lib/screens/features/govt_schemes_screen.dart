@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import '../../config/theme.dart';
 import '../../services/firestore_content_service.dart';
 import '../../widgets/glass_widgets.dart';
+import 'scheme_detail_sheet.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// GovtSchemesScreen — Searchable database of important government schemes
@@ -306,111 +307,6 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
     );
   }
 
-  void _showSchemeDetail(Map<String, dynamic> s) {
-    final name = s['name'] as String? ?? '';
-    final fullForm = s['fullForm'] as String? ?? '';
-    final sector = s['sector'] as String? ?? '';
-    final year = s['year'] as String? ?? '';
-    final ministry = s['ministry'] as String? ?? '';
-    final detailedDescription = s['detailedDescription'] as String? ?? '';
-    final keyFeatures = (s['keyFeatures'] as List<dynamic>?)?.cast<String>() ?? [];
-    final upscRelevance = s['upscRelevance'] as String? ?? '';
-    final icon = FirestoreContentService.getIcon(s['iconName'] as String? ?? '');
-    final color = FirestoreContentService.parseColor(s['colorHex'] as String? ?? '');
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (ctx, scroll) => SingleChildScrollView(
-          controller: scroll,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    width: 48, height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [color, color.withValues(alpha: 0.6)]),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 24),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(name, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800)),
-                        if (fullForm.isNotEmpty && fullForm != name)
-                          Text(fullForm, style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(ctx))),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _schemeBadge(sector, color),
-                  _schemeBadge('Year: $year', AppTheme.textTertiary),
-                  _schemeBadge(ministry, AppTheme.accentViolet),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(detailedDescription, style: AppFonts.inter(fontSize: 14, height: 1.7)),
-              const SizedBox(height: 16),
-              Text('Key Features', style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
-              const SizedBox(height: 10),
-              ...keyFeatures.map((f) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(margin: const EdgeInsets.only(top: 6), width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(f, style: AppFonts.inter(fontSize: 13, height: 1.5))),
-                  ],
-                ),
-              )),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      const Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryColor),
-                      const SizedBox(width: 6),
-                      Text('UPSC Relevance', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
-                    ]),
-                    const SizedBox(height: 8),
-                    Text(upscRelevance, style: AppFonts.inter(fontSize: 13, height: 1.5)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
+  void _showSchemeDetail(Map<String, dynamic> s) =>
+      showSchemeDetailSheet(context, s);
 }
