@@ -70,7 +70,12 @@ jobs:
           # Verify the keystore password and detect its existing private-key
           # alias. Historical releases used alias "1" while a later workflow
           # assumed "upload"; hardcoding either one breaks the other.
-          KEYSTORE_LIST=$(keytool -list -v -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD")
+          if ! KEYSTORE_LIST=$(keytool -list -v -keystore android/app/upload-keystore.jks -storepass "$KEYSTORE_PASSWORD" 2>&1); then
+            KEYSTORE_FORMAT=$(file -b android/app/upload-keystore.jks)
+            echo "::error::Unable to open KEYSTORE_BASE64 with KEYSTORE_PASSWORD. Decoded file type: $KEYSTORE_FORMAT"
+            printf '%s\n' "$KEYSTORE_LIST" | tail -n 3
+            exit 1
+          fi
           ALIAS=$(printf '%s\n' "$KEYSTORE_LIST" | sed -n 's/^Alias name: //p' | head -1)
           if [ -z "$ALIAS" ]; then
             echo "::error::No signing-key alias found in KEYSTORE_BASE64."
