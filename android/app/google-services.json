@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "906645524405",
+    "firebase_url": "https://upsc-app-e2475-e5c95-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "upsc-app-e2475-e5c95",
     "storage_bucket": "upsc-app-e2475-e5c95.firebasestorage.app"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "906645524405-ekh73nk046pt5rb28i77sj4e3j92liaj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.upsc.upsc_daily_edge",
+            "certificate_hash": "c3b2910c1a705672b0d6d3f3a0d0afad0a5acdda"
+          }
+        },
         {
           "client_id": "906645524405-gkbqd7t0logs2di5tope5rjege4lmlgk.apps.googleusercontent.com",
           "client_type": 1,
