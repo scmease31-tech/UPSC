@@ -44,6 +44,12 @@ dependencies:
   lottie: ^3.3.2
   package_info_plus: ^9.0.1
 
+  # In-app sideload updater: download APK (path_provider for the cache dir),
+  # verify SHA-256 (crypto), hand off to the Android system installer (open_filex).
+  crypto: 3.0.7
+  path_provider: 2.1.5
+  open_filex: 4.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

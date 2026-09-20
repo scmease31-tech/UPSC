@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:upsc_daily_edge/config/routes.dart';
+import 'package:upsc_daily_edge/config/update_config.dart';
 import 'package:upsc_daily_edge/data/offline_content.dart';
 import 'package:upsc_daily_edge/firebase_options.dart';
 
@@ -62,5 +63,40 @@ void main() {
     ]) {
       expect(routes, contains(route), reason: 'Missing route: $route');
     }
+  });
+
+  group('sideload updater security invariants', () {
+    test('silent install is never permitted', () {
+      expect(UpdateConfig.silentInstall, isFalse);
+    });
+
+    test('updater is enabled for sideload and disabled for Play builds', () {
+      // Default (no PLAY_STORE dart-define) is a sideload build.
+      expect(UpdateConfig.isPlayStoreBuild, isFalse);
+      expect(UpdateConfig.sideloadUpdaterEnabled, isTrue);
+    });
+
+    test('the version manifest URL is HTTPS and on the allowlist', () {
+      expect(UpdateConfig.versionManifestUrl, startsWith('https://'));
+      expect(UpdateConfig.isAllowedUrl(UpdateConfig.versionManifestUrl), isTrue);
+    });
+
+    test('only allowlisted HTTPS origins pass the URL guard', () {
+      expect(
+        UpdateConfig.isAllowedUrl('https://scmease31-tech.github.io/UPSC/app.apk'),
+        isTrue,
+      );
+      expect(
+        UpdateConfig.isAllowedUrl('https://evil.example.com/app.apk'),
+        isFalse,
+      );
+      expect(
+        UpdateConfig.isAllowedUrl('http://scmease31-tech.github.io/UPSC/app.apk'),
+        isFalse,
+        reason: 'plain HTTP must be rejected',
+      );
+      expect(UpdateConfig.isAllowedUrl('not a url'), isFalse);
+      expect(UpdateConfig.isAllowedUrl(''), isFalse);
+    });
   });
 }
