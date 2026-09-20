@@ -4,12 +4,12 @@ import 'package:upsc_daily_edge/data/offline_content.dart';
 import 'package:upsc_daily_edge/firebase_options.dart';
 
 void main() {
-  test('Android content and authentication projects stay intentionally split', () {
-    expect(DefaultFirebaseOptions.android.projectId, 'upsc-app-e2475');
+  test('Android uses the live scraper Firebase project for all data', () {
+    expect(DefaultFirebaseOptions.android.projectId, 'upsc-app-e2475-e5c95');
     expect(DefaultFirebaseOptions.androidAuth.projectId, 'upsc-app-e2475-e5c95');
     expect(
       DefaultFirebaseOptions.android.projectId,
-      isNot(DefaultFirebaseOptions.androidAuth.projectId),
+      DefaultFirebaseOptions.androidAuth.projectId,
     );
   });
 

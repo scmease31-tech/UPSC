@@ -49,24 +49,18 @@ class DefaultFirebaseOptions {
     }
   }
 
-  /// Primary Firebase app used for public study content on Android.
-  /// This matches the web project and the backend uploader target.
+  /// Android Firebase app used for live content, Google authentication, and
+  /// user profiles. The daily scraper service account writes to this project.
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDbOuNUCnM5j81IXWd41vOV1lfsjMYwygE',
-    appId: '1:787232499240:android:1f8f5a1308feb26e2af71d',
-    messagingSenderId: '787232499240',
-    projectId: 'upsc-app-e2475',
-    storageBucket: 'upsc-app-e2475.firebasestorage.app',
-  );
-
-  /// Secondary Android app that owns Google OAuth and private user profiles.
-  static const FirebaseOptions androidAuth = FirebaseOptions(
     apiKey: 'AIzaSyDgTUysddSs22iwBc-zjGxeaDwpODzBt8U',
     appId: '1:906645524405:android:838f1c73e83ff7a0dc53fc',
     messagingSenderId: '906645524405',
     projectId: 'upsc-app-e2475-e5c95',
     storageBucket: 'upsc-app-e2475-e5c95.firebasestorage.app',
   );
+
+  /// Kept as a semantic alias for authentication call sites.
+  static const FirebaseOptions androidAuth = android;
 
   /// OAuth web client paired with the Android sign-in project.
   static const String androidAuthWebClientId =

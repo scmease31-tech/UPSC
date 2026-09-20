@@ -7,20 +7,16 @@ import '../firebase_options.dart';
 
 /// Owns the app's Firebase connections.
 ///
-/// Public study content is stored in the original `upsc-app-e2475` project,
-/// while the Android OAuth client and user profiles live in
-/// `upsc-app-e2475-e5c95`. Keeping both apps initialized prevents the installed
-/// Android build from reading an empty content database just to make Google
-/// Sign-In available.
+/// Android content, Google authentication, and private user data all use the
+/// live `upsc-app-e2475-e5c95` project—the same project targeted by the daily
+/// scraper service account.
 class FirebaseServices {
   FirebaseServices._();
 
-  static const String _contentAppName = 'upsc-content';
-  static FirebaseApp? _contentApp;
-  static FirebaseApp? _authApp;
+  static FirebaseApp? _app;
 
-  static FirebaseApp get contentApp => _contentApp ?? Firebase.app();
-  static FirebaseApp get authApp => _authApp ?? Firebase.app();
+  static FirebaseApp get contentApp => _app ?? Firebase.app();
+  static FirebaseApp get authApp => _app ?? Firebase.app();
 
   static FirebaseFirestore get contentFirestore =>
       FirebaseFirestore.instanceFor(app: contentApp);
@@ -31,29 +27,14 @@ class FirebaseServices {
   static FirebaseAuth get auth => FirebaseAuth.instanceFor(app: authApp);
 
   static Future<void> initialize() async {
-    FirebaseApp primary;
     try {
-      primary = Firebase.app();
+      _app = Firebase.app();
     } on FirebaseException {
-      primary = await Firebase.initializeApp(
+      _app = await Firebase.initializeApp(
         options: kIsWeb
             ? DefaultFirebaseOptions.web
-            : DefaultFirebaseOptions.androidAuth,
+            : DefaultFirebaseOptions.android,
       );
-    }
-
-    _authApp = primary;
-    _contentApp = primary;
-
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      try {
-        _contentApp = Firebase.app(_contentAppName);
-      } on FirebaseException {
-        _contentApp = await Firebase.initializeApp(
-          name: _contentAppName,
-          options: DefaultFirebaseOptions.android,
-        );
-      }
     }
   }
 }
