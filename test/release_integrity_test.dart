@@ -98,5 +98,34 @@ void main() {
       expect(UpdateConfig.isAllowedUrl('not a url'), isFalse);
       expect(UpdateConfig.isAllowedUrl(''), isFalse);
     });
+
+    test('the APK can only come from the project Pages origin', () {
+      // The allowlist is one origin on purpose. Users are never sent to the
+      // repository for a build, and release assets are per-ABI with a lower
+      // versionCode than the APK the updater manages — installing one would
+      // desync the device from the update channel.
+      expect(UpdateConfig.allowedOrigins,
+          ['https://scmease31-tech.github.io']);
+
+      for (final repoUrl in <String>[
+        'https://github.com/scmease31-tech/UPSC/releases/latest/download/UPSC-Daily-Edge.apk',
+        'https://objects.githubusercontent.com/some/asset.apk',
+        'https://release-assets.githubusercontent.com/some/asset.apk',
+        'https://raw.githubusercontent.com/scmease31-tech/UPSC/main/app.apk',
+      ]) {
+        expect(UpdateConfig.isAllowedUrl(repoUrl), isFalse,
+            reason: 'the updater must refuse a repository download: $repoUrl');
+      }
+    });
+
+    test('a lookalike host cannot pass as the Pages origin', () {
+      for (final url in <String>[
+        'https://scmease31-tech.github.io.evil.com/app.apk',
+        'https://evil-scmease31-tech.github.io/app.apk',
+        'https://scmease31-tech.github.io:8443/app.apk',
+      ]) {
+        expect(UpdateConfig.isAllowedUrl(url), isFalse, reason: url);
+      }
+    });
   });
 }
