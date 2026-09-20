@@ -41,3 +41,19 @@ jobs:
           else
             node backfill.js
           fi
+
+      # backfill.js can only CREATE docs — uploadToCollection skips ids that
+      # already exist. Schemes are keyed on their name alone, so ones stored
+      # before generateSchemes produced detailedDescription / keyFeatures /
+      # upscRelevance / ministry would keep their thin shape forever and the
+      # app's detail sheet would stay near-empty. This fills those fields in.
+      - name: Fill scheme detail onto existing docs
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            node enrich-schemes.js --dry-run
+          else
+            node enrich-schemes.js
+          fi

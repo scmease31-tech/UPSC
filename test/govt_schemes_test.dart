@@ -66,8 +66,9 @@ void main() {
       await _pumpSheet(tester, complete);
 
       expect(find.text(complete['name'] as String), findsOneWidget);
+      expect(find.text('OVERVIEW'), findsOneWidget);
       expect(find.text(complete['detailedDescription'] as String), findsOneWidget);
-      expect(find.text('Key Features'), findsOneWidget);
+      expect(find.text('KEY FEATURES'), findsOneWidget);
       expect(
         find.text((complete['keyFeatures'] as List).cast<String>().first),
         findsOneWidget,
@@ -77,9 +78,18 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('shows the ministry badge', (tester) async {
+    testWidgets('shows the ministry, labelled', (tester) async {
       await _pumpSheet(tester, complete);
+      expect(find.text('Administered by'), findsOneWidget);
       expect(find.text(complete['ministry'] as String), findsOneWidget);
+    });
+
+    testWidgets('numbers the key features', (tester) async {
+      await _pumpSheet(tester, complete);
+      final count = (complete['keyFeatures'] as List).length;
+      // The section header carries the count, and each card is numbered.
+      expect(find.text('$count'), findsWidgets);
+      expect(find.text('1'), findsWidgets);
     });
 
     test('is not classed as sparse', () {
@@ -103,7 +113,7 @@ void main() {
         (tester) async {
       await _pumpSheet(tester, scraperScheme());
 
-      expect(find.text('Key Features'), findsNothing,
+      expect(find.text('KEY FEATURES'), findsNothing,
           reason: 'a heading with no features under it reads as broken');
       expect(find.text('UPSC Relevance'), findsNothing,
           reason: 'an empty relevance box reads as broken');
@@ -113,12 +123,16 @@ void main() {
         (tester) async {
       await _pumpSheet(tester, scraperScheme());
 
-      // sector + year are present, ministry is not: two badges, not three.
+      // sector + year are present, ministry is not: two rows, not three.
+      expect(find.text('Sector'), findsOneWidget);
       expect(find.text('Science & Technology'), findsOneWidget);
-      expect(find.text('Year: 2026'), findsOneWidget);
+      expect(find.text('In coverage from'), findsOneWidget);
+      expect(find.text('2026'), findsOneWidget);
+      expect(find.text('Administered by'), findsNothing,
+          reason: 'no ministry row should appear when none is known');
       final blank = find.byWidgetPredicate(
           (w) => w is Text && w.data != null && w.data!.trim().isEmpty);
-      expect(blank, findsNothing, reason: 'an empty pill was rendered');
+      expect(blank, findsNothing, reason: 'an empty row was rendered');
     });
 
     test('a name-only scheme is classed as sparse', () {
@@ -135,6 +149,43 @@ void main() {
       expect(find.text('Some Mission'), findsOneWidget);
       expect(find.textContaining('Only a brief record exists'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('UPSC relevance presentation', () {
+    test('lifts a GS paper prefix out of the prose', () {
+      final r = SchemeDetailSheet.splitRelevance(
+        'GS-II — Government policies and interventions. Expect questions.',
+      );
+      expect(r.paper, 'GS-II');
+      expect(r.rest, 'Government policies and interventions. Expect questions.');
+    });
+
+    test('handles a combined paper label', () {
+      expect(
+        SchemeDetailSheet.splitRelevance('GS-I / GS-II — Role of women.').paper,
+        'GS-I / GS-II',
+      );
+    });
+
+    test('leaves prose alone when it does not lead with a paper', () {
+      // The embedded content writes "GS-II welfare delivery and GS-III ..." with
+      // no separator; splitting that would mangle it.
+      const text = 'GS-II welfare delivery and GS-III agricultural support.';
+      final r = SchemeDetailSheet.splitRelevance(text);
+      expect(r.paper, isNull);
+      expect(r.rest, text);
+    });
+
+    testWidgets('shows the paper as a badge when one is present',
+        (tester) async {
+      await _pumpSheet(tester, {
+        'name': 'X Yojana',
+        'description': 'Body',
+        'upscRelevance': 'GS-III — Inclusive growth. Expect questions.',
+      });
+      expect(find.text('GS-III'), findsOneWidget);
+      expect(find.text('Inclusive growth. Expect questions.'), findsOneWidget);
     });
   });
 
