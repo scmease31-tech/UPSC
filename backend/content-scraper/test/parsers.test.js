@@ -5,7 +5,7 @@ import { classifyPaper, parsePrelimsPaper, parseMainsPaper } from '../upsc-paper
 import { classify as classifyUpload } from '../inbox-ingest.js';
 import { parsePyqBlock } from '../scrapers.js';
 import { restructure, isStructured } from '../restructure.js';
-import { generateDailyQuiz, generateFlashcards, generateKeyFacts } from '../generators.js';
+import { generateDailyQuiz, generateFlashcards, generateKeyFacts, generateSchemes } from '../generators.js';
 
 const base = 'https://www.upsc.gov.in/sites/default/files/';
 
@@ -424,4 +424,111 @@ test('daily news quiz handles sparse publication days without throwing', () => {
   const sparse = generateDailyQuiz([{ ...sampleArticle, id: 'only-one' }], '2026-09-20');
   assert.ok(Array.isArray(sparse));
   assert.ok(sparse.length <= 10);
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Government schemes
+//
+// The app's detail sheet reads detailedDescription, keyFeatures, ministry and
+// upscRelevance. generateSchemes used to set none of them, so every
+// scraper-derived scheme opened to a near-empty sheet.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const schemeArticle = {
+  id: 'art-scheme-1',
+  title: 'Cabinet approves PM Vishwakarma Yojana for traditional artisans',
+  summary:
+    'The Union Cabinet approved the PM Vishwakarma Yojana, a credit and skilling package for traditional artisans and craftspeople.',
+  content: [
+    'The Union Cabinet has approved the PM Vishwakarma Yojana, implemented by the Ministry of Micro, Small and Medium Enterprises.',
+    'PM Vishwakarma Yojana provides collateral-free credit of up to 3 lakh rupees in two tranches to registered artisans.',
+    'Under PM Vishwakarma Yojana, beneficiaries receive a stipend of 500 rupees per day during skill training.',
+    'The Ministry of Micro, Small and Medium Enterprises will run the scheme across 18 traditional trades.',
+    'Officials said the scheme has been in the news recently and is widely discussed.',
+  ].join(' '),
+  publishedDate: '2026-09-18',
+  categoryTags: ['Economy'],
+  governmentScheme: 'PM Vishwakarma Yojana',
+};
+
+test('derived schemes carry the fields the detail sheet renders', () => {
+  const schemes = generateSchemes([schemeArticle]);
+  const scheme = schemes.find((s) => /Vishwakarma/i.test(s.name));
+  assert.ok(scheme, 'the scheme was not detected');
+
+  for (const field of ['detailedDescription', 'keyFeatures', 'upscRelevance', 'ministry']) {
+    assert.ok(field in scheme, `missing field: ${field}`);
+  }
+  assert.ok(scheme.detailedDescription.length > scheme.description.length / 2);
+  assert.ok(scheme.upscRelevance.length > 0);
+});
+
+test('the ministry is read from the article, never guessed', () => {
+  const [scheme] = generateSchemes([schemeArticle]).filter((s) =>
+    /Vishwakarma/i.test(s.name)
+  );
+  assert.equal(scheme.ministry, 'Ministry of Micro, Small and Medium Enterprises');
+
+  // No ministry named anywhere → blank, not a plausible-looking guess. Which
+  // ministry runs a scheme is examinable; a wrong answer is worse than none.
+  const noMinistry = generateSchemes([
+    {
+      ...schemeArticle,
+      content:
+        'PM Vishwakarma Yojana provides collateral-free credit of up to 3 lakh rupees to 1000 artisans.',
+    },
+  ]).find((s) => /Vishwakarma/i.test(s.name));
+  assert.equal(noMinistry.ministry, '');
+});
+
+test('key features are concrete and drop narrative filler', () => {
+  const scheme = generateSchemes([schemeArticle]).find((s) =>
+    /Vishwakarma/i.test(s.name)
+  );
+  assert.ok(scheme.keyFeatures.length > 0, 'no key features extracted');
+  assert.ok(scheme.keyFeatures.length <= 4);
+  // Every bullet must mention the scheme and carry a checkable figure.
+  for (const f of scheme.keyFeatures) {
+    assert.match(f.toLowerCase(), /vishwakarma/);
+    assert.match(f, /\d/);
+  }
+  // "has been in the news recently" is filler and must not become a feature.
+  assert.ok(!scheme.keyFeatures.some((f) => /in the news recently/i.test(f)));
+});
+
+test('upscRelevance states syllabus mapping without inventing outcomes', () => {
+  const scheme = generateSchemes([schemeArticle]).find((s) =>
+    /Vishwakarma/i.test(s.name)
+  );
+  assert.match(scheme.upscRelevance, /GS-/);
+  assert.match(scheme.upscRelevance, /Ministry of Micro, Small and Medium Enterprises/);
+  // No claims about success, coverage or impact.
+  assert.ok(!/successful|most effective|best scheme|will eradicate/i.test(scheme.upscRelevance));
+});
+
+test('a scheme with no usable detail still produces valid fields', () => {
+  const thin = generateSchemes([
+    {
+      id: 'art-thin',
+      title: 'Officials review the Sagarmala Mission',
+      summary: 'A short note.',
+      content: 'Officials reviewed the Sagarmala Mission this week.',
+      publishedDate: '2026-09-18',
+      categoryTags: ['Infrastructure'],
+    },
+  ]).find((s) => /Sagarmala/i.test(s.name));
+
+  assert.ok(thin, 'the scheme was not detected');
+  assert.equal(typeof thin.detailedDescription, 'string');
+  assert.ok(Array.isArray(thin.keyFeatures));
+  assert.equal(typeof thin.ministry, 'string');
+  // Relevance is always present because it comes from the sector mapping.
+  assert.match(thin.upscRelevance, /GS-/);
+});
+
+test('scheme generation stays deterministic across runs', () => {
+  const a = generateSchemes([schemeArticle]);
+  const b = generateSchemes([schemeArticle]);
+  assert.deepEqual(a, b);
 });

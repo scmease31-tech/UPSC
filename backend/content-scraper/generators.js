@@ -356,6 +356,132 @@ function acronym(name) {
 }
 
 /**
+ * The administering body, read out of the article text.
+ *
+ * Only ever reports a ministry the source actually names. Guessing one from the
+ * sector would be worse than leaving it blank: "which ministry runs this" is
+ * examinable, and a plausible-looking wrong answer is what a reader would
+ * memorise.
+ */
+// Ministry names carry commas and conjunctions ("Ministry of Micro, Small and
+// Medium Enterprises"), so the continuation allows ", ", " and ", " & " and a
+// plain space. A lowercase word ends the match, which is what stops it running
+// into the rest of the sentence.
+const MINISTRY_RE =
+  /\b(Ministry|Department)\s+of\s+([A-Z][A-Za-z&'-]*(?:(?:,\s+|\s+and\s+|\s+&\s+|\s+of\s+|\s+)[A-Z][A-Za-z&'-]*){0,6})/g;
+
+function findMinistry(text) {
+  if (!text) return '';
+  MINISTRY_RE.lastIndex = 0;
+  const counts = new Map();
+  let m;
+  while ((m = MINISTRY_RE.exec(text)) !== null) {
+    const name = clean(`${m[1]} of ${m[2]}`)
+        .replace(/[,\s]+(and|of|&)$/i, '')
+        .replace(/[,\s]+$/, '');
+    if (name.length > 80) continue;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  if (counts.size === 0) return '';
+  // The most frequently named body wins; ties go to the longer, more specific
+  // name ("Ministry of Health and Family Welfare" over "Ministry of Health").
+  return [...counts.entries()].sort(
+    (a, b) => b[1] - a[1] || b[0].length - a[0].length
+  )[0][0];
+}
+
+/**
+ * Which GS paper a sector belongs to. This is syllabus mapping, not a claim
+ * about the scheme, so it is safe to state without the article saying it.
+ */
+const SECTOR_PAPER = {
+  Health: 'GS-II — Issues relating to development and management of Social Sector/Services (Health)',
+  Agriculture: 'GS-III — Issues related to direct and indirect farm subsidies, agricultural marketing',
+  Education: 'GS-II — Issues relating to development and management of Social Sector/Services (Education)',
+  'Women & Child': 'GS-I / GS-II — Role of women, and welfare schemes for vulnerable sections',
+  Rural: 'GS-II — Welfare schemes for vulnerable sections and rural development',
+  Financial: 'GS-III — Inclusive growth, mobilisation of resources and financial inclusion',
+  Infrastructure: 'GS-III — Infrastructure: energy, ports, roads, airports and railways',
+  Energy: 'GS-III — Infrastructure and energy; conservation and environmental impact',
+  Governance: 'GS-II — Government policies and interventions for development in various sectors',
+};
+
+/**
+ * A short note on why the scheme matters for the exam. Built only from the
+ * sector mapping, the administering body and the launch year — all of which are
+ * either syllabus facts or values read from the source. It deliberately makes no
+ * claim about outcomes or scale.
+ */
+function schemeRelevance({ sector, ministry, year }) {
+  const paper = SECTOR_PAPER[sector] || SECTOR_PAPER.Governance;
+  const parts = [paper + '.'];
+  if (ministry && year) {
+    parts.push(`Administered by the ${ministry}; appeared in coverage from ${year}.`);
+  } else if (ministry) {
+    parts.push(`Administered by the ${ministry}.`);
+  } else if (year) {
+    parts.push(`Appeared in coverage from ${year}.`);
+  }
+  parts.push(
+    'Expect questions pairing the scheme with its ministry, objective and target group.'
+  );
+  return parts.join(' ');
+}
+
+/**
+ * A real quantity, date or legal reference — the kind of detail worth revising.
+ * Unlike FACT_SIGNAL this does NOT treat "Yojana"/"Mission"/"launched" as
+ * signals, because every candidate sentence already names the scheme.
+ */
+const SCHEME_FIGURE =
+  /(\b\d{4}\b|\b\d+(?:\.\d+)?\s*(?:%|per ?cent|crore|lakh|billion|million|km|GW|MW|tonnes?|rupees?)\b|\bRs\.?\s*\d|\bArticle\s+\d+|\bSection\s+\d+|\b\d+\s+(?:trades|districts|states|villages|beneficiaries|artisans|families|years|days|months|tranches)\b)/i;
+
+/**
+ * Concrete, checkable sentences about the scheme, pulled from the article.
+ *
+ * Reuses the key-fact signal (figures, years, Articles, targets) so the bullets
+ * are the kind of detail worth revising rather than narrative filler. Returns []
+ * when the source has nothing specific — the app omits the section entirely
+ * rather than showing an empty heading.
+ */
+function schemeFeatures(text, name, { limit = 4 } = {}) {
+  if (!text || !name) return [];
+  const lower = name.toLowerCase();
+  const seen = new Set();
+  const out = [];
+  for (const raw of text.split(/(?<=[.!?])\s+/)) {
+    const s = clean(raw);
+    if (s.length < 40 || s.length > 240) continue;
+    if (!s.toLowerCase().includes(lower)) continue;
+    // SCHEME_FIGURE rather than FACT_SIGNAL: FACT_SIGNAL counts "Yojana" and
+    // "Mission" as signals, which every one of these sentences contains by
+    // definition, so it would promote "Cabinet has approved the X Yojana" to a
+    // key feature. Require an actual figure, date or legal reference.
+    if (!SCHEME_FIGURE.test(s) || NOT_A_FACT.test(s)) continue;
+    const key = s.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
+ * A fuller body for the detail sheet: the sentences around the scheme mention,
+ * rather than the single sentence used on the card.
+ */
+function schemeDetail(text, name, { sentences = 3 } = {}) {
+  if (!text || !name) return '';
+  const all = text.split(/(?<=[.!?])\s+/).map(clean).filter(Boolean);
+  const lower = name.toLowerCase();
+  const at = all.findIndex((s) => s.toLowerCase().includes(lower));
+  if (at === -1) return '';
+  const picked = all.slice(at, at + sentences).join(' ');
+  return picked.length > 900 ? picked.slice(0, 900).trim() : picked;
+}
+
+/**
  * Detect government schemes mentioned across articles and build `govtSchemes`
  * docs. Uses the explicit `governmentScheme` field when present, plus pattern
  * matching on title/content.
@@ -413,6 +539,11 @@ export function generateSchemes(articles) {
     if (byName.has(key)) return;
 
     const context = `${article.title} ${article.summary}`;
+    const body = `${article.title}\n${article.summary || ''}\n${article.content || ''}`;
+    const sector = guessSector(context);
+    const year = String(new Date(article.publishedDate || Date.now()).getFullYear());
+    const ministry = findMinistry(body);
+
     byName.set(key, {
       id: hashId('gs', name),
       name,
@@ -420,8 +551,16 @@ export function generateSchemes(articles) {
       description:
         findExampleSentence(article.content, name) ||
         clean(article.summary).slice(0, 220),
-      sector: guessSector(context),
-      year: String(new Date(article.publishedDate || Date.now()).getFullYear()),
+      // The detail sheet reads detailedDescription / keyFeatures /
+      // upscRelevance. Leaving them unset is what made every scraper-derived
+      // scheme open to a near-empty sheet.
+      detailedDescription:
+        schemeDetail(article.content, name) || clean(article.summary),
+      keyFeatures: schemeFeatures(article.content, name),
+      upscRelevance: schemeRelevance({ sector, ministry, year }),
+      ministry,
+      sector,
+      year,
       iconName: '',
       colorHex: '',
     });

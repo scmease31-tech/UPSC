@@ -57,11 +57,27 @@ class UpdateConfig {
   /// the APK at an off-list host is rejected with a security error — this is
   /// what stops a compromised or spoofed manifest from redirecting the download
   /// to an attacker-controlled binary.
+  ///
+  /// Deliberately ONE origin: the project's own Pages site, which is where
+  /// publish-pages.yml puts the signed APK and its manifest together in a single
+  /// commit. github.com, objects.githubusercontent.com and
+  /// release-assets.githubusercontent.com used to be listed as well, which meant
+  /// a manifest could legitimately send the updater to a repository release
+  /// asset. Those are removed on purpose:
+  ///
+  ///   • Users are never sent to the repository to fetch a build. The APK the
+  ///     app installs is the same file the download link serves, published as
+  ///     one atomic unit with the manifest that describes it.
+  ///   • Release assets are built per-ABI with a lower versionCode and are NOT
+  ///     the binary the updater manages, so installing one from here would
+  ///     desync a device from the update channel.
+  ///   • A narrower allowlist is a smaller trust surface. Nothing in the app
+  ///     needs those hosts.
+  ///
+  /// Adding a host here widens what a spoofed manifest can reach. Do not add one
+  /// without a reason that survives the two points above.
   static const List<String> allowedOrigins = <String>[
     'https://scmease31-tech.github.io',
-    'https://github.com',
-    'https://objects.githubusercontent.com',
-    'https://release-assets.githubusercontent.com',
   ];
 
   /// Returns true when [url] is an absolute HTTPS URL whose origin
