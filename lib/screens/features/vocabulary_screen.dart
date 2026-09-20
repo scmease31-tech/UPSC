@@ -30,7 +30,6 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
   String _searchQuery = '';
   List<Map<String, dynamic>> _words = [];
   bool _loading = true;
-  bool _hasError = false;
 
   static const _wordCategories = [
     'All', 'Governance', 'Economy', 'Diplomacy', 'Environment',
@@ -66,13 +65,13 @@ class _VocabularyBuilderScreenState extends State<VocabularyBuilderScreen> {
         final validIds = words.map((w) => w['id'] as String? ?? w['word'] as String? ?? '').toSet();
         _learnedWords.retainWhere(validIds.contains);
         _bookmarkedWords.retainWhere(validIds.contains);
-        setState(() { _words = words; _loading = false; _hasError = false; });
+        setState(() { _words = words; _loading = false; });
       }
     } catch (e) {
       if (mounted) {
         // Fall back to embedded data on error
         final words = VocabularyData.words.map((w) => Map<String, dynamic>.from(w)).toList();
-        setState(() { _words = words; _loading = false; _hasError = false; });
+        setState(() { _words = words; _loading = false; });
       }
     }
   }

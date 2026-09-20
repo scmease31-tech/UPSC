@@ -7,6 +7,7 @@ import '../config/app_fonts.dart';
 import '../services/firebase_services.dart';
 import '../config/theme.dart';
 import '../services/notification_service.dart';
+import '../design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// Redesigned Splash Screen — Pastel gradient background with glassmorphic
@@ -331,7 +332,7 @@ class _SplashScreenState extends State<SplashScreen>
                     },
                   ),
 
-                  const SizedBox(height: 44),
+                  const SizedBox(height: FsSpace.huge),
 
                   // Title with slide
                   SlideTransition(
@@ -351,7 +352,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: FsSpace.md),
 
                   // Shimmer tagline
                   FadeTransition(
@@ -406,7 +407,7 @@ class _SplashScreenState extends State<SplashScreen>
                     SizedBox(
                       width: 200,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(FsRadii.sm),
                         child: LinearProgressIndicator(
                           backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.12),
                           valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
@@ -414,7 +415,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: FsSpace.lg),
                     Text(
                       'Preparing your study dashboard...',
                       style: AppFonts.inter(
@@ -435,7 +436,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: FadeTransition(
                 opacity: _loaderFade,
                 child: Text(
-                  'v1.5.1',
+                  'v1.6.0',
                   textAlign: TextAlign.center,
                   style: AppFonts.inter(
                     fontSize: 11,

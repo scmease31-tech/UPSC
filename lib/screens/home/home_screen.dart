@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../config/theme.dart';
+import '../../design_system/frosted_scholar.dart';
 import '../../config/app_images.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/articles_provider.dart';
@@ -55,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   // ── Responsive helpers ──
-  double _hPad(double w) => w < 340 ? 12 : (w < 400 ? 16 : 20);
+  double _hPad(double w) => w < 340 ? FsSpace.md : (w < 400 ? FsSpace.lg : FsSpace.xl);
   double _sf(double w, double base) {
     if (w < 340) return base - 2;
     if (w < 380) return base - 1;
@@ -162,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               children: [
                 // ── Welcome Header ──
                 _buildWebHeader(context, greeting, firstName, now, dark),
-                const SizedBox(height: 24),
+                const SizedBox(height: FsSpace.xxl),
 
                 // ── Row 1: Progress + Stats ──
                 if (isWide)
@@ -170,20 +171,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(flex: 3, child: _buildWebProgressCard(context, progress, dark)),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: FsSpace.lg),
                       Expanded(flex: 2, child: _buildWebStatsColumn(context, progress, articles, dark)),
                     ],
                   )
                 else ...[
                   _buildWebProgressCard(context, progress, dark),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: FsSpace.lg),
                   _buildWebStatsRow(context, progress, articles),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: FsSpace.xxl),
 
                 // ── Quick Actions (wider grid) ──
                 _buildWebQuickActions(context, dark),
-                const SizedBox(height: 24),
+                const SizedBox(height: FsSpace.xxl),
 
                 // ── Row 2: Trending + Sidebar ──
                 if (isWide)
@@ -191,20 +192,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(flex: 3, child: _buildWebTrending(context, articles, dark)),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: FsSpace.lg),
                       Expanded(flex: 2, child: _buildWebSidebar(context, progress, dark)),
                     ],
                   )
                 else ...[
                   _buildWebTrending(context, articles, dark),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: FsSpace.xxl),
                   _buildWebSidebar(context, progress, dark),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: FsSpace.xxl),
 
                 // ── Study Tools Grid (4-6 columns) ──
                 _buildWebStudyTools(context, dark),
-                const SizedBox(height: 24),
+                const SizedBox(height: FsSpace.xxl),
 
                 // ── Weekly Progress + Exam Countdown ──
                 if (isWide)
@@ -212,16 +213,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(child: _buildWeeklyProgress(context, progress)),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: FsSpace.lg),
                       Expanded(child: _buildExamCountdown(context, progress)),
                     ],
                   )
                 else ...[
                   _buildWeeklyProgress(context, progress),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: FsSpace.lg),
                   _buildExamCountdown(context, progress),
                 ],
-                const SizedBox(height: 32),
+                const SizedBox(height: FsSpace.huge),
               ],
             ),
           ),
@@ -246,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: FsSpace.xxs),
               Text(
                 DateFormat('EEEE, d MMMM yyyy').format(now),
                 style: AppFonts.inter(
@@ -273,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(FsRadii.lg),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF0D1B2A).withValues(alpha: 0.2),
@@ -292,30 +293,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(FsRadii.lg),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.rocket_launch_rounded, size: 14, color: Colors.white70),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: FsSpace.xxs),
                       Text("Today's Mission", style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white70)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: FsSpace.lg),
                 Text(
                   '${p.articlesReadToday} of 5 Tasks Completed',
                   style: AppFonts.plusJakartaSans(fontSize: 22, color: Colors.white, fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: FsSpace.xs),
                 Text(
                   completionPct >= 100 ? 'All done! Great job today!' : 'Keep pushing — every task counts!',
                   style: AppFonts.inter(fontSize: 14, color: Colors.white60),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: FsSpace.lg),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(FsRadii.sm),
                   child: LinearProgressIndicator(
                     value: completion,
                     minHeight: 8,
@@ -326,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ],
             ),
           ),
-          const SizedBox(width: 32),
+          const SizedBox(width: FsSpace.huge),
           DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -355,9 +356,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Column(
       children: [
         _webStatCard(Icons.local_fire_department_rounded, '${p.currentStreak}', 'Day Streak', [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)], dark),
-        const SizedBox(height: 12),
+        const SizedBox(height: FsSpace.md),
         _webStatCard(Icons.emoji_events_rounded, '${p.quizzesThisWeek}', 'Quizzes/Week', [const Color(0xFFFBBF24), const Color(0xFFF59E0B)], dark),
-        const SizedBox(height: 12),
+        const SizedBox(height: FsSpace.md),
         _webStatCard(Icons.timer_rounded, '${p.studyMinutesThisWeek}m', 'Study/Week', [AppTheme.primaryColor, AppTheme.primaryLight], dark),
       ],
     );
@@ -368,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: dark ? const Color(0xFF161B22) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FsRadii.card),
         border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.05)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.15 : 0.03), blurRadius: 12, offset: const Offset(0, 2))],
       ),
@@ -379,12 +380,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             height: 44,
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: gradient),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(FsRadii.control),
               boxShadow: [BoxShadow(color: gradient[0].withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))],
             ),
             child: Icon(icon, color: Colors.white, size: 22),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: FsSpace.lg),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -402,9 +403,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Row(
       children: [
         Expanded(child: _webStatCard(Icons.local_fire_department_rounded, '${p.currentStreak}', 'Streak', [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)], dark)),
-        const SizedBox(width: 12),
+        const SizedBox(width: FsSpace.md),
         Expanded(child: _webStatCard(Icons.emoji_events_rounded, '${p.quizzesThisWeek}', 'Quizzes/wk', [const Color(0xFFFBBF24), const Color(0xFFF59E0B)], dark)),
-        const SizedBox(width: 12),
+        const SizedBox(width: FsSpace.md),
         Expanded(child: _webStatCard(Icons.timer_rounded, '${p.studyMinutesThisWeek}m', 'Study/wk', [AppTheme.primaryColor, AppTheme.primaryLight], dark)),
       ],
     );
@@ -424,7 +425,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Quick Actions', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-        const SizedBox(height: 16),
+        const SizedBox(height: FsSpace.lg),
         Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -449,20 +450,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: FsSpace.md),
         if (topArticles.isEmpty)
           Container(
             padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
               color: dark ? const Color(0xFF161B22) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(FsRadii.card),
               border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.05)),
             ),
             child: Center(
               child: Column(
                 children: [
                   Icon(Icons.article_outlined, size: 40, color: AppTheme.textT(context)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: FsSpace.xs),
                   Text('No articles yet', style: AppFonts.inter(color: AppTheme.textS(context))),
                 ],
               ),
@@ -470,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           )
         else
           ...topArticles.map((article) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: FsSpace.xs),
             child: ArticleCard(article: article),
           )),
       ],
@@ -500,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: dark ? const Color(0xFF161B22) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(FsRadii.card),
             border: Border.all(color: dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.05)),
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.1 : 0.03), blurRadius: 12)],
           ),
@@ -508,17 +509,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text("Today's Activity", style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-              const SizedBox(height: 16),
+              const SizedBox(height: FsSpace.lg),
               ...activities.map((a) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: FsSpace.md),
                 child: Row(
                   children: [
                     Container(
                       width: 38, height: 38,
-                      decoration: BoxDecoration(color: a.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: a.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(FsRadii.sm)),
                       child: Icon(a.icon, color: a.color, size: 18),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: FsSpace.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,7 +531,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: a.color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: a.color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(FsRadii.sm)),
                       child: Text(a.time, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: a.color)),
                     ),
                   ],
@@ -539,13 +540,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: FsSpace.lg),
         // Daily Insight
         Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(FsRadii.card),
             boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 6))],
           ),
           child: Column(
@@ -555,14 +556,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 children: [
                   Container(
                     width: 36, height: 36,
-                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(FsRadii.sm)),
                     child: const Icon(Icons.lightbulb_rounded, color: Colors.white, size: 18),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: FsSpace.md),
                   Text('Daily Insight', style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white70)),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: FsSpace.md),
               Text(todayInsight, style: AppFonts.inter(fontSize: 14, color: Colors.white, height: 1.5)),
             ],
           ),
@@ -593,7 +594,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Study Tools', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-        const SizedBox(height: 16),
+        const SizedBox(height: FsSpace.lg),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -647,13 +648,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             AppTheme.accentViolet.withValues(alpha: 0.08),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(FsRadii.lg),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(emoji, style: const TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: FsSpace.xxs),
                           Text(
                             DateFormat('EEEE, d MMM').format(now),
                             style: AppFonts.inter(
@@ -667,7 +668,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: FsSpace.xs),
                 Text(
                     '$greeting, $name!',
                     style: AppFonts.plusJakartaSans(
@@ -679,7 +680,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: FsSpace.xxs),
                 Text(
                   tagline,
                   style: AppFonts.inter(
@@ -693,7 +694,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: FsSpace.md),
           // Notification bell
           GlassCard(
             padding: const EdgeInsets.all(10),
@@ -701,7 +702,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Icon(Icons.notifications_outlined, color: AppTheme.textP(context), size: 22),
             onTap: () => _showNotificationsSheet(context),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: FsSpace.xs),
           // Profile avatar
           GestureDetector(
             onTap: () => _navigateToTab(4),
@@ -736,11 +737,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       padding: EdgeInsets.fromLTRB(hp, 10, hp, 6),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           boxShadow: AppTheme.cardShadow,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           child: Stack(
             children: [
               // Image and overlay stretch to whatever height the content needs,
@@ -794,14 +795,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(FsRadii.lg),
                                 border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(Icons.rocket_launch_rounded, size: 13, color: Colors.white),
-                                  const SizedBox(width: 5),
+                                  const SizedBox(width: FsSpace.xxs),
                                   Text(
                                     'Today\'s Mission',
                                     style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
@@ -809,21 +810,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: FsSpace.md),
                             Text(
                               '${p.articlesReadToday} of 5 Completed',
                               style: AppFonts.plusJakartaSans(fontSize: _sf(w, 15), color: Colors.white, fontWeight: FontWeight.w700),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: FsSpace.xxs),
                             Text(
                               completionPct >= 100 ? 'All done! Great job!' : 'Keep going, you\'re doing great!',
                               style: AppFonts.inter(fontSize: 11, color: Colors.white60),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: FsSpace.xs),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(6),
                               child: LinearProgressIndicator(
@@ -838,7 +839,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ],
                         ),
                       ),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: FsSpace.lg),
                       // Circular progress with glow
                       DecoratedBox(
                         decoration: BoxDecoration(
@@ -927,7 +928,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Padding(
       padding: EdgeInsets.fromLTRB(hp, 10, hp, 6),
       child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: FsSpacing.listItem,
         child: Row(
           children: [
             SizedBox(
@@ -939,12 +940,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     gradient: const LinearGradient(
                       colors: [AppTheme.errorRed, AppTheme.warningOrange],
                     ),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(FsRadii.sm),
                   ),
                   child: const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 18),
                 ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: FsSpace.md),
             Expanded(
               child: Text(message, style: AppFonts.inter(fontSize: _sf(w, 13), fontWeight: FontWeight.w600, color: AppTheme.textP(context), height: 1.4),
                 maxLines: 3,
@@ -970,7 +971,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(FsRadii.control),
               boxShadow: [
                 BoxShadow(
                   color: s.gradientColors[0].withValues(alpha: 0.3),
@@ -981,9 +982,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
             child: Icon(s.icon, color: Colors.white, size: 19),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: FsSpace.xs),
           Text(s.value, style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textP(context))),
-          const SizedBox(height: 2),
+          const SizedBox(height: FsSpace.xxs),
           Text(s.label, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context), fontWeight: FontWeight.w500)),
         ],
       ),
@@ -1011,7 +1012,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(title: 'Quick Actions', padding: EdgeInsets.zero),
-          const SizedBox(height: 14),
+          const SizedBox(height: FsSpace.md),
           Row(
             children: List.generate(actions.length, (i) {
               final a = actions[i];
@@ -1037,7 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
                           child: Icon(a.icon, color: a.color, size: w < 360 ? 22 : 26),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: FsSpace.xs),
                         Text(
                           a.label,
                           style: AppFonts.inter(
@@ -1086,7 +1087,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF667EEA).withValues(alpha: 0.3),
@@ -1106,12 +1107,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     width: 50, height: 50,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(FsRadii.control),
                     ),
                     child: const Icon(Icons.lightbulb_rounded, color: Colors.white, size: 22),
                   ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: FsSpace.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1120,7 +1121,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       'Daily Insight',
                       style: AppFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white70),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: FsSpace.xxs),
                     Text(
                       todayInsight,
                       style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white, height: 1.4),
@@ -1154,7 +1155,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(title: 'Today\'s Activity', padding: EdgeInsets.zero),
-          const SizedBox(height: 12),
+          const SizedBox(height: FsSpace.md),
           ...activities.map((a) => _activityRow(context, a)),
         ],
       ),
@@ -1163,26 +1164,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _activityRow(BuildContext context, _Activity a) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: FsSpace.xs),
       child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: FsSpacing.input,
         child: Row(
           children: [
             Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
                 color: a.color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(FsRadii.sm),
               ),
               child: Icon(a.icon, color: a.color, size: 18),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: FsSpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(a.title, style: AppFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context))),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: FsSpace.xxs),
                   Text(a.subtitle, style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
                 ],
               ),
@@ -1191,7 +1192,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: a.color.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(FsRadii.sm),
               ),
               child: Text(a.time, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: a.color)),
             ),
@@ -1221,7 +1222,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   width: 80, height: 80,
                   child: Icon(Icons.article_outlined, size: 40, color: AppTheme.textT(context)),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: FsSpace.xs),
                 Text('No articles yet', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textS(context))),
               ],
             ),
@@ -1240,7 +1241,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         // Horizontal scroll of remaining articles
         if (topArticles.length > 1) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: FsSpace.xs),
           SizedBox(
             // Tall enough for the card's cover + 2-line headline + 2-line deck
             // + meta row, so the rail never clips its contents.
@@ -1297,7 +1298,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(title: 'Study Tools', padding: EdgeInsets.zero),
-          const SizedBox(height: 12),
+          const SizedBox(height: FsSpace.md),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -1318,7 +1319,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: dark ? AppTheme.darkCardBg : Colors.white,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(FsRadii.card),
                     border: Border.all(color: t.color.withValues(alpha: 0.12)),
                     boxShadow: [
                       BoxShadow(
@@ -1339,11 +1340,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           color: dark
                               ? t.color.withValues(alpha: 0.15)
                               : t.color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(FsRadii.control),
                         ),
                         child: Icon(t.icon, color: t.color, size: 24),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: FsSpace.xs),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: Text(
@@ -1359,7 +1360,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: FsSpace.xxs),
                       Text(
                         t.subtitle,
                         style: AppFonts.inter(
@@ -1407,9 +1408,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             onAction: () => Navigator.pushNamed(context, '/weekly-progress'),
             padding: EdgeInsets.zero,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: FsSpace.md),
           GlassCard(
-            padding: const EdgeInsets.all(20),
+            padding: FsSpacing.screen,
             child: Column(
               children: [
                 // Summary row with progress bar
@@ -1419,7 +1420,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(FsRadii.lg),
                       ),
                       child: Text(
                         '$doneCount/7 days active',
@@ -1433,7 +1434,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: FsSpace.md),
                 // Linear progress bar
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
@@ -1446,7 +1447,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: FsSpace.lg),
                 // Day circles
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1504,7 +1505,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     : null,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: FsSpace.xs),
                         Text(
                           days[i],
                           style: AppFonts.inter(
@@ -1543,11 +1544,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Container(
         height: cardH,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           boxShadow: AppTheme.cardShadow,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -1586,11 +1587,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           Row(
                             children: [
                               Image.asset('assets/flaticon_pngs/target_mixed.png', width: 20, height: 20),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: FsSpace.xxs),
                               Flexible(child: Text('Prelims ${p.prelimsExamYear}', style: AppFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis)),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: FsSpace.xxs),
                           Text('Every day counts!', style: AppFonts.inter(fontSize: 12, color: Colors.white70), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ),
@@ -1599,7 +1600,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(FsRadii.control),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       child: Column(
@@ -1649,7 +1650,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(FsRadii.lg)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -1671,18 +1672,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                       Text('Notification Settings',
                           style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textP(ctx))),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: FsSpace.xxs),
                       Text('Manage your daily reminders',
                           style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(ctx))),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: FsSpace.lg),
                       _notifOption(ctx, Icons.article_rounded, 'Current Affairs', '8:00 AM', AppTheme.primaryColor),
                       _notifOption(ctx, Icons.style_rounded, 'Flashcard Reminder', '7:30 AM', AppTheme.accentViolet),
                       _notifOption(ctx, Icons.quiz_rounded, 'Quiz Reminder', '6:00 PM', AppTheme.warningOrange),
                       _notifOption(ctx, Icons.menu_book_rounded, 'Study Reminder', '9:00 PM', const Color(0xFFFF6B6B)),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: FsSpace.lg),
                       Row(
                         children: [
                           Expanded(
@@ -1698,13 +1699,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               },
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(color: AppTheme.errorRed.withValues(alpha: 0.5)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                               child: Text('Turn Off All', style: AppFonts.inter(fontWeight: FontWeight.w600, color: AppTheme.errorRed)),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: FsSpace.md),
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () async {
@@ -1719,7 +1720,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryColor,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.control)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                               child: Text('Enable All', style: AppFonts.inter(fontWeight: FontWeight.w600)),
@@ -1740,12 +1741,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _notifOption(BuildContext context, IconData icon, String title, String time, Color color) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: FsSpacing.listItem,
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(FsRadii.control),
         ),
         child: Row(
           children: [
@@ -1753,11 +1754,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               width: 38, height: 38,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(FsRadii.sm),
               ),
               child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: FsSpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1844,7 +1845,7 @@ class _WebActionChipState extends State<_WebActionChip> {
             color: _hovered
                 ? a.color.withValues(alpha: widget.dark ? 0.15 : 0.08)
                 : (widget.dark ? const Color(0xFF161B22) : Colors.white),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(FsRadii.control),
             border: Border.all(
               color: _hovered ? a.color.withValues(alpha: 0.3) : (widget.dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.06)),
             ),
@@ -1860,11 +1861,11 @@ class _WebActionChipState extends State<_WebActionChip> {
                 height: 36,
                 decoration: BoxDecoration(
                   color: a.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(FsRadii.sm),
                 ),
                 child: Icon(a.icon, color: a.color, size: 20),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: FsSpace.md),
               Text(
                 a.label.replaceAll('\n', ' '),
                 style: AppFonts.inter(
@@ -1906,7 +1907,7 @@ class _WebToolCardState extends State<_WebToolCard> {
           transform: _hovered ? (Matrix4.identity()..translate(0.0, -3.0)) : Matrix4.identity(),
           decoration: BoxDecoration(
             color: widget.dark ? const Color(0xFF161B22) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(FsRadii.card),
             border: Border.all(
               color: _hovered ? t.color.withValues(alpha: 0.3) : (widget.dark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.05)),
             ),
@@ -1926,11 +1927,11 @@ class _WebToolCardState extends State<_WebToolCard> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: t.color.withValues(alpha: widget.dark ? 0.15 : 0.1),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(FsRadii.control),
                 ),
                 child: Icon(t.icon, color: t.color, size: 24),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: FsSpace.md),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
@@ -1941,7 +1942,7 @@ class _WebToolCardState extends State<_WebToolCard> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: FsSpace.xxs),
               Text(
                 t.subtitle,
                 style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context)),

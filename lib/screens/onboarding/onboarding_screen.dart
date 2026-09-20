@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../services/firebase_services.dart';
 import '../../widgets/glass_widgets.dart';
+import '../../design_system/frosted_scholar.dart';
 
 const _apkDownloadUrl = 'https://scmease31-tech.github.io/UPSC/UPSC-Daily-Edge.apk';
 
@@ -1028,7 +1029,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                       ),
                     )),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: FsSpace.xxl),
                   // CTA button
                   ScaleTransition(
                     scale: _btnScale,
@@ -1048,7 +1049,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _pages[_page].accentColor,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FsRadii.lg)),
                           elevation: 0,
                         ),
                         child: Row(
@@ -1056,9 +1057,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                           children: [
                             Text(
                               isLast ? 'Get Started' : 'Continue',
-                              style: AppFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700),
+                              style: FsType.button(Colors.white).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: FsSpace.xs),
                             Icon(
                               isLast ? Icons.rocket_launch_rounded : Icons.arrow_forward_rounded,
                               size: 20,
@@ -1068,11 +1069,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: FsSpace.md),
                   if (!isLast)
                     TextButton(
                       onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                      child: Text('Skip', style: AppFonts.inter(fontSize: 14, color: Colors.black45)),
+                      child: Text('Skip', style: FsType.body(context).copyWith(color: Colors.black45)),
                     )
                   else
                     const SizedBox(height: 48),
@@ -1097,7 +1098,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 36),
+          padding: const EdgeInsets.symmetric(horizontal: FsSpace.huge),
           child: Column(
             children: [
               const Spacer(flex: 3),
@@ -1144,46 +1145,46 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                   );
                 },
               ),
-              const SizedBox(height: 44),
+              const SizedBox(height: FsSpace.huge),
               // Content card with subtle glass effect
               ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(FsRadii.lg),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  filter: ImageFilter.blur(sigmaX: FsBlur.card, sigmaY: FsBlur.card),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                    padding: const EdgeInsets.symmetric(horizontal: FsSpace.xxl, vertical: FsSpace.xxl),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(FsRadii.lg),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
                     ),
                     child: Column(
                       children: [
                         // Page number badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: FsSpacing.chip,
                           decoration: BoxDecoration(
                             color: p.accentColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(FsRadii.pill),
                             border: Border.all(color: p.accentColor.withValues(alpha: 0.15)),
                           ),
                           child: Text(
                             'Step ${index + 1} of ${_pages.length}',
-                            style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: p.accentColor),
+                            style: FsType.button(p.accentColor).copyWith(fontSize: 12),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: FsSpace.lg),
                         // Title
                         Text(
                           p.title,
                           style: AppFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textPrimary, height: 1.2, letterSpacing: -0.5),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: FsSpace.md),
                         // Subtitle
                         Text(
                           p.subtitle,
-                          style: AppFonts.inter(fontSize: 15, color: AppTheme.textSecondary, height: 1.65, letterSpacing: 0.1),
+                          style: FsType.body(context).copyWith(color: AppTheme.textSecondary, letterSpacing: 0.1),
                           textAlign: TextAlign.center,
                         ),
                       ],

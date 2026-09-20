@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/app_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/articles_provider.dart';
 import '../../providers/daily_progress_provider.dart';
 import '../../widgets/glass_widgets.dart';
-import '../../widgets/section_header.dart';
+import 'package:upsc_daily_edge/design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// ExploreScreen — Rebuilt: clean, professional, no emojis.
+/// Migrated to the Frosted Scholar design system (tokens + primitives).
 /// ──────────────────────────────────────────────────────────────────────────────
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -63,19 +63,19 @@ class _ExploreScreenState extends State<ExploreScreen>
 
               // Quick tools
               const SliverToBoxAdapter(
-                child: SectionHeader(title: 'Quick Tools', padding: EdgeInsets.fromLTRB(20, 20, 20, 10)),
+                child: FsSectionHeader(title: 'Quick Tools'),
               ),
               SliverToBoxAdapter(child: _buildToolGrid(context, dark)),
 
               // Browse by date
               const SliverToBoxAdapter(
-                child: SectionHeader(title: 'Browse by Date', padding: EdgeInsets.fromLTRB(20, 20, 20, 10)),
+                child: FsSectionHeader(title: 'Browse by Date'),
               ),
               SliverToBoxAdapter(child: _buildDateStrip(context, articles, dark)),
 
               // Syllabus overview
               const SliverToBoxAdapter(
-                child: SectionHeader(title: 'Syllabus Overview', padding: EdgeInsets.fromLTRB(20, 20, 20, 10)),
+                child: FsSectionHeader(title: 'Syllabus Overview'),
               ),
               SliverToBoxAdapter(child: _buildSyllabus(context, dark)),
 
@@ -91,7 +91,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xs, FsSpace.xs, FsSpace.lg, 0),
       child: Row(
         children: [
           IconButton(
@@ -101,27 +101,22 @@ class _ExploreScreenState extends State<ExploreScreen>
               Navigator.pop(context);
             },
           ),
-          Text(
-            'Explore',
-            style: AppFonts.plusJakartaSans(
-              fontSize: 24, fontWeight: FontWeight.w800, color: AppTheme.textP(context),
-            ),
-          ),
-          const SizedBox(width: 8),
-          const SizedBox(
+          Text('Explore', style: FsType.display(context)),
+          const SizedBox(width: FsSpace.xs),
+          SizedBox(
             width: 36, height: 36,
-            child: Icon(Icons.explore_rounded, color: AppTheme.primaryColor, size: 28),
+            child: Icon(Icons.explore_rounded, color: FsColors.accent(context), size: 28),
           ),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: FsSpacing.chip,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(20),
+              color: FsColors.accent(context).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(FsRadii.pill),
             ),
             child: Text(
               DateFormat('d MMM').format(DateTime.now()),
-              style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+              style: FsType.button(FsColors.accent(context)).copyWith(fontSize: 12),
             ),
           ),
         ],
@@ -133,7 +128,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   Widget _buildCountdownRow(BuildContext context, DailyProgressProvider p, bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      padding: const EdgeInsets.fromLTRB(FsSpace.lg, FsSpace.md, FsSpace.lg, 0),
       child: Row(
         children: [
           Expanded(child: _countdownCard(
@@ -143,7 +138,7 @@ class _ExploreScreenState extends State<ExploreScreen>
             gradient: [AppTheme.primaryColor, const Color(0xFF00E5FF)],
             icon: Icons.event_available_rounded,
           )),
-          const SizedBox(width: 12),
+          const SizedBox(width: FsSpace.md),
           Expanded(child: _countdownCard(
             context, dark,
             label: 'Mains ${p.mainsExamYear}',
@@ -164,9 +159,9 @@ class _ExploreScreenState extends State<ExploreScreen>
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: FsSpace.xl, horizontal: FsSpace.lg),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(FsRadii.lg),
         gradient: LinearGradient(
           begin: Alignment.topLeft, end: Alignment.bottomRight,
           colors: gradient.map((c) => c.withValues(alpha: dark ? 0.25 : 0.12)).toList(),
@@ -180,18 +175,20 @@ class _ExploreScreenState extends State<ExploreScreen>
             children: [
               Icon(icon, size: 16, color: gradient[0]),
               const SizedBox(width: 6),
-              Text(label, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
+              Text(label, style: FsType.caption(context).copyWith(
+                  fontWeight: FontWeight.w600, color: FsColors.textSecondary(context))),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: FsSpace.xs),
           ShaderMask(
             shaderCallback: (b) => LinearGradient(colors: gradient).createShader(b),
             child: Text(
               '$days',
-              style: AppFonts.plusJakartaSans(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white),
+              style: FsType.display(context).copyWith(fontSize: 40, color: Colors.white),
             ),
           ),
-          Text('days remaining', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+          Text('days remaining', style: FsType.label(context).copyWith(
+              color: FsColors.textSecondary(context))),
         ],
       ),
     );
@@ -210,14 +207,14 @@ class _ExploreScreenState extends State<ExploreScreen>
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: FsSpace.lg),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
+          mainAxisSpacing: FsSpace.md,
+          crossAxisSpacing: FsSpace.md,
           childAspectRatio: 0.88,
         ),
         itemCount: tools.length,
@@ -231,7 +228,7 @@ class _ExploreScreenState extends State<ExploreScreen>
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: dark ? AppTheme.darkCardBg : Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(FsRadii.card),
                 border: Border.all(color: t.color.withValues(alpha: 0.12)),
                 boxShadow: [
                   BoxShadow(
@@ -255,18 +252,17 @@ class _ExploreScreenState extends State<ExploreScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(FsRadii.control),
                     ),
                     child: Icon(t.icon, color: t.color, size: 24),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: FsSpace.xs),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: Text(
                       t.label,
-                      style: AppFonts.inter(
-                        fontSize: 11, fontWeight: FontWeight.w600,
-                        color: AppTheme.textP(context), height: 1.2,
+                      style: FsType.label(context).copyWith(
+                        color: FsColors.textPrimary(context), height: 1.2,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -288,11 +284,11 @@ class _ExploreScreenState extends State<ExploreScreen>
     final dates = articles.availableDates.take(7).toList();
     if (dates.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: FsSpace.lg),
         child: GlassCard(
-          padding: const EdgeInsets.symmetric(vertical: 24),
+          padding: const EdgeInsets.symmetric(vertical: FsSpace.xxl),
           child: Center(
-            child: Text('No dates available yet', style: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context))),
+            child: Text('No dates available yet', style: FsType.caption(context)),
           ),
         ),
       );
@@ -301,9 +297,9 @@ class _ExploreScreenState extends State<ExploreScreen>
       height: 72,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: FsSpace.lg),
         itemCount: dates.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, __) => const SizedBox(width: FsSpace.xs),
         itemBuilder: (context, i) {
           final d = dates[i];
           // Try to parse the date string for a nicer display
@@ -323,25 +319,29 @@ class _ExploreScreenState extends State<ExploreScreen>
               width: 64,
               decoration: BoxDecoration(
                 color: dark
-                    ? AppTheme.primaryColor.withValues(alpha: 0.08)
-                    : AppTheme.primaryColor.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.15)),
+                    ? FsColors.accent(context).withValues(alpha: 0.08)
+                    : FsColors.accent(context).withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(FsRadii.card),
+                border: Border.all(color: FsColors.accent(context).withValues(alpha: 0.15)),
               ),
               child: parsed != null
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(weekDay, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textS(context))),
+                        Text(weekDay, style: FsType.label(context).copyWith(
+                            fontWeight: FontWeight.w500, color: FsColors.textSecondary(context))),
                         const SizedBox(height: 2),
-                        Text(dayNum, style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.primaryColor)),
-                        Text(month, style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textS(context))),
+                        Text(dayNum, style: FsType.title(context).copyWith(
+                            fontSize: 20, fontWeight: FontWeight.w800, color: FsColors.accent(context))),
+                        Text(month, style: FsType.label(context).copyWith(
+                            color: FsColors.textSecondary(context))),
                       ],
                     )
                   : Center(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(d, style: AppFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.textP(context)),
+                        padding: const EdgeInsets.symmetric(horizontal: FsSpace.xs),
+                        child: Text(d, style: FsType.caption(context).copyWith(
+                            fontWeight: FontWeight.w500, color: FsColors.textPrimary(context)),
                             textAlign: TextAlign.center),
                       ),
                     ),
@@ -364,16 +364,16 @@ class _ExploreScreenState extends State<ExploreScreen>
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: FsSpace.lg),
       child: Column(
         children: items.map((item) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: FsSpace.xs),
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: FsSpacing.cardPadding,
               decoration: BoxDecoration(
                 color: dark ? AppTheme.darkCardBg : Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(FsRadii.card),
                 border: Border.all(color: item.color.withValues(alpha: 0.12)),
                 boxShadow: [
                   BoxShadow(
@@ -389,26 +389,24 @@ class _ExploreScreenState extends State<ExploreScreen>
                     width: 40, height: 40,
                     decoration: BoxDecoration(
                       color: item.color.withValues(alpha: dark ? 0.15 : 0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(FsRadii.control),
                     ),
                     child: Icon(item.icon, color: item.color, size: 20),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: FsSpace.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.tag, style: AppFonts.plusJakartaSans(
+                        Text(item.tag, style: FsType.subtitle(context).copyWith(
                           fontSize: 14, fontWeight: FontWeight.w700, color: item.color,
                         )),
                         const SizedBox(height: 2),
-                        Text(item.desc, style: AppFonts.inter(
-                          fontSize: 12, color: AppTheme.textS(context), height: 1.3,
-                        )),
+                        Text(item.desc, style: FsType.caption(context)),
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: AppTheme.textS(context), size: 20),
+                  Icon(Icons.chevron_right_rounded, color: FsColors.textSecondary(context), size: 20),
                 ],
               ),
             ),

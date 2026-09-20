@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = auth.userProfile;
     final dark = theme.isDark;
 
-    Widget content = CustomScrollView(
+    final Widget content = CustomScrollView(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -509,7 +508,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Version 1.5.1', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+            Text('Version 1.6.0', style: AppFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
             const SizedBox(height: 12),
             Text(
               'Your daily companion for UPSC preparation. Get curated current affairs, practice quizzes, flashcards, and track your progress — all in one app.',

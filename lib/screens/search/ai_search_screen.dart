@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../services/gemini_service.dart';
 import '../../services/web_search_service.dart';
+import 'package:upsc_daily_edge/design_system/frosted_scholar.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// AI Search Screen — Gemini-powered UPSC topic search engine.
@@ -271,18 +271,18 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildHeader(bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.lg, FsSpace.xl, FsSpace.xs),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(FsSpace.xs),
               decoration: BoxDecoration(
                 color: (dark ? Colors.white : Colors.black).withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(FsRadii.control),
               ),
-              child: Icon(Icons.arrow_back_rounded, color: AppTheme.textP(context), size: 22),
+              child: Icon(Icons.arrow_back_rounded, color: FsColors.textPrimary(context), size: 22),
             ),
           ),
           const SizedBox(width: 14),
@@ -292,11 +292,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               children: [
                 Text(
                   'AI Search Engine',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.display(context).copyWith(fontSize: 24),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -305,10 +301,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                           ? 'AI Enhanced • ${GeminiService.keyCount} key${GeminiService.keyCount > 1 ? 's' : ''} active'
                           : 'AI Enhanced • Add API key for full power')
                       : 'Web Search • No API key needed',
-                  style: AppFonts.inter(
-                    fontSize: 12,
-                    color: AppTheme.textS(context),
-                  ),
+                  style: FsType.caption(context),
                 ),
               ],
             ),
@@ -317,10 +310,10 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           GestureDetector(
             onTap: () => _showApiKeyDialog(),
             child: Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(FsSpace.xs),
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(FsRadii.control),
               ),
               child: const Icon(Icons.settings_rounded, color: AppTheme.primaryColor, size: 20),
             ),
@@ -337,9 +330,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
   Widget _buildApiKeyBanner(bool dark) {
     final keyCount = GeminiService.keyCount;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(FsSpace.lg),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -349,7 +342,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               const Color(0xFF448AFF).withValues(alpha: 0.08),
             ],
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           border: Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.25)),
         ),
         child: Column(
@@ -358,33 +351,28 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(FsSpace.xs),
                   decoration: BoxDecoration(
                     color: const Color(0xFF7C4DFF).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(FsRadii.control),
                   ),
                   child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF7C4DFF), size: 22),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: FsSpace.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         keyCount == 0 ? 'Enable AI Search' : 'Add More API Keys',
-                        style: AppFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textP(context),
-                        ),
+                        style: FsType.subtitle(context).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         keyCount == 0
                             ? 'Free • Takes 30 seconds • No credit card'
                             : '$keyCount/5 keys added • Add more for uninterrupted search',
-                        style: AppFonts.inter(
-                          fontSize: 11,
+                        style: FsType.label(context).copyWith(
                           fontWeight: FontWeight.w500,
                           color: AppTheme.primaryColor,
                         ),
@@ -394,23 +382,22 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 ),
                 if (keyCount > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: FsSpace.xs, vertical: 5),
                     decoration: BoxDecoration(
                       color: const Color(0xFF4CAF50).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(FsRadii.pill),
                     ),
                     child: Text(
                       '$keyCount/5',
-                      style: AppFonts.inter(
+                      style: FsType.button(const Color(0xFF4CAF50)).copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF4CAF50),
                       ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: FsSpace.lg),
             // Step-by-step guide
             if (keyCount == 0) ...[
               _buildSetupStep(1, 'Tap the button below to open Google AI Studio', Icons.open_in_new_rounded),
@@ -419,32 +406,28 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               _buildSetupStep(4, 'Copy the key and paste it here', Icons.content_paste_rounded),
             ] else ...[
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(FsSpace.md),
                 decoration: BoxDecoration(
                   color: const Color(0xFF4CAF50).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(FsRadii.control),
                   border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.info_outline_rounded, color: Color(0xFF4CAF50), size: 18),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: FsSpace.xs),
                     Expanded(
                       child: Text(
                         'Add up to 5 keys from different Google accounts. '
                         'When one key hits the rate limit, the app automatically switches to the next one — no interruptions!',
-                        style: AppFonts.inter(
-                          fontSize: 12,
-                          color: AppTheme.textS(context),
-                          height: 1.4,
-                        ),
+                        style: FsType.caption(context),
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: FsSpace.lg),
             Row(
               children: [
                 Expanded(
@@ -469,21 +452,17 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.open_in_new_rounded, color: Colors.white, size: 18),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: FsSpace.xs),
                           Text(
                             keyCount == 0 ? 'Get Free API Key' : 'Add Another Key',
-                            style: AppFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                            style: FsType.button(Colors.white).copyWith(fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: FsSpace.xs),
                 GestureDetector(
                   onTap: () => _showApiKeyDialog(),
                   child: Container(
@@ -497,11 +476,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     ),
                     child: Text(
                       keyCount == 0 ? 'I have a key' : 'Manage keys',
-                      style: AppFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textP(context),
-                      ),
+                      style: FsType.button(FsColors.textPrimary(context)).copyWith(fontSize: 13),
                     ),
                   ),
                 ),
@@ -515,7 +490,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildSetupStep(int step, String text, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: FsSpace.xs),
       child: Row(
         children: [
           Container(
@@ -523,30 +498,25 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             height: 26,
             decoration: BoxDecoration(
               color: const Color(0xFF7C4DFF).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(FsSpace.xs),
             ),
             child: Center(
               child: Text(
                 '$step',
-                style: AppFonts.inter(
+                style: FsType.button(const Color(0xFF7C4DFF)).copyWith(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF7C4DFF),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          Icon(icon, size: 16, color: AppTheme.textS(context)),
-          const SizedBox(width: 8),
+          const SizedBox(width: FsSpace.xs),
+          Icon(icon, size: 16, color: FsColors.textSecondary(context)),
+          const SizedBox(width: FsSpace.xs),
           Expanded(
             child: Text(
               text,
-              style: AppFonts.inter(
-                fontSize: 13,
-                color: AppTheme.textS(context),
-                height: 1.4,
-              ),
+              style: FsType.caption(context),
             ),
           ),
         ],
@@ -567,7 +537,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
           SnackBar(
             content: Text(
               'Link copied! Open browser and paste: aistudio.google.com/apikey',
-              style: AppFonts.inter(fontSize: 13),
+              style: FsType.caption(context),
             ),
             duration: const Duration(seconds: 5),
           ),
@@ -587,32 +557,26 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildSearchBar(bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.md, FsSpace.xl, FsSpace.xs),
       child: DecoratedBox(
         decoration: AppTheme.glassCard(context, radius: 18),
         child: Row(
           children: [
-            const SizedBox(width: 16),
+            const SizedBox(width: FsSpace.lg),
             const Icon(Icons.search_rounded, color: AppTheme.primaryColor, size: 24),
-            const SizedBox(width: 12),
+            const SizedBox(width: FsSpace.md),
             Expanded(
               child: TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
-                style: AppFonts.inter(
-                  fontSize: 15,
-                  color: AppTheme.textP(context),
-                ),
+                style: FsType.body(context),
                 decoration: InputDecoration(
                   hintText: 'Search any UPSC topic...',
-                  hintStyle: AppFonts.inter(
-                    fontSize: 15,
-                    color: AppTheme.textT(context),
-                  ),
+                  hintStyle: FsType.body(context).copyWith(color: FsColors.textTertiary(context)),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(vertical: FsSpace.lg),
                   fillColor: Colors.transparent,
                   filled: true,
                 ),
@@ -627,8 +591,8 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   setState(() => _searchResult = null);
                 },
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Icon(Icons.close_rounded, color: AppTheme.textT(context), size: 20),
+                  padding: const EdgeInsets.all(FsSpace.md),
+                  child: Icon(Icons.close_rounded, color: FsColors.textTertiary(context), size: 20),
                 ),
               ),
             // Search button
@@ -636,10 +600,10 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               onTap: () => _performSearch(_searchController.text),
               child: Container(
                 margin: const EdgeInsets.all(6),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(FsSpace.md),
                 decoration: BoxDecoration(
                   gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(FsRadii.control),
                   boxShadow: AppTheme.glowShadow,
                 ),
                 child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
@@ -657,16 +621,16 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildFilters(bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Row(
         children: [
           // Category dropdown
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: FsSpace.md, vertical: FsSpace.xxs),
               decoration: BoxDecoration(
                 color: (dark ? Colors.white : Colors.black).withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(FsRadii.control),
                 border: Border.all(
                   color: (dark ? Colors.white : Colors.black).withValues(alpha: 0.08),
                 ),
@@ -675,34 +639,34 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 child: DropdownButton<String>(
                   value: _selectedCategory ?? 'All',
                   isExpanded: true,
-                  icon: Icon(Icons.expand_more_rounded, color: AppTheme.textS(context), size: 20),
-                  style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context)),
+                  icon: Icon(Icons.expand_more_rounded, color: FsColors.textSecondary(context), size: 20),
+                  style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context)),
                   dropdownColor: AppTheme.card(context),
                   items: _categories.map((c) => DropdownMenuItem(
                     value: c,
-                    child: Text(c, style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context))),
+                    child: Text(c, style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context))),
                   )).toList(),
                   onChanged: (val) => setState(() => _selectedCategory = val),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: FsSpace.xs),
           // Exam type chips
           ...List.generate(_examTypes.length, (i) {
             final selected = (_selectedExamType ?? 'Both') == _examTypes[i];
             return Padding(
-              padding: const EdgeInsets.only(left: 4),
+              padding: const EdgeInsets.only(left: FsSpace.xxs),
               child: GestureDetector(
                 onTap: () => setState(() => _selectedExamType = _examTypes[i]),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  duration: FsMotion.base,
+                  padding: const EdgeInsets.symmetric(horizontal: FsSpace.md, vertical: FsSpace.xs),
                   decoration: BoxDecoration(
                     color: selected
                         ? AppTheme.primaryColor.withValues(alpha: 0.12)
                         : (dark ? Colors.white : Colors.black).withValues(alpha: 0.04),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(FsRadii.sm),
                     border: Border.all(
                       color: selected
                           ? AppTheme.primaryColor.withValues(alpha: 0.4)
@@ -711,10 +675,10 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   ),
                   child: Text(
                     _examTypes[i],
-                    style: AppFonts.inter(
+                    style: FsType.caption(context).copyWith(
                       fontSize: 12,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: selected ? AppTheme.primaryColor : AppTheme.textS(context),
+                      color: selected ? AppTheme.primaryColor : FsColors.textSecondary(context),
                     ),
                   ),
                 ),
@@ -732,36 +696,29 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildLoadingState(bool dark) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(FsSpace.xl),
       child: Column(
         children: [
-          const SizedBox(height: 40),
+          const SizedBox(height: FsSpace.lg),
           Lottie.asset(
             'assets/animations/searching.json',
             width: 120,
             height: 120,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: FsSpace.lg),
           Text(
             _searchStatusText.isNotEmpty ? _searchStatusText : 'Searching the web...',
-            style: AppFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textP(context),
-            ),
+            style: FsType.subtitle(context).copyWith(fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: FsSpace.xs),
           Text(
             _useAiEnhanced ? 'Fetching & analyzing with AI' : 'Fetching content from the web',
-            style: AppFonts.inter(
-              fontSize: 13,
-              color: AppTheme.textS(context),
-            ),
+            style: FsType.caption(context),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: FsSpace.xl),
           // Shimmer placeholders
           ...List.generate(3, (i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: FsSpace.md),
             child: Shimmer.fromColors(
               baseColor: dark ? Colors.white.withValues(alpha: 0.06) : Colors.grey.shade200,
               highlightColor: dark ? Colors.white.withValues(alpha: 0.12) : Colors.grey.shade100,
@@ -769,7 +726,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 height: 80 + (i * 20.0),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(FsRadii.card),
                 ),
               ),
             ),
@@ -866,45 +823,36 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     final sourceColor = isAiEnhanced ? AppTheme.primaryColor : const Color(0xFF26A69A);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.lg, FsSpace.xl, FsSpace.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: FsSpace.md, vertical: FsSpace.xxs),
                 decoration: BoxDecoration(
                   color: sourceColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(FsSpace.xs),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(sourceIcon, color: sourceColor, size: 14),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: FsSpace.xxs),
                     Text(
                       sourceLabel,
-                      style: AppFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.primaryColor,
-                      ),
+                      style: FsType.button(AppTheme.primaryColor).copyWith(fontSize: 11),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: FsSpace.md),
           Text(
             result['title'] ?? 'Search Result',
-            style: AppFonts.plusJakartaSans(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textP(context),
-              height: 1.3,
-            ),
+            style: FsType.display(context).copyWith(height: 1.3),
           ),
         ],
       ),
@@ -927,9 +875,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(FsRadii.lg),
         child: CachedNetworkImage(
           imageUrl: imageUrl,
           height: 180,
@@ -942,7 +890,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               height: 180,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(FsRadii.lg),
               ),
             ),
           ),
@@ -950,7 +898,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             height: 180,
             decoration: BoxDecoration(
               gradient: AppTheme.heroGradient,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(FsRadii.lg),
             ),
             child: Center(
               child: Icon(Icons.image_rounded, color: Colors.white.withValues(alpha: 0.5), size: 48),
@@ -970,9 +918,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     final syllabus = exam is Map ? (exam['syllabus_topic'] ?? '') : '';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: AppTheme.glassCard(context, radius: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -980,68 +928,52 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 const Icon(Icons.school_rounded, color: AppTheme.accentViolet, size: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Exam Relevance',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: FsSpace.md, vertical: FsSpace.xxs),
                   decoration: BoxDecoration(
                     color: _frequencyColor(frequency.toString()).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(FsSpace.xs),
                   ),
                   child: Text(
                     '$frequency Frequency',
-                    style: AppFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: _frequencyColor(frequency.toString()),
-                    ),
+                    style: FsType.button(_frequencyColor(frequency.toString())).copyWith(fontSize: 11),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: FsSpace.xs,
+              runSpacing: FsSpace.xs,
               children: papers.map<Widget>((p) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: FsSpace.md, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.accentViolet.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(FsRadii.sm),
                   border: Border.all(color: AppTheme.accentViolet.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   p.toString(),
-                  style: AppFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.accentViolet,
-                  ),
+                  style: FsType.button(AppTheme.accentViolet).copyWith(fontSize: 12),
                 ),
               )).toList(),
             ),
             if (syllabus.toString().isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: FsSpace.md),
               Row(
                 children: [
-                  Icon(Icons.bookmark_rounded, color: AppTheme.textT(context), size: 14),
+                  Icon(Icons.bookmark_rounded, color: FsColors.textTertiary(context), size: 14),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Syllabus: $syllabus',
-                      style: AppFonts.inter(
-                        fontSize: 12,
-                        color: AppTheme.textS(context),
-                        fontStyle: FontStyle.italic,
-                      ),
+                      style: FsType.caption(context).copyWith(fontStyle: FontStyle.italic),
                     ),
                   ),
                 ],
@@ -1055,9 +987,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildSummaryCard(Map<String, dynamic> result, bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -1065,7 +997,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               AppTheme.primaryColor.withValues(alpha: 0.02),
             ],
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.15)),
         ),
         child: Column(
@@ -1074,25 +1006,17 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 const Icon(Icons.summarize_rounded, color: AppTheme.primaryColor, size: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Quick Summary',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: FsSpace.md),
             Text(
               result['summary'] ?? '',
-              style: AppFonts.inter(
-                fontSize: 14,
-                color: AppTheme.textP(context),
-                height: 1.6,
-              ),
+              style: FsType.body(context).copyWith(fontSize: 14, height: 1.6),
             ),
           ],
         ),
@@ -1104,65 +1028,53 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     final points = (result['key_points'] as List<dynamic>).map((e) => e.toString()).toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: AppTheme.glassCard(context, radius: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.checklist_rounded, color: AppTheme.successGreen, size: 18),
-                const SizedBox(width: 8),
+                const Icon(Icons.checklist_rounded, color: FsColors.success, size: 18),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Key Points',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 Text(
                   '${points.length} points',
-                  style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context)),
+                  style: FsType.label(context),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             ...points.asMap().entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: FsSpace.md),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 24,
                     height: 24,
-                    margin: const EdgeInsets.only(right: 10),
+                    margin: const EdgeInsets.only(right: FsSpace.md),
                     decoration: BoxDecoration(
-                      color: AppTheme.successGreen.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      color: FsColors.success.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(FsSpace.xs),
                     ),
                     child: Center(
                       child: Text(
                         '${entry.key + 1}',
-                        style: AppFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.successGreen,
-                        ),
+                        style: FsType.button(FsColors.success).copyWith(fontSize: 11, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
                   Expanded(
                     child: Text(
                       entry.value,
-                      style: AppFonts.inter(
-                        fontSize: 13,
-                        color: AppTheme.textP(context),
-                        height: 1.5,
-                      ),
+                      style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context), height: 1.5),
                     ),
                   ),
                 ],
@@ -1176,9 +1088,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildDetailedExplanation(Map<String, dynamic> result, bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: AppTheme.glassCard(context, radius: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1186,25 +1098,17 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 const Icon(Icons.article_rounded, color: AppTheme.accentViolet, size: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Detailed Explanation',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             Text(
               result['detailed_explanation'] ?? '',
-              style: AppFonts.inter(
-                fontSize: 14,
-                color: AppTheme.textP(context),
-                height: 1.7,
-              ),
+              style: FsType.body(context).copyWith(fontSize: 14, height: 1.7),
             ),
           ],
         ),
@@ -1214,9 +1118,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildMnemonicCard(Map<String, dynamic> result, bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -1224,39 +1128,34 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               AppTheme.warmGold.withValues(alpha: 0.06),
             ],
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           border: Border.all(color: AppTheme.warmYellow.withValues(alpha: 0.3)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(FsSpace.xs),
               decoration: BoxDecoration(
                 color: AppTheme.warmYellow.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(FsRadii.control),
               ),
               child: const Icon(Icons.lightbulb_outline_rounded, color: AppTheme.warmYellow, size: 22),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: FsSpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Memory Aid (Mnemonic)',
-                    style: AppFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textP(context),
-                    ),
+                    style: FsType.subtitle(context).copyWith(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     result['mnemonic'] ?? '',
-                    style: AppFonts.inter(
-                      fontSize: 13,
-                      color: AppTheme.textP(context),
+                    style: FsType.caption(context).copyWith(
+                      color: FsColors.textPrimary(context),
                       height: 1.5,
                       fontStyle: FontStyle.italic,
                     ),
@@ -1274,9 +1173,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     final steps = (result['flowchart'] as List<dynamic>).map((e) => e.toString()).toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: AppTheme.glassCard(context, radius: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1284,18 +1183,14 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 const Icon(Icons.account_tree_rounded, color: AppTheme.primaryColor, size: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Flowchart / Process',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: FsSpace.lg),
             ...steps.asMap().entries.map((entry) {
               final isLast = entry.key == steps.length - 1;
               return Row(
@@ -1308,16 +1203,12 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         height: 28,
                         decoration: BoxDecoration(
                           gradient: AppTheme.primaryGradient,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(FsSpace.xs),
                         ),
                         child: Center(
                           child: Text(
                             '${entry.key + 1}',
-                            style: AppFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                            style: FsType.button(Colors.white).copyWith(fontSize: 12, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ),
@@ -1329,17 +1220,13 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         ),
                     ],
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: FsSpace.md),
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+                      padding: EdgeInsets.only(bottom: isLast ? 0 : FsSpace.lg),
                       child: Text(
                         entry.value,
-                        style: AppFonts.inter(
-                          fontSize: 13,
-                          color: AppTheme.textP(context),
-                          height: 1.5,
-                        ),
+                        style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context), height: 1.5),
                       ),
                     ),
                   ),
@@ -1356,9 +1243,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     final terms = result['important_terms'] as Map<String, dynamic>;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: AppTheme.glassCard(context, radius: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1366,54 +1253,42 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 const Icon(Icons.menu_book_rounded, color: AppTheme.accentRose, size: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Important Terms',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             ...terms.entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: FsSpace.md),
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(FsSpace.md),
                 decoration: BoxDecoration(
                   color: AppTheme.accentRose.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(FsRadii.control),
                   border: Border.all(color: AppTheme.accentRose.withValues(alpha: 0.1)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: FsSpace.xs, vertical: FsSpace.xxs),
                       decoration: BoxDecoration(
                         color: AppTheme.accentRose.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         entry.key,
-                        style: AppFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.accentRose,
-                        ),
+                        style: FsType.button(AppTheme.accentRose).copyWith(fontSize: 12, fontWeight: FontWeight.w700),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: FsSpace.md),
                     Expanded(
                       child: Text(
                         entry.value.toString(),
-                        style: AppFonts.inter(
-                          fontSize: 13,
-                          color: AppTheme.textP(context),
-                          height: 1.5,
-                        ),
+                        style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context), height: 1.5),
                       ),
                     ),
                   ],
@@ -1428,9 +1303,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildAnswerFrameworkCard(Map<String, dynamic> result, bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -1438,7 +1313,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               AppTheme.accentLavender.withValues(alpha: 0.04),
             ],
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           border: Border.all(color: AppTheme.accentViolet.withValues(alpha: 0.15)),
         ),
         child: Column(
@@ -1447,25 +1322,17 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 const Icon(Icons.edit_note_rounded, color: AppTheme.accentViolet, size: 20),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Mains Answer Framework',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: FsSpace.md),
             Text(
               result['answer_framework'] ?? '',
-              style: AppFonts.inter(
-                fontSize: 13,
-                color: AppTheme.textP(context),
-                height: 1.6,
-              ),
+              style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context), height: 1.6),
             ),
           ],
         ),
@@ -1477,43 +1344,35 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     final pyqs = (result['previous_year_questions'] as List<dynamic>).map((e) => e.toString()).toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: AppTheme.glassCard(context, radius: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.history_edu_rounded, color: AppTheme.warningOrange, size: 18),
-                const SizedBox(width: 8),
+                const Icon(Icons.history_edu_rounded, color: FsColors.warning, size: 18),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Previous Year Connections',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             ...pyqs.map((q) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: FsSpace.xs),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.arrow_right_rounded, color: AppTheme.warningOrange, size: 18),
-                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_right_rounded, color: FsColors.warning, size: 18),
+                  const SizedBox(width: FsSpace.xxs),
                   Expanded(
                     child: Text(
                       q,
-                      style: AppFonts.inter(
-                        fontSize: 13,
-                        color: AppTheme.textP(context),
-                        height: 1.5,
-                      ),
+                      style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context), height: 1.5),
                     ),
                   ),
                 ],
@@ -1529,9 +1388,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     final notes = (result['quick_revision_notes'] as List<dynamic>).map((e) => e.toString()).toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -1539,7 +1398,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               AppTheme.primaryColor.withValues(alpha: 0.04),
             ],
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           border: Border.all(color: AppTheme.mintGreen.withValues(alpha: 0.2)),
         ),
         child: Column(
@@ -1548,27 +1407,23 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 const Icon(Icons.flash_on_rounded, color: AppTheme.mintGreen, size: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Quick Revision Notes',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             ...notes.map((n) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: FsSpace.xs),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 6,
                     height: 6,
-                    margin: const EdgeInsets.only(top: 6, right: 10),
+                    margin: const EdgeInsets.only(top: 6, right: FsSpace.md),
                     decoration: BoxDecoration(
                       color: AppTheme.mintGreen,
                       borderRadius: BorderRadius.circular(3),
@@ -1577,11 +1432,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   Expanded(
                     child: Text(
                       n,
-                      style: AppFonts.inter(
-                        fontSize: 13,
-                        color: AppTheme.textP(context),
-                        height: 1.5,
-                      ),
+                      style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context), height: 1.5),
                     ),
                   ),
                 ],
@@ -1597,41 +1448,33 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     final topics = (result['related_topics'] as List<dynamic>).map((e) => e.toString()).toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Related Topics',
-            style: AppFonts.plusJakartaSans(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textP(context),
-            ),
+            style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: FsSpace.md),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: FsSpace.xs,
+            runSpacing: FsSpace.xs,
             children: topics.map((t) => GestureDetector(
               onTap: () {
                 _searchController.text = t;
                 _performSearch(t);
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: FsSpace.xs),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
+                  color: FsColors.accent(context).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(FsRadii.control),
+                  border: Border.all(color: FsColors.accent(context).withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   t,
-                  style: AppFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.primaryColor,
-                  ),
+                  style: FsType.button(FsColors.accent(context)).copyWith(fontSize: 12),
                 ),
               ),
             )).toList(),
@@ -1643,24 +1486,20 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildGenerateQuizButton(Map<String, dynamic> result, bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.lg, FsSpace.xl, FsSpace.xs),
       child: GestureDetector(
         onTap: () => _generateQuizFromResult(result),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: FsSpace.lg),
           decoration: AppTheme.gradientButton(),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.quiz_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
+              const SizedBox(width: FsSpace.md),
               Text(
                 'Generate Quiz on This Topic',
-                style: AppFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+                style: FsType.button(Colors.white).copyWith(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -1676,32 +1515,28 @@ class _AiSearchScreenState extends State<AiSearchScreen>
         message.toLowerCase().contains('exhausted');
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(FsSpace.xl),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(FsSpace.lg),
         decoration: BoxDecoration(
-          color: (isRateLimit ? Colors.amber : AppTheme.errorRed).withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: (isRateLimit ? Colors.amber : AppTheme.errorRed).withValues(alpha: 0.2)),
+          color: (isRateLimit ? Colors.amber : FsColors.danger).withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
+          border: Border.all(color: (isRateLimit ? Colors.amber : FsColors.danger).withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
             Icon(
               isRateLimit ? Icons.hourglass_top_rounded : Icons.error_outline_rounded,
-              color: isRateLimit ? Colors.amber[700] : AppTheme.errorRed,
+              color: isRateLimit ? Colors.amber[700] : FsColors.danger,
               size: 40,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppFonts.inter(
-                fontSize: 14,
-                color: AppTheme.textP(context),
-                height: 1.5,
-              ),
+              style: FsType.body(context).copyWith(fontSize: 14),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: FsSpace.lg),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1714,12 +1549,12 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: FsSpace.xxl, vertical: FsSpace.md),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF26A69A), Color(0xFF00897B)],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(FsRadii.control),
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFF26A69A).withValues(alpha: 0.3),
@@ -1732,39 +1567,31 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.refresh_rounded, color: Colors.white, size: 18),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: FsSpace.xs),
                         Text(
                           'Retry Now',
-                          style: AppFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
+                          style: FsType.button(Colors.white).copyWith(fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
                   ),
                 ),
                 if (isRateLimit && GeminiService.keyCount < 5) ...[
-                  const SizedBox(width: 10),
+                  const SizedBox(width: FsSpace.xs),
                   GestureDetector(
                     onTap: () => _showApiKeyDialog(),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: FsSpace.lg, vertical: FsSpace.md),
                       decoration: BoxDecoration(
                         color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(FsRadii.control),
                         border: Border.all(
                           color: dark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.1),
                         ),
                       ),
                       child: Text(
                         '+ Add Key',
-                        style: AppFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textP(context),
-                        ),
+                        style: FsType.button(FsColors.textPrimary(context)).copyWith(fontSize: 13),
                       ),
                     ),
                   ),
@@ -1783,28 +1610,24 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildTrendingTopics(bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.lg, FsSpace.xl, FsSpace.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Icon(Icons.trending_up_rounded, color: AppTheme.primaryColor, size: 20),
-              const SizedBox(width: 8),
+              const SizedBox(width: FsSpace.xs),
               Text(
                 'Trending UPSC Topics',
-                style: AppFonts.plusJakartaSans(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textP(context),
-                ),
+                style: FsType.title(context).copyWith(fontSize: 17),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: FsSpace.md),
           Wrap(
-            spacing: 8,
-            runSpacing: 10,
+            spacing: FsSpace.xs,
+            runSpacing: FsSpace.md,
             children: _trendingTopics.map((topic) {
               final cleanTopic = topic.replaceAll(RegExp(r'[^\w\s&]'), '').trim();
               return GestureDetector(
@@ -1813,14 +1636,13 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   _performSearch(cleanTopic);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: AppTheme.glassCard(context, radius: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: FsSpace.md),
+                  decoration: AppTheme.glassCard(context, radius: FsRadii.control),
                   child: Text(
                     topic,
-                    style: AppFonts.inter(
-                      fontSize: 13,
+                    style: FsType.caption(context).copyWith(
+                      color: FsColors.textPrimary(context),
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textP(context),
                     ),
                   ),
                 ),
@@ -1838,21 +1660,17 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildRecentSearches(bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.lg, FsSpace.xl, FsSpace.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.history_rounded, color: AppTheme.textS(context), size: 18),
-              const SizedBox(width: 8),
+              Icon(Icons.history_rounded, color: FsColors.textSecondary(context), size: 18),
+              const SizedBox(width: FsSpace.xs),
               Text(
                 'Recent Searches',
-                style: AppFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textP(context),
-                ),
+                style: FsType.subtitle(context),
               ),
               const Spacer(),
               GestureDetector(
@@ -1862,32 +1680,26 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 },
                 child: Text(
                   'Clear',
-                  style: AppFonts.inter(
-                    fontSize: 12,
-                    color: AppTheme.textT(context),
-                  ),
+                  style: FsType.caption(context).copyWith(color: FsColors.textTertiary(context)),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: FsSpace.md),
           ...(_recentSearches.take(5).map((s) => GestureDetector(
             onTap: () {
               _searchController.text = s;
               _performSearch(s);
             },
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: FsSpace.xs),
               child: Row(
                 children: [
-                  Icon(Icons.search_rounded, color: AppTheme.textT(context), size: 16),
-                  const SizedBox(width: 10),
+                  Icon(Icons.search_rounded, color: FsColors.textTertiary(context), size: 16),
+                  const SizedBox(width: FsSpace.md),
                   Text(
                     s,
-                    style: AppFonts.inter(
-                      fontSize: 14,
-                      color: AppTheme.textS(context),
-                    ),
+                    style: FsType.body(context).copyWith(fontSize: 14, color: FsColors.textSecondary(context)),
                   ),
                 ],
               ),
@@ -1915,26 +1727,22 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.lg, FsSpace.xl, FsSpace.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Explore by Subject',
-            style: AppFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textP(context),
-            ),
+            style: FsType.title(context).copyWith(fontSize: 17),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: FsSpace.md),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
+              crossAxisSpacing: FsSpace.md,
+              mainAxisSpacing: FsSpace.md,
               childAspectRatio: 2.5,
             ),
             itemCount: quickSearches.length,
@@ -1947,26 +1755,26 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   _performSearch(label);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: FsSpace.md, vertical: FsSpace.md),
                   decoration: AppTheme.glassCard(context, radius: 14),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(FsSpace.xs),
                         decoration: BoxDecoration(
                           color: (item['color'] as Color).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(FsRadii.sm),
                         ),
                         child: Icon(item['icon'] as IconData, color: item['color'] as Color, size: 18),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: FsSpace.xs),
                       Expanded(
                         child: Text(
                           item['label'] as String,
-                          style: AppFonts.inter(
+                          style: FsType.caption(context).copyWith(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textP(context),
+                            color: FsColors.textPrimary(context),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -1989,9 +1797,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildSearchModeToggle(bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xxs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(FsSpace.xxs),
         decoration: BoxDecoration(
           color: (dark ? Colors.white : Colors.black).withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(14),
@@ -2006,13 +1814,13 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               child: GestureDetector(
                 onTap: () => setState(() => _useAiEnhanced = false),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  duration: FsMotion.base,
+                  padding: const EdgeInsets.symmetric(vertical: FsSpace.md),
                   decoration: BoxDecoration(
                     color: !_useAiEnhanced
                         ? const Color(0xFF26A69A).withValues(alpha: 0.12)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(FsRadii.sm),
                     border: Border.all(
                       color: !_useAiEnhanced
                           ? const Color(0xFF26A69A).withValues(alpha: 0.3)
@@ -2025,28 +1833,27 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       Icon(
                         Icons.public_rounded,
                         size: 16,
-                        color: !_useAiEnhanced ? const Color(0xFF26A69A) : AppTheme.textT(context),
+                        color: !_useAiEnhanced ? const Color(0xFF26A69A) : FsColors.textTertiary(context),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'Web Search',
-                        style: AppFonts.inter(
-                          fontSize: 13,
+                        style: FsType.caption(context).copyWith(
                           fontWeight: !_useAiEnhanced ? FontWeight.w700 : FontWeight.w500,
-                          color: !_useAiEnhanced ? const Color(0xFF26A69A) : AppTheme.textS(context),
+                          color: !_useAiEnhanced ? const Color(0xFF26A69A) : FsColors.textSecondary(context),
                         ),
                       ),
                       if (!_useAiEnhanced) ...[
-                        const SizedBox(width: 4),
+                        const SizedBox(width: FsSpace.xxs),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
                             color: const Color(0xFF26A69A).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(FsSpace.xxs),
                           ),
                           child: Text(
                             'FREE',
-                            style: AppFonts.inter(
+                            style: FsType.label(context).copyWith(
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF26A69A),
@@ -2059,19 +1866,19 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 ),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: FsSpace.xxs),
             // AI Enhanced tab
             Expanded(
               child: GestureDetector(
                 onTap: () => setState(() => _useAiEnhanced = true),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  duration: FsMotion.base,
+                  padding: const EdgeInsets.symmetric(vertical: FsSpace.md),
                   decoration: BoxDecoration(
                     color: _useAiEnhanced
                         ? AppTheme.primaryColor.withValues(alpha: 0.12)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(FsRadii.sm),
                     border: Border.all(
                       color: _useAiEnhanced
                           ? AppTheme.primaryColor.withValues(alpha: 0.3)
@@ -2084,19 +1891,18 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       Icon(
                         Icons.auto_awesome_rounded,
                         size: 16,
-                        color: _useAiEnhanced ? AppTheme.primaryColor : AppTheme.textT(context),
+                        color: _useAiEnhanced ? AppTheme.primaryColor : FsColors.textTertiary(context),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'AI Enhanced',
-                        style: AppFonts.inter(
-                          fontSize: 13,
+                        style: FsType.caption(context).copyWith(
                           fontWeight: _useAiEnhanced ? FontWeight.w700 : FontWeight.w500,
-                          color: _useAiEnhanced ? AppTheme.primaryColor : AppTheme.textS(context),
+                          color: _useAiEnhanced ? AppTheme.primaryColor : FsColors.textSecondary(context),
                         ),
                       ),
                       if (!GeminiService.isConfigured && _useAiEnhanced) ...[
-                        const SizedBox(width: 4),
+                        const SizedBox(width: FsSpace.xxs),
                         Icon(Icons.warning_amber_rounded, size: 14, color: Colors.amber[700]),
                       ],
                     ],
@@ -2119,9 +1925,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
     if (sources.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.xs, FsSpace.xl, FsSpace.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: FsSpacing.cardPadding,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -2129,7 +1935,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               const Color(0xFF26A69A).withValues(alpha: 0.02),
             ],
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(FsRadii.lg),
           border: Border.all(color: const Color(0xFF26A69A).withValues(alpha: 0.15)),
         ),
         child: Column(
@@ -2138,23 +1944,19 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             Row(
               children: [
                 const Icon(Icons.link_rounded, color: Color(0xFF26A69A), size: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: FsSpace.xs),
                 Text(
                   'Sources (${sources.length})',
-                  style: AppFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textP(context),
-                  ),
+                  style: FsType.subtitle(context).copyWith(fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 Text(
                   'Tap to read full article',
-                  style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context)),
+                  style: FsType.label(context),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: FsSpace.md),
             ...sources.take(5).map<Widget>((source) {
               final s = source as Map<String, dynamic>;
               final title = s['title'] as String? ?? 'Source';
@@ -2165,11 +1967,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               return GestureDetector(
                 onTap: () => _openUrl(url),
                 child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: FsSpace.xs),
+                  padding: const EdgeInsets.all(FsSpace.md),
                   decoration: BoxDecoration(
                     color: (dark ? Colors.white : Colors.black).withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(FsRadii.control),
                     border: Border.all(
                       color: (dark ? Colors.white : Colors.black).withValues(alpha: 0.06),
                     ),
@@ -2181,7 +1983,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: const Color(0xFF26A69A).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(FsSpace.xs),
                         ),
                         child: Icon(
                           sourceName == 'Wikipedia' ? Icons.menu_book_rounded : Icons.language_rounded,
@@ -2189,15 +1991,14 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                           color: const Color(0xFF26A69A),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: FsSpace.md),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               title,
-                              style: AppFonts.inter(
-                                fontSize: 13,
+                              style: FsType.caption(context).copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFF26A69A),
                                 decoration: TextDecoration.underline,
@@ -2210,9 +2011,8 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                               const SizedBox(height: 3),
                               Text(
                                 desc,
-                                style: AppFonts.inter(
-                                  fontSize: 11,
-                                  color: AppTheme.textS(context),
+                                style: FsType.label(context).copyWith(
+                                  color: FsColors.textSecondary(context),
                                   height: 1.3,
                                 ),
                                 maxLines: 2,
@@ -2222,8 +2022,8 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Icon(Icons.open_in_new_rounded, size: 14, color: AppTheme.textT(context)),
+                      const SizedBox(width: FsSpace.xs),
+                      Icon(Icons.open_in_new_rounded, size: 14, color: FsColors.textTertiary(context)),
                     ],
                   ),
                 ),
@@ -2241,14 +2041,14 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Widget _buildEnhanceWithAiButton(Map<String, dynamic> result, bool dark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      padding: const EdgeInsets.fromLTRB(FsSpace.xl, FsSpace.md, FsSpace.xl, FsSpace.xxs),
       child: GestureDetector(
         onTap: () {
           setState(() => _useAiEnhanced = true);
           _performSearch(_searchController.text);
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: FsSpace.xl),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFF7C4DFF), Color(0xFF448AFF)],
@@ -2266,14 +2066,10 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
+              const SizedBox(width: FsSpace.xs),
               Text(
                 'Enhance with AI Analysis',
-                style: AppFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+                style: FsType.button(Colors.white).copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(width: 6),
               Container(
@@ -2284,7 +2080,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                 ),
                 child: Text(
                   'Gemini',
-                  style: AppFonts.inter(
+                  style: FsType.label(context).copyWith(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -2309,7 +2105,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Link copied! Open in browser: $url', style: AppFonts.inter(fontSize: 12)),
+            content: Text('Link copied! Open in browser: $url', style: FsType.label(context)),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -2323,10 +2119,10 @@ class _AiSearchScreenState extends State<AiSearchScreen>
 
   Color _frequencyColor(String frequency) {
     switch (frequency.toLowerCase()) {
-      case 'high': return AppTheme.errorRed;
-      case 'medium': return AppTheme.warningOrange;
-      case 'low': return AppTheme.successGreen;
-      default: return AppTheme.warningOrange;
+      case 'high': return FsColors.danger;
+      case 'medium': return FsColors.warning;
+      case 'low': return FsColors.success;
+      default: return FsColors.warning;
     }
   }
 
@@ -2346,7 +2142,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   const SizedBox(width: 10),
                   Text(
                     'API Keys (${keys.length}/5)',
-                    style: AppFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700),
+                    style: FsType.title(context).copyWith(fontSize: 17),
                   ),
                 ],
               ),
@@ -2370,7 +2166,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                             child: Text(
                               'Auto-rotation: When one key is rate-limited, '
                               'the app switches to the next automatically!',
-                              style: AppFonts.inter(fontSize: 11, color: const Color(0xFF2E7D32), height: 1.4),
+                              style: FsType.label(context).copyWith(color: const Color(0xFF2E7D32), height: 1.4),
                             ),
                           ),
                         ],
@@ -2382,7 +2178,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     if (keys.isNotEmpty) ...[
                       Text(
                         'Your API Keys',
-                        style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)),
+                        style: FsType.caption(context).copyWith(fontWeight: FontWeight.w600, color: FsColors.textPrimary(context)),
                       ),
                       const SizedBox(height: 8),
                       ...List.generate(keys.length, (i) {
@@ -2422,7 +2218,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                   fontFamilyFallback: const ['Roboto Mono', 'Courier New'],
                                   fontSize: 12,
                                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                                  color: AppTheme.textP(context),
+                                  color: FsColors.textPrimary(context),
                                 ),
                               ),
                               const Spacer(),
@@ -2433,7 +2229,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                     color: const Color(0xFF4CAF50).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text('Active', style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFF4CAF50))),
+                                  child: Text('Active', style: FsType.label(context).copyWith(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFF4CAF50))),
                                 ),
                               const SizedBox(width: 4),
                               InkWell(
@@ -2457,7 +2253,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     if (keys.length < 5) ...[
                       Text(
                         keys.isEmpty ? 'Don\'t have a key yet?' : 'Add another key (use a different Google account)',
-                        style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textP(context)),
+                        style: FsType.caption(context).copyWith(fontWeight: FontWeight.w600, color: FsColors.textPrimary(context)),
                       ),
                       const SizedBox(height: 6),
                       GestureDetector(
@@ -2487,7 +2283,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                               const SizedBox(width: 6),
                               Text(
                                 'Open Google AI Studio →',
-                                style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF7C4DFF)),
+                                style: FsType.caption(context).copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF7C4DFF)),
                               ),
                             ],
                           ),
@@ -2498,7 +2294,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                         controller: controller,
                         decoration: InputDecoration(
                           hintText: 'Paste new API key here...',
-                          hintStyle: AppFonts.inter(fontSize: 14, color: Colors.grey),
+                          hintStyle: FsType.body(context).copyWith(fontSize: 14, color: Colors.grey),
                           prefixIcon: const Icon(Icons.vpn_key_rounded, size: 19),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                           focusedBorder: OutlineInputBorder(
@@ -2517,7 +2313,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                             },
                           ),
                         ),
-                        style: AppFonts.inter(fontSize: 14),
+                        style: FsType.body(context).copyWith(fontSize: 14),
                       ),
                     ] else ...[
                       Container(
@@ -2533,7 +2329,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                             Expanded(
                               child: Text(
                                 'Maximum 5 keys reached! You have excellent search capacity.',
-                                style: AppFonts.inter(fontSize: 12, color: Colors.amber[800], height: 1.3),
+                                style: FsType.label(context).copyWith(fontSize: 12, color: Colors.amber[800], height: 1.3),
                               ),
                             ),
                           ],
@@ -2546,7 +2342,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text('Close', style: AppFonts.inter(color: Colors.grey)),
+                  child: Text('Close', style: FsType.button(Colors.grey)),
                 ),
                 if (keys.length < 5)
                   ElevatedButton(
@@ -2580,7 +2376,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                   const SizedBox(width: 8),
                                   Text(
                                     'Key ${GeminiService.keyCount} added! (${GeminiService.keyCount}/5)',
-                                    style: AppFonts.inter(fontWeight: FontWeight.w600),
+                                    style: FsType.button(Colors.white).copyWith(fontWeight: FontWeight.w600),
                                   ),
                                 ],
                               ),
@@ -2598,7 +2394,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     },
                     child: Text(
                       keys.isEmpty ? 'Activate AI Search' : 'Add Key',
-                      style: AppFonts.inter(fontWeight: FontWeight.w700),
+                      style: FsType.button(Colors.white).copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
               ],
@@ -2630,7 +2426,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
             const SizedBox(height: 16),
             Text(
               'Generating quiz questions...',
-              style: AppFonts.inter(fontSize: 14),
+              style: FsType.body(context).copyWith(fontSize: 14),
             ),
           ],
         ),
@@ -2689,17 +2485,17 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                   const SizedBox(height: 20),
                   Text(
                     'Quiz Complete!',
-                    style: AppFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textP(context)),
+                    style: FsType.display(context),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: FsSpace.xs),
                   Text(
                     'Score: $score / ${questions.length}',
-                    style: AppFonts.inter(fontSize: 18, color: AppTheme.primaryColor, fontWeight: FontWeight.w700),
+                    style: FsType.subtitle(context).copyWith(fontSize: 18, color: AppTheme.primaryColor, fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: FsSpace.xs),
                   Text(
                     'Topic: $topic',
-                    style: AppFonts.inter(fontSize: 14, color: AppTheme.textS(context)),
+                    style: FsType.body(context).copyWith(fontSize: 14, color: FsColors.textSecondary(context)),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -2742,12 +2538,12 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                     children: [
                       Text(
                         'Question ${currentQ + 1} / ${questions.length}',
-                        style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+                        style: FsType.caption(context).copyWith(fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
                       ),
                       const Spacer(),
                       Text(
                         'Score: $score',
-                        style: AppFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textS(context)),
+                        style: FsType.caption(context).copyWith(fontWeight: FontWeight.w600, color: FsColors.textSecondary(context)),
                       ),
                     ],
                   ),
@@ -2766,14 +2562,9 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                       children: [
                         Text(
                           q['question'] ?? '',
-                          style: AppFonts.plusJakartaSans(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textP(context),
-                            height: 1.5,
-                          ),
+                          style: FsType.title(context).copyWith(fontSize: 17, height: 1.5),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: FsSpace.lg),
                         ...List.generate(options.length, (i) {
                           final isSelected = selectedAnswer == i;
                           final isCorrect = i == correctIdx;
@@ -2829,13 +2620,11 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                     child: Center(
                                       child: Text(
                                         String.fromCharCode(65 + i),
-                                        style: AppFonts.inter(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: (answered && (isCorrect || (isSelected && !isCorrect)))
+                                        style: FsType.button(
+                                          (answered && (isCorrect || (isSelected && !isCorrect)))
                                               ? Colors.white
                                               : AppTheme.primaryColor,
-                                        ),
+                                        ).copyWith(fontSize: 13, fontWeight: FontWeight.w700),
                                       ),
                                     ),
                                   ),
@@ -2843,10 +2632,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                   Expanded(
                                     child: Text(
                                       options[i].toString(),
-                                      style: AppFonts.inter(
-                                        fontSize: 14,
-                                        color: AppTheme.textP(context),
-                                      ),
+                                      style: FsType.body(context).copyWith(fontSize: 14),
                                     ),
                                   ),
                                 ],
@@ -2870,11 +2656,7 @@ class _AiSearchScreenState extends State<AiSearchScreen>
                                 Expanded(
                                   child: Text(
                                     q['explanation'] ?? '',
-                                    style: AppFonts.inter(
-                                      fontSize: 13,
-                                      color: AppTheme.textP(context),
-                                      height: 1.5,
-                                    ),
+                                    style: FsType.caption(context).copyWith(color: FsColors.textPrimary(context), height: 1.5),
                                   ),
                                 ),
                               ],

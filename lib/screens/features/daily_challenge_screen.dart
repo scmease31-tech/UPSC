@@ -47,8 +47,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen>
   }
 
   Future<void> _loadQuestions() async {
-    await DailyContentManager.fetchFlashcardsFromFirestore();
-    final qs = DailyContentManager.getTodaysChallengeQuestions();
+    final qs = await DailyContentManager.fetchTodaysChallengeQuestions();
     if (!mounted) return;
     setState(() {
       _questions = qs;
