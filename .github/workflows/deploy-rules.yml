@@ -17,6 +17,7 @@ on:
     paths:
       - 'firestore.rules'
       - '.github/workflows/deploy-rules.yml'
+      - 'backend/content-scraper/register-android-sha.js'
 
 jobs:
   deploy:
@@ -40,3 +41,10 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
         run: node deploy-rules.js
+
+      - name: Register Android signing SHA-1
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          ANDROID_SIGNING_SHA1: ${{ vars.SIGNING_SHA1 }}
+        run: node register-android-sha.js
