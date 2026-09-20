@@ -51,6 +51,12 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
+          # Secrets first entered from Windows PowerShell may contain a trailing
+          # CR/LF. keytool treats that as part of the password and reports only
+          # exit code 1, so normalize line endings before validation.
+          KEYSTORE_PASSWORD=$(printf '%s' "${KEYSTORE_PASSWORD:-}" | tr -d '\r\n')
+          KEY_PASSWORD=$(printf '%s' "${KEY_PASSWORD:-}" | tr -d '\r\n')
+          export KEYSTORE_PASSWORD KEY_PASSWORD
           if [ -z "${KEYSTORE_PASSWORD:-}" ] || [ -z "${KEY_PASSWORD:-}" ]; then
             echo "::error::KEYSTORE_PASSWORD and KEY_PASSWORD secrets must be set."
             exit 1
