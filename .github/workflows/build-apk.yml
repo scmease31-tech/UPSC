@@ -126,6 +126,10 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "UPSC Daily Edge ${{ steps.version.outputs.tag }}"
           body: |
+            ## Important: one-time reinstall required
+
+            Android signing was reset for this release. If version 1.4.0 or older is installed, uninstall it once before installing v1.5.0. After v1.5.0 is installed, future updates will install normally from the in-app update prompt.
+
             ## UPSC Daily Edge - Android App
 
             ### What's included:
