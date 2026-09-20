@@ -48,6 +48,45 @@ class DailyContentManager {
     return shuffled.take(5).toList();
   }
 
+  /// Fetch today's news-derived challenge, falling back to the latest bundle
+  /// and finally the deterministic built-in bank when Firestore is unavailable.
+  static Future<List<Map<String, dynamic>>> fetchTodaysChallengeQuestions() async {
+    try {
+      Map<String, dynamic>? data;
+      final exact = await FirebaseServices.contentFirestore
+          .collection('dailyQuizzes')
+          .doc(_today())
+          .get();
+      if (exact.exists) {
+        data = exact.data();
+      } else {
+        final latest = await FirebaseServices.contentFirestore
+            .collection('dailyQuizzes')
+            .orderBy('date', descending: true)
+            .limit(1)
+            .get();
+        if (latest.docs.isNotEmpty) data = latest.docs.first.data();
+      }
+      final raw = (data?['questions'] as List<dynamic>?) ?? const [];
+      final questions = raw.whereType<Map>().map((item) {
+        final map = item.map((k, v) => MapEntry(k.toString(), v));
+        return <String, dynamic>{
+          'q': (map['question'] ?? '').toString(),
+          'options': List<String>.from(map['options'] ?? const []),
+          'answer': map['correctAnswerIndex'] as int? ?? 0,
+          'explain': (map['explanation'] ?? '').toString(),
+          'sourceTitle': (map['sourceTitle'] ?? '').toString(),
+        };
+      }).where((question) =>
+          (question['q'] as String).isNotEmpty &&
+          (question['options'] as List).length == 4).take(5).toList();
+      if (questions.isNotEmpty) return questions;
+    } catch (_) {
+      // Fall through to the built-in deterministic challenge.
+    }
+    return getTodaysChallengeQuestions();
+  }
+
   /// Get today's flashcard set — tries Firestore first, falls back to local.
   static List<Map<String, String>> getTodaysFlashcards() {
     final seed = _dailySeed(DateTime.now()) + 500;

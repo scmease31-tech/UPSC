@@ -1,5 +1,6 @@
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { generateDailyQuiz } from './generators.js';
 
 let db = null;
 
@@ -254,6 +255,122 @@ export function uploadKeyFacts(docs, dryRun = false) {
  */
 export function uploadPyqs(docs, dryRun = false) {
   return uploadToCollection('pyqs', docs, dryRun, 'question');
+}
+
+/** Upsert one date's quiz bundle and its individual topic-question documents. */
+export async function uploadDailyQuiz(dateStr, questions, dryRun = false) {
+  const stats = { uploaded: 0, skipped: 0, errors: 0 };
+  if (!questions?.length) return stats;
+  if (dryRun) {
+    console.log(`[DryRun] Would upsert dailyQuizzes/${dateStr} with ${questions.length} questions`);
+    stats.uploaded = questions.length;
+    return stats;
+  }
+  if (!db) initFirebase();
+
+  try {
+    const batch = db.batch();
+    const bundleRef = db.collection('dailyQuizzes').doc(dateStr);
+    batch.set(bundleRef, {
+      date: dateStr,
+      questionCount: questions.length,
+      articleIds: [...new Set(questions.map((q) => q.articleRef).filter(Boolean))],
+      questions: questions.map(({ id, ...question }) => ({ id, ...question })),
+      generatedAt: FieldValue.serverTimestamp(),
+    });
+    for (const question of questions) {
+      const { id, ...data } = question;
+      batch.set(db.collection('quizQuestions').doc(id), {
+        ...data,
+        dailyQuizDate: dateStr,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+    stats.uploaded = questions.length;
+    console.log(`  [upsert] dailyQuizzes/${dateStr}: ${questions.length} questions`);
+  } catch (error) {
+    stats.errors = questions.length;
+    console.error(`  [err] dailyQuizzes/${dateStr}: ${error.message}`);
+  }
+  return stats;
+}
+
+function dateKey(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function periodBounds(dateStr, period) {
+  const end = new Date(`${dateStr}T00:00:00Z`);
+  if (period === 'weekly') {
+    const start = new Date(end);
+    const mondayOffset = (start.getUTCDay() + 6) % 7;
+    start.setUTCDate(start.getUTCDate() - mondayOffset);
+    return { start: dateKey(start), end: dateKey(end), id: `week_${dateKey(start)}` };
+  }
+  const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+  return {
+    start: dateKey(start),
+    end: dateKey(end),
+    id: `month_${end.getUTCFullYear()}-${String(end.getUTCMonth() + 1).padStart(2, '0')}`,
+  };
+}
+
+/** Rebuild current week and month summaries from the canonical articles store. */
+export async function rebuildRoundups(dateStr, dryRun = false) {
+  if (dryRun) {
+    console.log(`[DryRun] Would rebuild weekly/monthly roundups ending ${dateStr}`);
+    return { uploaded: 2, skipped: 0, errors: 0 };
+  }
+  if (!db) initFirebase();
+  const stats = { uploaded: 0, skipped: 0, errors: 0 };
+
+  for (const period of ['weekly', 'monthly']) {
+    const bounds = periodBounds(dateStr, period);
+    try {
+      const snapshot = await db.collection('articles')
+        .where('publishedDate', '>=', bounds.start)
+        .where('publishedDate', '<=', bounds.end)
+        .get();
+      const articles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => String(b.publishedDate).localeCompare(String(a.publishedDate)));
+      const categoryCounts = {};
+      for (const article of articles) {
+        const category = primaryCategory(article);
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+      }
+      const keyStories = articles.slice(0, 24).map((article) => ({
+        id: article.id,
+        title: clean(article.title),
+        summary: clean(article.summary),
+        category: primaryCategory(article),
+        newspaper: clean(article.newspaper),
+        publishedDate: clean(article.publishedDate),
+        upscPaper: clean(article.upscPaper),
+      }));
+      const reviewQuestions = generateDailyQuiz(articles, bounds.id, { limit: 10 });
+      await db.collection('currentAffairsRoundups').doc(bounds.id).set({
+        id: bounds.id,
+        period,
+        startDate: bounds.start,
+        endDate: bounds.end,
+        title: period === 'weekly'
+          ? `Weekly Current Affairs · ${bounds.start} to ${bounds.end}`
+          : `Monthly Current Affairs · ${bounds.start.slice(0, 7)}`,
+        storyCount: articles.length,
+        categoryCounts,
+        keyStories,
+        reviewQuestions: reviewQuestions.map(({ id, ...question }) => ({ id, ...question })),
+        generatedAt: FieldValue.serverTimestamp(),
+      });
+      stats.uploaded++;
+      console.log(`  [upsert] ${bounds.id}: ${articles.length} stories, ${reviewQuestions.length} review questions`);
+    } catch (error) {
+      stats.errors++;
+      console.error(`  [err] ${bounds.id}: ${error.message}`);
+    }
+  }
+  return stats;
 }
 
 /**

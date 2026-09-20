@@ -446,9 +446,117 @@ export function generateSchemes(articles) {
   return [...byName.values()];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Daily current-affairs quiz
+// ─────────────────────────────────────────────────────────────────────────────
+
+function stableRank(seed, value) {
+  return crypto.createHash('sha256').update(`${seed}|${value}`).digest('hex');
+}
+
+function orderedOptions(correct, distractors, seed) {
+  const unique = [correct, ...distractors]
+    .map(clean)
+    .filter((value, index, all) => value && all.indexOf(value) === index)
+    .slice(0, 4);
+  if (unique.length !== 4) return null;
+  unique.sort((a, b) => stableRank(seed, a).localeCompare(stableRank(seed, b)));
+  return { options: unique, correctAnswerIndex: unique.indexOf(clean(correct)) };
+}
+
 /**
- * Convenience: run all generators and return a keyed result.
+ * Generate a stable quiz for one publication date. The same articles always
+ * produce the same IDs, question order and option order, so re-runs are safe.
  */
+export function generateDailyQuiz(articles, dateStr, { limit = 10 } = {}) {
+  const usable = [...articles]
+    .filter((article) => clean(article.title))
+    .sort((a, b) => clean(a.title).localeCompare(clean(b.title)));
+  const candidates = [];
+  const seenQuestions = new Set();
+
+  const add = (question, correct, distractors, article, type, explanation) => {
+    const q = clean(question);
+    if (!q || seenQuestions.has(q.toLowerCase())) return;
+    const arranged = orderedOptions(correct, distractors, `${dateStr}|${article.id}|${type}`);
+    if (!arranged) return;
+    seenQuestions.add(q.toLowerCase());
+    candidates.push({
+      id: hashId('dq', dateStr, article.id || article.title, type),
+      question: q,
+      options: arranged.options,
+      correctAnswerIndex: arranged.correctAnswerIndex,
+      explanation: clean(explanation).slice(0, 500),
+      category: primaryCategory(article),
+      difficulty: type === 'term' ? 'Medium' : 'Easy',
+      articleRef: article.id || '',
+      syllabusArea: clean(article.syllabusMapping || article.upscPaper || ''),
+      source: 'daily_news',
+      publishedDate: dateStr,
+      sourceTitle: clean(article.title),
+      sourceUrl: clean(article.sourceUrl || ''),
+    });
+  };
+
+  // Strongest questions: key-term definitions with definitions from other
+  // articles as plausible distractors.
+  const terms = usable.flatMap((article) => Object.entries(article.keyTerms || {})
+    .map(([term, definition]) => ({ article, term: clean(term), definition: clean(definition) }))
+    .filter((item) => item.term.length > 2 && item.definition.length > 20));
+  for (const item of terms) {
+    const distractors = terms
+      .filter((other) => other.term.toLowerCase() !== item.term.toLowerCase())
+      .map((other) => other.definition);
+    add(
+      `In today’s current affairs, what does “${item.term}” mean?`,
+      item.definition,
+      distractors,
+      item.article,
+      'term',
+      `${item.term}: ${item.definition} Source: ${item.article.title}`,
+    );
+  }
+
+  // Article comprehension questions: identify the key finding attached to one
+  // headline. Distractors come from other articles published the same day.
+  const keyPointItems = usable
+    .map((article) => ({ article, point: clean((article.keyPoints || [])[0] || (article.shortNotes || [])[0]) }))
+    .filter((item) => item.point.length >= 25 && item.point.length <= 220);
+  for (const item of keyPointItems) {
+    const distractors = keyPointItems
+      .filter((other) => other.article.id !== item.article.id)
+      .map((other) => other.point);
+    add(
+      `Which statement is linked to “${clean(item.article.title)}”?`,
+      item.point,
+      distractors,
+      item.article,
+      'key-point',
+      `${item.point} This was a key point in ${item.article.title}.`,
+    );
+  }
+
+  // Category questions guarantee a useful fallback on sparse days.
+  const categoryPool = [...new Set(usable.map(primaryCategory))];
+  const defaultCategories = ['Polity', 'Economy', 'Environment', 'Science & Technology', 'International Relations', 'Social Issues'];
+  for (const article of usable) {
+    const correct = primaryCategory(article);
+    const distractors = [...categoryPool, ...defaultCategories].filter((value) => value !== correct);
+    add(
+      `Which UPSC subject best matches “${clean(article.title)}”?`,
+      correct,
+      distractors,
+      article,
+      'category',
+      `The article is classified under ${correct}${article.upscPaper ? ` (${article.upscPaper})` : ''}.`,
+    );
+  }
+
+  candidates.sort((a, b) => stableRank(dateStr, a.id).localeCompare(stableRank(dateStr, b.id)));
+  return candidates.slice(0, limit);
+}
+
+/** Convenience: run all library generators. */
 export function generateAll(articles) {
   return {
     vocabulary: generateVocabulary(articles),
