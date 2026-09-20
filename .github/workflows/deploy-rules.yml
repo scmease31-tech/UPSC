@@ -48,3 +48,21 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
           ANDROID_SIGNING_SHA1: ${{ vars.SIGNING_SHA1 }}
         run: node register-android-sha.js
+
+      # Registering the SHA creates the OAuth client server-side, but the APK
+      # embeds whatever google-services.json is committed. Pull the regenerated
+      # config so the two cannot drift; fails if the upload key is still absent.
+      - name: Fetch refreshed google-services.json
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          ANDROID_SIGNING_SHA1: ${{ vars.SIGNING_SHA1 }}
+          GOOGLE_SERVICES_OUTPUT: ../../android/app/google-services.json
+        run: node fetch-google-services.js
+
+      - name: Upload google-services.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-services-json
+          path: android/app/google-services.json
+          if-no-files-found: error
