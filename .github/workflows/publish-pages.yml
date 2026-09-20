@@ -10,6 +10,14 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      # A signed republish takes ~10 minutes and burns a build number. Changes
+      # that cannot affect the APK should not trigger one. Anything under lib/,
+      # android/, assets/, pubspec or the workflows themselves still does.
+      - 'tool/**'
+      - 'docs/**'
+      - '**/*.md'
+      - '.gitignore'
   workflow_dispatch:
 
 concurrency:
