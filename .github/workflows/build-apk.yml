@@ -127,9 +127,11 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "UPSC Daily Edge ${{ steps.version.outputs.tag }}"
           body: |
-            ## Important: one-time reinstall required
+            ## Installing
 
-            Android signing was reset for this release. If version 1.4.0 or older is installed, uninstall it once before installing v1.5.0. After v1.5.0 is installed, future updates will install normally from the in-app update prompt.
+            Prefer the in-app update prompt, or the download on the project page. Those deliver the universal APK the in-app updater manages.
+
+            If version 1.4.0 or older is installed, uninstall it once first — Android signing was reset after that release, so an update over it will be refused. Nothing else needs a reinstall, and later updates install normally from the in-app prompt.
 
             ## UPSC Daily Edge - Android App
 
@@ -153,35 +155,29 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Deploy APK + updater manifest to GitHub Pages
+      # Refreshes ONLY the legacy root download. This workflow deliberately does
+      # NOT write update/version.json or update/UPSC-Daily-Edge.apk —
+      # publish-pages.yml is the single owner of the in-app updater channel.
+      #
+      # Two reasons it must stay that way. The updater treats `build` as
+      # monotonic, and this workflow's build number comes from pubspec (19)
+      # whereas publish-pages derives a always-increasing one; writing the
+      # manifest here would advertise a LOWER build than Pages already serves.
+      # And these APKs are built --split-per-abi, which offsets versionCode per
+      # ABI, so their versionCode does not line up with the universal APK the
+      # updater installs. Android refuses to install an APK whose versionCode is
+      # below the installed one, so mixing the two channels strands users.
+      - name: Refresh the legacy root APK download on GitHub Pages
         run: |
           set -euo pipefail
           APK=build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk
-          SEMVER=$(sed -n 's/^version:[[:space:]]*\([^+]*\)+.*/\1/p' pubspec.yaml | tr -d '[:space:]')
-          BUILD=$(sed -n 's/^version:[^+]*+\([0-9][0-9]*\).*/\1/p' pubspec.yaml)
-          SHA256=$(sha256sum "$APK" | cut -d' ' -f1)
-          SIZE=$(stat -c%s "$APK")
           cp "$APK" "$RUNNER_TEMP/UPSC-Daily-Edge.apk"
-          cat > "$RUNNER_TEMP/version.json" << EOF
-          {
-            "version": "$SEMVER",
-            "build": $BUILD,
-            "notes": "Frosted Scholar $SEMVER — direct in-app updates, live daily quizzes, weekly/monthly roundups, and app-wide design improvements.",
-            "apkUrl": "https://scmease31-tech.github.io/UPSC/update/UPSC-Daily-Edge.apk",
-            "sha256": "$SHA256",
-            "sizeBytes": $SIZE,
-            "mandatory": false
-          }
-          EOF
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git stash --include-untracked
           git fetch origin gh-pages
           git checkout gh-pages
-          mkdir -p update
           cp "$RUNNER_TEMP/UPSC-Daily-Edge.apk" UPSC-Daily-Edge.apk
-          cp "$RUNNER_TEMP/UPSC-Daily-Edge.apk" update/UPSC-Daily-Edge.apk
-          cp "$RUNNER_TEMP/version.json" update/version.json
-          git add UPSC-Daily-Edge.apk update/UPSC-Daily-Edge.apk update/version.json
-          git commit -m "Publish updater manifest for ${{ steps.version.outputs.tag }}" || true
+          git add UPSC-Daily-Edge.apk
+          git commit -m "Update root APK to ${{ steps.version.outputs.tag }}" || true
           git push origin gh-pages
