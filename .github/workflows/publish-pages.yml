@@ -135,6 +135,13 @@ jobs:
           mkdir -p "$OUT"
           cp "$SRC" "$OUT/UPSC-Daily-Edge.apk"
 
+          # The landing page's "Download Android App" links at the ROOT APK, so
+          # publish the same binary there. Keeping them identical means a fresh
+          # download and an in-app update land on the same versionCode: a new
+          # install is not immediately prompted to update, and the root download
+          # cannot drift behind the manifest the way it did through v1.5.1.
+          cp "$SRC" "pages_publish/UPSC-Daily-Edge.apk"
+
           SHA256=$(sha256sum "$OUT/UPSC-Daily-Edge.apk" | cut -d' ' -f1)
           SIZE=$(stat -c%s "$OUT/UPSC-Daily-Edge.apk")
           BUILD=${{ steps.build_number.outputs.build }}

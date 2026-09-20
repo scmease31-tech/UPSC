@@ -127,27 +127,31 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "UPSC Daily Edge ${{ steps.version.outputs.tag }}"
           body: |
-            ## Installing
+            ## How to get this
 
-            Prefer the in-app update prompt, or the download on the project page. Those deliver the universal APK the in-app updater manages.
+            **Already have the app?** Open it and accept the update prompt. The app downloads the new version, verifies its SHA-256, and hands it to Android to install. Nothing here needs downloading by hand.
 
-            If version 1.4.0 or older is installed, uninstall it once first — Android signing was reset after that release, so an update over it will be refused. Nothing else needs a reinstall, and later updates install normally from the in-app prompt.
+            **New install?** Use the download on the project page. That is the universal APK the in-app updater manages, so updates keep working afterwards.
 
-            ## UPSC Daily Edge - Android App
+            The APKs attached below are smaller per-architecture builds, for devices the universal APK will not fit. They carry a lower version code than the published build, so the app will offer an update the first time you open it — that is expected, and it moves you onto the managed universal build.
 
-            ### What's included:
-            - 📰 Daily Current Affairs from Drishti IAS & Insights on India
-            - 🧠 Smart Quizzes with XP tracking
-            - 📝 Flash Revision cards & mnemonics
-            - 📊 Progress tracking & streaks
+            If version 1.4.0 or older is installed, uninstall it once first: Android signing was reset after that release, so updating over it is refused. Nothing since then needs a reinstall.
 
-            ### Install:
-            1. Download **UPSC-Daily-Edge.apk** (recommended, works on most devices)
-            2. Open it on your Android device
+            ## What's in the app
+
+            - 📰 Daily current affairs from Drishti IAS and Insights on India
+            - 🧠 A daily quiz generated from that day's articles, plus topic quizzes with XP
+            - 📝 Flashcards, revision notes and mnemonics
+            - 📊 Streaks and progress tracking
+            - ⬇️ In-app updates, downloaded and SHA-256 verified inside the app
+
+            Android always shows its own final install confirmation. The app never installs anything silently.
+
+            ## Installing an APK by hand
+
+            1. Download the APK
+            2. Open it on the device
             3. Allow installation from unknown sources if prompted
-            4. Done!
-
-            > If the main APK doesn't work on your device, try the arm32 variant.
           files: |
             build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk
             build/app/outputs/flutter-apk/UPSC-Daily-Edge-${{ steps.version.outputs.tag }}-arm64.apk
@@ -155,29 +159,19 @@ jobs:
           draft: false
           prerelease: false
 
-      # Refreshes ONLY the legacy root download. This workflow deliberately does
-      # NOT write update/version.json or update/UPSC-Daily-Edge.apk —
-      # publish-pages.yml is the single owner of the in-app updater channel.
+      # This workflow does NOT touch gh-pages. publish-pages.yml owns every file
+      # served from Pages — update/version.json, update/UPSC-Daily-Edge.apk and
+      # the root APK the landing page links to.
       #
-      # Two reasons it must stay that way. The updater treats `build` as
-      # monotonic, and this workflow's build number comes from pubspec (19)
-      # whereas publish-pages derives a always-increasing one; writing the
-      # manifest here would advertise a LOWER build than Pages already serves.
-      # And these APKs are built --split-per-abi, which offsets versionCode per
-      # ABI, so their versionCode does not line up with the universal APK the
-      # updater installs. Android refuses to install an APK whose versionCode is
-      # below the installed one, so mixing the two channels strands users.
-      - name: Refresh the legacy root APK download on GitHub Pages
-        run: |
-          set -euo pipefail
-          APK=build/app/outputs/flutter-apk/UPSC-Daily-Edge.apk
-          cp "$APK" "$RUNNER_TEMP/UPSC-Daily-Edge.apk"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git stash --include-untracked
-          git fetch origin gh-pages
-          git checkout gh-pages
-          cp "$RUNNER_TEMP/UPSC-Daily-Edge.apk" UPSC-Daily-Edge.apk
-          git add UPSC-Daily-Edge.apk
-          git commit -m "Update root APK to ${{ steps.version.outputs.tag }}" || true
-          git push origin gh-pages
+      # The reason is the build number. versionCode here comes straight from
+      # pubspec (android/app/build.gradle.kts uses flutter.versionCode with no
+      # per-ABI override, so every split shares it), while publish-pages derives
+      # BASE + GITHUB_RUN_NUMBER, which is always higher. Publishing from here
+      # would move Pages BACKWARDS, and Android refuses to install an APK whose
+      # versionCode is below the installed one.
+      #
+      # Leaving Pages alone also makes these assets self-healing: a release APK
+      # sits below the published build, so the in-app updater offers the managed
+      # universal APK on first launch and pulls that user onto the normal
+      # channel. That only holds while this workflow does not stamp its own
+      # higher build number — do NOT add --build-number here.
