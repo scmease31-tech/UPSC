@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 /// Loads the app's bundled variable typefaces into the test font collection.
 ///
@@ -21,4 +23,26 @@ Future<void> loadAppFonts() async {
     final loader = FontLoader(entry.key)..addFont(Future.value(data));
     await loader.load();
   }
+
+  await _loadMaterialIcons();
+}
+
+/// Loads MaterialIcons from the SDK so `Icon` widgets draw their real glyph
+/// instead of the empty-box fallback. Only matters for captured screenshots;
+/// layout is unaffected because the fallback occupies the same square. Best
+/// effort: skipped when FLUTTER_ROOT is absent or the artifact has moved.
+Future<void> _loadMaterialIcons() async {
+  final root = Platform.environment['FLUTTER_ROOT'];
+  if (root == null || root.isEmpty) return;
+
+  final file = File(
+    p.join(root, 'bin', 'cache', 'artifacts', 'material_fonts',
+        'MaterialIcons-Regular.otf'),
+  );
+  if (!file.existsSync()) return;
+
+  final bytes = await file.readAsBytes();
+  final loader = FontLoader('MaterialIcons')
+    ..addFont(Future.value(ByteData.view(bytes.buffer)));
+  await loader.load();
 }
