@@ -115,6 +115,23 @@ void main() {
       }
     });
 
+    test('malformed SHA-256 is rejected before an 80 MB download', () {
+      for (final digest in <String>[
+        'abc123',
+        'g' * 64,
+        '0' * 63,
+        '0' * 65,
+      ]) {
+        final r = UpdateService.evaluateManifest(
+          validManifest(sha256: digest),
+          currentVersion: '1.5.1',
+          currentBuild: 18,
+        );
+        expect(r.hasUpdate, isFalse, reason: digest);
+        expect(r.errorIsSecurity, isTrue, reason: digest);
+      }
+    });
+
     test('whitespace around string fields is trimmed', () {
       final r = UpdateService.evaluateManifest(
         validManifest(version: '  1.6.0  ')
@@ -160,13 +177,14 @@ void main() {
       expect(r.hasUpdate, isTrue);
     });
 
-    test('UPDATE: higher semver alone triggers an update', () {
+    test('NO-UPDATE: higher semver with the same build is not installable', () {
       final r = UpdateService.evaluateManifest(
-        validManifest(version: '1.6.0', build: 18), // same build, higher semver
+        validManifest(version: '1.6.0', build: 18),
         currentVersion: '1.5.1',
         currentBuild: 18,
       );
-      expect(r.hasUpdate, isTrue);
+      expect(r.hasUpdate, isFalse);
+      expect(r.isUpToDate, isTrue);
     });
 
     test('NO-UPDATE: identical version and build is up to date', () {
@@ -190,16 +208,16 @@ void main() {
       expect(r.isUpToDate, isTrue);
     });
 
-    test(
-        'DOWNGRADE guard is per-axis: lower build but higher semver still '
-        'updates (semver OR build)', () {
-      // remoteBuild(17) < current(18) but 1.6.0 > 1.5.1 → the OR still fires.
+    test('DOWNGRADE: lower build is never offered, even with higher semver', () {
+      // Android decides upgrade/downgrade exclusively by versionCode. Offering
+      // this would download 80+ MB and end at INSTALL_FAILED_VERSION_DOWNGRADE.
       final r = UpdateService.evaluateManifest(
-        validManifest(version: '1.6.0', build: 17),
+        validManifest(version: '2.0.0', build: 17),
         currentVersion: '1.5.1',
         currentBuild: 18,
       );
-      expect(r.hasUpdate, isTrue);
+      expect(r.hasUpdate, isFalse);
+      expect(r.isUpToDate, isTrue);
     });
 
     group('isSemverNewer', () {

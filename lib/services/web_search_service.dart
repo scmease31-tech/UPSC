@@ -485,7 +485,7 @@ class WebSearchService {
             final nextDesc = nextData['description'] as String? ?? '';
             if (!_isEntertainmentContent(nextTitle, nextDesc)) {
               // Use this one instead
-              return _buildWikiResult(nextData, nextEncoded, validResults, 2);
+              return await _buildWikiResult(nextData, nextEncoded, validResults, 2);
             }
           }
         } catch (_) {}
@@ -1150,20 +1150,6 @@ class WebSearchService {
     final overlap = wordsA.intersection(wordsB).length;
     final minLen = wordsA.length < wordsB.length ? wordsA.length : wordsB.length;
     return minLen > 0 && overlap / minLen > 0.7;
-  }
-
-  /// Extract a readable detailed content from full Wikipedia text.
-  static String _extractDetailedContent(String fullContent) {
-    if (fullContent.isEmpty) return '';
-    // Get first ~1000 chars of meaningful content
-    final paragraphs = fullContent.split('\n\n').where((p) => p.trim().length > 50).toList();
-    final buf = StringBuffer();
-    for (final p in paragraphs) {
-      buf.writeln(p.trim());
-      buf.writeln();
-      if (buf.length > 1200) break;
-    }
-    return buf.toString().trim();
   }
 
   /// Guess exam relevance from query keywords (basic heuristic).

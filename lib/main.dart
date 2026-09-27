@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show kIsWeb, LicenseRegistry, LicenseEntryWithLineBreaks;
 import 'package:flutter/material.dart';
@@ -22,7 +24,7 @@ import 'services/firebase_services.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// Entry point of the UPSC Daily Edge application.
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Surface the bundled fonts' licences in Flutter's licence page. Package
@@ -46,32 +48,101 @@ void main() async {
       statusBarBrightness: Brightness.light,
     ));
 
-    // Lock to portrait orientation for consistent UI
-    await SystemChrome.setPreferredOrientations([
+    // Do not hold the first Flutter frame behind a platform-channel response.
+    // Orientation lock is best-effort and can settle after the bootstrap paints.
+    unawaited(SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
-    ]);
+    ]));
   }
 
-  Object? firebaseStartupError;
-  try {
-    await FirebaseServices.initialize();
-    // Enable offline persistence for the public content database (mobile only).
-    if (!kIsWeb) {
-      FirebaseServices.contentFirestore.settings = const Settings(
-        persistenceEnabled: true,
-        cacheSizeBytes: 50 * 1024 * 1024,
-      );
+  // Paint immediately. Firebase initialization used to run before runApp with
+  // no deadline, so a stalled platform channel produced a literal blank screen.
+  // The bootstrap below gives it a bounded wait and a working retry surface.
+  runApp(const UPSCDailyEdgeBootstrap());
+}
+
+class UPSCDailyEdgeBootstrap extends StatefulWidget {
+  const UPSCDailyEdgeBootstrap({super.key});
+
+  @override
+  State<UPSCDailyEdgeBootstrap> createState() => _UPSCDailyEdgeBootstrapState();
+}
+
+class _UPSCDailyEdgeBootstrapState extends State<UPSCDailyEdgeBootstrap> {
+  bool _initializing = true;
+  bool _ready = false;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    if (!_initializing) setState(() => _initializing = true);
+    try {
+      await FirebaseServices.initialize().timeout(const Duration(seconds: 12));
+      if (!kIsWeb) {
+        FirebaseServices.contentFirestore.settings = const Settings(
+          persistenceEnabled: true,
+          cacheSizeBytes: 50 * 1024 * 1024,
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _ready = true;
+        _error = null;
+        _initializing = false;
+      });
+      unawaited(_initServicesAsync());
+    } catch (error, stackTrace) {
+      debugPrint('Firebase startup failed: $error\n$stackTrace');
+      if (!mounted) return;
+      setState(() {
+        _ready = false;
+        _error = error;
+        _initializing = false;
+      });
     }
-  } catch (error, stackTrace) {
-    firebaseStartupError = error;
-    debugPrint('Firebase startup failed: $error\n$stackTrace');
   }
 
-  runApp(UPSCDailyEdgeApp(startupError: firebaseStartupError));
+  @override
+  Widget build(BuildContext context) {
+    if (_ready) return const UPSCDailyEdgeApp();
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: _initializing
+          ? const _StartupLoadingScreen()
+          : _StartupErrorScreen(error: _error!, onRetry: _initialize),
+    );
+  }
+}
 
-  // Initialize services in background only after Firebase is ready.
-  if (firebaseStartupError == null) {
-    _initServicesAsync();
+class _StartupLoadingScreen extends StatelessWidget {
+  const _StartupLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              SizedBox(height: 16),
+              Text('Starting UPSC Daily Edge…'),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -147,6 +218,9 @@ class _AppWithBookmarkSyncState extends State<_AppWithBookmarkSync> {
         context.read<BookmarksProvider>().loadUserBookmarks(uid);
       }
     } else {
+      if (_lastSyncedUid != null) {
+        context.read<BookmarksProvider>().clearBookmarks();
+      }
       _lastSyncedUid = null;
     }
   }
@@ -190,8 +264,9 @@ class _AppWithBookmarkSyncState extends State<_AppWithBookmarkSync> {
 
 class _StartupErrorScreen extends StatelessWidget {
   final Object error;
+  final VoidCallback? onRetry;
 
-  const _StartupErrorScreen({required this.error});
+  const _StartupErrorScreen({required this.error, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +278,8 @@ class _StartupErrorScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.cloud_off_rounded, size: 64, color: AppTheme.errorRed),
+                const Icon(Icons.cloud_off_rounded,
+                    size: 64, color: AppTheme.errorRed),
                 const SizedBox(height: 18),
                 const Text(
                   'The app could not start its data service',
@@ -223,6 +299,14 @@ class _StartupErrorScreen extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 ),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Retry connection'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -247,7 +331,8 @@ class _UnknownRouteScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.explore_off_rounded, size: 58, color: AppTheme.primaryColor),
+              const Icon(Icons.explore_off_rounded,
+                  size: 58, color: AppTheme.primaryColor),
               const SizedBox(height: 16),
               const Text(
                 'This page could not be opened.',

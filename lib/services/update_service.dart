@@ -216,6 +216,12 @@ class UpdateService {
     if (remoteVersion.isEmpty || remoteBuild == null || apkUrl.isEmpty || sha.isEmpty) {
       return const ManifestEvaluation.failure('The update information was incomplete.');
     }
+    if (!RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(sha)) {
+      return const ManifestEvaluation.failure(
+        'Update blocked: the published SHA-256 digest is invalid.',
+        isSecurity: true,
+      );
+    }
 
     // Reject a manifest that points the APK at a non-allowlisted origin.
     if (!UpdateConfig.isAllowedUrl(apkUrl)) {
@@ -225,19 +231,18 @@ class UpdateService {
       );
     }
 
-    // Newer if EITHER the build number increased OR the semantic version did.
-    // The build number is authoritative (monotonic); the semver is a
-    // human-facing tie-break / display value.
-    final isNewer =
-        remoteBuild > currentBuild || isSemverNewer(remoteVersion, currentVersion);
-    if (!isNewer) {
+    // Android installs by versionCode, which is the manifest build. A higher
+    // semantic label with an equal/lower build is not installable as an upgrade
+    // and must never be offered. Semver remains display metadata; build is the
+    // single monotonic authority.
+    if (remoteBuild <= currentBuild) {
       return const ManifestEvaluation.upToDate();
     }
 
     return ManifestEvaluation.upgrade(UpdateInfo(
       version: remoteVersion,
       build: remoteBuild,
-      notes: data['notes'] as String? ?? '',
+      notes: (data['notes'] ?? '').toString(),
       apkUrl: apkUrl,
       sha256: sha,
       sizeBytes: _asInt(data['sizeBytes']),
