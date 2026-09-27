@@ -18,6 +18,7 @@ class ArticlesProvider extends ChangeNotifier {
   String _cacheKey = '';
   int _dataRevision = 0;
   int _loadGeneration = 0;
+  final Set<Timer> _pendingTimeouts = <Timer>{};
 
   final FirebaseFirestore _firestore = FirebaseServices.contentFirestore;
   StreamSubscription<QuerySnapshot>? _firestoreSub;
@@ -146,8 +147,35 @@ class ArticlesProvider extends ChangeNotifier {
   @override
   void dispose() {
     _loadGeneration++;
+    for (final timer in _pendingTimeouts) {
+      timer.cancel();
+    }
+    _pendingTimeouts.clear();
     _firestoreSub?.cancel();
     super.dispose();
+  }
+
+  Future<T> _bounded<T>(Future<T> operation, Duration duration) {
+    final completer = Completer<T>();
+    late final Timer timer;
+    timer = Timer(duration, () {
+      _pendingTimeouts.remove(timer);
+      if (!completer.isCompleted) {
+        completer.completeError(
+          TimeoutException('Article request timed out', duration),
+        );
+      }
+    });
+    _pendingTimeouts.add(timer);
+    operation.then((value) {
+      if (!completer.isCompleted) completer.complete(value);
+    }, onError: (Object error, StackTrace stackTrace) {
+      if (!completer.isCompleted) completer.completeError(error, stackTrace);
+    }).whenComplete(() {
+      timer.cancel();
+      _pendingTimeouts.remove(timer);
+    });
+    return completer.future;
   }
 
   /// Load articles from Firestore with a real-time listener and a bounded first
@@ -200,11 +228,13 @@ class ArticlesProvider extends ChangeNotifier {
     });
 
     try {
-      final snapshot = await _firestore
-          .collection('articles')
-          .orderBy('publishedDate', descending: true)
-          .get()
-          .timeout(const Duration(seconds: 18));
+      final snapshot = await _bounded(
+        _firestore
+            .collection('articles')
+            .orderBy('publishedDate', descending: true)
+            .get(),
+        const Duration(seconds: 18),
+      );
       if (generation != _loadGeneration || streamDelivered) return;
       _replaceArticles(parse(snapshot));
     } catch (error) {

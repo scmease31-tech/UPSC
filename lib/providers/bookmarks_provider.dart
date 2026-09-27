@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/article.dart';
@@ -15,11 +17,46 @@ class BookmarksProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   int _loadGeneration = 0;
+  Future<void>? _articlesLoad;
+  final Set<Timer> _pendingTimeouts = <Timer>{};
 
   Set<String> get bookmarkedIds => _bookmarkedIds;
   bool get isLoading => _isLoading;
 
   bool isBookmarked(String articleId) => _bookmarkedIds.contains(articleId);
+
+  Future<T> _bounded<T>(Future<T> operation, Duration duration) {
+    final completer = Completer<T>();
+    late final Timer timer;
+    timer = Timer(duration, () {
+      _pendingTimeouts.remove(timer);
+      if (!completer.isCompleted) {
+        completer.completeError(
+          TimeoutException('Bookmark request timed out', duration),
+        );
+      }
+    });
+    _pendingTimeouts.add(timer);
+    operation.then((value) {
+      if (!completer.isCompleted) completer.complete(value);
+    }, onError: (Object error, StackTrace stackTrace) {
+      if (!completer.isCompleted) completer.completeError(error, stackTrace);
+    }).whenComplete(() {
+      timer.cancel();
+      _pendingTimeouts.remove(timer);
+    });
+    return completer.future;
+  }
+
+  @override
+  void dispose() {
+    _loadGeneration++;
+    for (final timer in _pendingTimeouts) {
+      timer.cancel();
+    }
+    _pendingTimeouts.clear();
+    super.dispose();
+  }
 
   /// Load bookmarks for the current user. Each call supersedes the preceding
   /// one, so a slow account-A request cannot overwrite account B after a switch.
@@ -35,11 +72,10 @@ class BookmarksProvider extends ChangeNotifier {
     }
 
     try {
-      final doc = await _userFirestore
-          .collection('users')
-          .doc(userId)
-          .get()
-          .timeout(const Duration(seconds: 15));
+      final doc = await _bounded(
+        _userFirestore.collection('users').doc(userId).get(),
+        const Duration(seconds: 15),
+      );
       if (generation != _loadGeneration || _userId != userId) return;
       final raw = doc.data()?['bookmarkedArticleIds'];
       final ids = raw is List
@@ -97,8 +133,9 @@ class BookmarksProvider extends ChangeNotifier {
 
   /// Get bookmarked articles from Firestore or dummy data.
   List<Article> getBookmarkedArticles() {
+    if (_bookmarkedIds.isEmpty) return const <Article>[];
     if (_allArticles.isEmpty) {
-      _loadArticlesCache();
+      _articlesLoad ??= _loadArticlesCache();
       return DummyData.articles
           .where((a) => _bookmarkedIds.contains(a.id))
           .toList();
@@ -108,11 +145,10 @@ class BookmarksProvider extends ChangeNotifier {
 
   Future<void> _loadArticlesCache() async {
     try {
-      final snapshot = await _contentFirestore
-          .collection('articles')
-          .limit(500)
-          .get()
-          .timeout(const Duration(seconds: 15));
+      final snapshot = await _bounded(
+        _contentFirestore.collection('articles').limit(500).get(),
+        const Duration(seconds: 15),
+      );
       if (snapshot.docs.isNotEmpty) {
         _allArticles = snapshot.docs
             .map((doc) => Article.fromMap(doc.data(), doc.id))
@@ -125,6 +161,8 @@ class BookmarksProvider extends ChangeNotifier {
       debugPrint('Failed to load articles cache: $e');
       _allArticles = DummyData.articles;
       notifyListeners();
+    } finally {
+      _articlesLoad = null;
     }
   }
 }

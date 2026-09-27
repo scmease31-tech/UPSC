@@ -232,8 +232,7 @@ class FirestoreContentService {
     final now = _now;
 
     try {
-      prefs = await SharedPreferences.getInstance()
-          .timeout(const Duration(seconds: 4));
+      prefs = await SharedPreferences.getInstance();
       cachedJson = prefs.getString(cacheKey);
       cachedTs = prefs.getInt(tsKey) ?? 0;
     } catch (error) {
@@ -334,8 +333,7 @@ class FirestoreContentService {
   static Future<List<Map<String, dynamic>>> refresh(String collection) async {
     SharedPreferences? prefs;
     try {
-      prefs = await SharedPreferences.getInstance()
-          .timeout(const Duration(seconds: 4));
+      prefs = await SharedPreferences.getInstance();
     } catch (error) {
       debugPrint('Could not clear local cache for $collection: $error');
     }

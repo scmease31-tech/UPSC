@@ -76,7 +76,7 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
     try {
       final loader =
           widget.loadSchemes ?? FirestoreContentService.getGovtSchemes;
-      final data = await loader().timeout(const Duration(seconds: 20));
+      final data = await loader();
       if (!mounted) return;
       setState(() {
         _schemes = _normalize(data);
@@ -104,7 +104,7 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
     try {
       final loader = widget.refreshSchemes ??
           () => FirestoreContentService.refresh('govtSchemes');
-      final data = await loader().timeout(const Duration(seconds: 20));
+      final data = await loader();
       if (!mounted) return;
       setState(() {
         _schemes = _normalize(data);
