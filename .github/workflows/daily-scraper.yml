@@ -2,11 +2,14 @@ name: Daily UPSC Content Scraper
 
 on:
   schedule:
-    # Runs 4 times daily (IST: 7 AM, 12 PM, 6 PM, 11:30 PM)
-    - cron: '30 1 * * *'   # 7:00 AM IST
-    - cron: '30 6 * * *'   # 12:00 PM IST
-    - cron: '30 12 * * *'  # 6:00 PM IST
-    - cron: '0 18 * * *'   # 11:30 PM IST
+    # Monday-Saturday. Each cron's UTC calendar date is also the intended IST
+    # publication date (the 18:00 UTC slot is 23:30 IST). The workflow passes
+    # that UTC date explicitly, so a queued run crossing midnight in India does
+    # not accidentally scrape the following day.
+    - cron: '30 1 * * 1-6'   # 7:00 AM IST
+    - cron: '30 6 * * 1-6'   # 12:00 PM IST
+    - cron: '30 12 * * 1-6'  # 6:00 PM IST
+    - cron: '0 18 * * 1-6'   # 11:30 PM IST
   workflow_dispatch:        # Manual trigger from GitHub UI
     inputs:
       date:
@@ -21,18 +24,20 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: daily-content-scraper
+  cancel-in-progress: false
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    # Skip Sundays (sites don't publish on Sundays)
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule != '' 
-    
+    timeout-minutes: 20
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
@@ -52,9 +57,13 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
         run: |
           ARGS=""
-          
-          # Handle manual trigger inputs
-          if [ "${{ github.event.inputs.date }}" != "" ]; then
+
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            # Use the cron slot's UTC date, not delayed runner wall-clock in IST.
+            # The 18:00 UTC run may start after midnight IST but still belongs to
+            # the UTC date (23:30 IST publication day).
+            ARGS="--date $(date -u +%F)"
+          elif [ "${{ github.event.inputs.date }}" != "" ]; then
             ARGS="--date ${{ github.event.inputs.date }}"
           elif [ "${{ github.event.inputs.days }}" != "" ] && [ "${{ github.event.inputs.days }}" != "1" ]; then
             ARGS="--days ${{ github.event.inputs.days }}"

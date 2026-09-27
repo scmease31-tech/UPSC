@@ -18,15 +18,17 @@ on:
       - 'firestore.rules'
       - '.github/workflows/deploy-rules.yml'
       - 'backend/content-scraper/register-android-sha.js'
+      - 'backend/content-scraper/fetch-google-services.js'
+      - 'backend/content-scraper/ensure-web-app.js'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
@@ -65,4 +67,18 @@ jobs:
         with:
           name: google-services-json
           path: android/app/google-services.json
+          if-no-files-found: error
+
+      - name: Ensure live-project Web app and export config
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          FIREBASE_WEB_CONFIG_OUTPUT: ../../firebase-web-config.json
+        run: node ensure-web-app.js
+
+      - name: Upload Firebase Web config
+        uses: actions/upload-artifact@v4
+        with:
+          name: firebase-web-config
+          path: firebase-web-config.json
           if-no-files-found: error

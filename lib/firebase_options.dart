@@ -66,16 +66,18 @@ class DefaultFirebaseOptions {
   static const String androidAuthWebClientId =
       '906645524405-ifrp69c4lq4m2e5umjlpk428d099nn0h.apps.googleusercontent.com';
 
-  /// Registered web Firebase app. Android remains the authoritative live feed;
-  /// this valid web app is retained until a matching web app is registered in
-  /// the live Firebase project.
+  /// Web app registered in the same live project as Android and the scraper.
+  /// Keeping every platform on one project prevents routes from showing a
+  /// different/empty collection in the browser. Generated from the Firebase
+  /// Management API by backend/content-scraper/ensure-web-app.js.
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCuoe1xWtNkHtFQhQx8Cq2rP9jywgnuseY',
-    appId: '1:787232499240:web:60e803c2749c0a092af71d',
-    messagingSenderId: '787232499240',
-    projectId: 'upsc-app-e2475',
-    storageBucket: 'upsc-app-e2475.firebasestorage.app',
-    authDomain: 'upsc-app-e2475.firebaseapp.com',
-    measurementId: 'G-13JDPLXQMT',
+    apiKey: 'AIzaSyACReA-zvqA5sr9WRCenhtlEpcrom7_WtA',
+    appId: '1:906645524405:web:a97f474e5ff2c9b0dc53fc',
+    messagingSenderId: '906645524405',
+    projectId: 'upsc-app-e2475-e5c95',
+    authDomain: 'upsc-app-e2475-e5c95.firebaseapp.com',
+    databaseURL:
+        'https://upsc-app-e2475-e5c95-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'upsc-app-e2475-e5c95.firebasestorage.app',
   );
 }

@@ -1,6 +1,6 @@
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { generateDailyQuiz } from './generators.js';
+import { clean, generateDailyQuiz, primaryCategory } from './generators.js';
 
 let db = null;
 
@@ -447,6 +447,47 @@ function periodBounds(dateStr, period) {
   };
 }
 
+/**
+ * Build the stored portion of a roundup without touching Firestore.
+ *
+ * Keeping this pure makes the entire weekly/monthly path executable in tests;
+ * testing primaryCategory alone missed the next file-private dependency (`clean`)
+ * and production failed again immediately after the first fix.
+ */
+export function buildRoundupDocument(articles, bounds, period) {
+  const sorted = [...articles].sort((a, b) =>
+    String(b.publishedDate).localeCompare(String(a.publishedDate))
+  );
+  const categoryCounts = {};
+  for (const article of sorted) {
+    const category = primaryCategory(article);
+    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+  }
+  const keyStories = sorted.slice(0, 24).map((article) => ({
+    id: article.id,
+    title: clean(article.title),
+    summary: clean(article.summary),
+    category: primaryCategory(article),
+    newspaper: clean(article.newspaper),
+    publishedDate: clean(article.publishedDate),
+    upscPaper: clean(article.upscPaper),
+  }));
+  const reviewQuestions = generateDailyQuiz(sorted, bounds.id, { limit: 10 });
+  return {
+    id: bounds.id,
+    period,
+    startDate: bounds.start,
+    endDate: bounds.end,
+    title: period === 'weekly'
+      ? `Weekly Current Affairs · ${bounds.start} to ${bounds.end}`
+      : `Monthly Current Affairs · ${bounds.start.slice(0, 7)}`,
+    storyCount: sorted.length,
+    categoryCounts,
+    keyStories,
+    reviewQuestions: reviewQuestions.map(({ id, ...question }) => ({ id, ...question })),
+  };
+}
+
 /** Rebuild current week and month summaries from the canonical articles store. */
 export async function rebuildRoundups(dateStr, dryRun = false) {
   if (dryRun) {
@@ -463,39 +504,14 @@ export async function rebuildRoundups(dateStr, dryRun = false) {
         .where('publishedDate', '>=', bounds.start)
         .where('publishedDate', '<=', bounds.end)
         .get();
-      const articles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        .sort((a, b) => String(b.publishedDate).localeCompare(String(a.publishedDate)));
-      const categoryCounts = {};
-      for (const article of articles) {
-        const category = primaryCategory(article);
-        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-      }
-      const keyStories = articles.slice(0, 24).map((article) => ({
-        id: article.id,
-        title: clean(article.title),
-        summary: clean(article.summary),
-        category: primaryCategory(article),
-        newspaper: clean(article.newspaper),
-        publishedDate: clean(article.publishedDate),
-        upscPaper: clean(article.upscPaper),
-      }));
-      const reviewQuestions = generateDailyQuiz(articles, bounds.id, { limit: 10 });
+      const articles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const roundup = buildRoundupDocument(articles, bounds, period);
       await db.collection('currentAffairsRoundups').doc(bounds.id).set({
-        id: bounds.id,
-        period,
-        startDate: bounds.start,
-        endDate: bounds.end,
-        title: period === 'weekly'
-          ? `Weekly Current Affairs · ${bounds.start} to ${bounds.end}`
-          : `Monthly Current Affairs · ${bounds.start.slice(0, 7)}`,
-        storyCount: articles.length,
-        categoryCounts,
-        keyStories,
-        reviewQuestions: reviewQuestions.map(({ id, ...question }) => ({ id, ...question })),
+        ...roundup,
         generatedAt: FieldValue.serverTimestamp(),
       });
       stats.uploaded++;
-      console.log(`  [upsert] ${bounds.id}: ${articles.length} stories, ${reviewQuestions.length} review questions`);
+      console.log(`  [upsert] ${bounds.id}: ${roundup.storyCount} stories, ${roundup.reviewQuestions.length} review questions`);
     } catch (error) {
       stats.errors++;
       console.error(`  [err] ${bounds.id}: ${error.message}`);

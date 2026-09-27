@@ -4,9 +4,21 @@ import assert from 'node:assert/strict';
 import { classifyPaper, parsePrelimsPaper, parseMainsPaper } from '../upsc-papers.js';
 import { classify as classifyUpload } from '../inbox-ingest.js';
 import { parsePyqBlock } from '../scrapers.js';
-import { isBlank, missingFieldPatch, SCHEME_DETAIL_FIELDS } from '../uploader.js';
+import {
+  buildRoundupDocument,
+  isBlank,
+  missingFieldPatch,
+  SCHEME_DETAIL_FIELDS,
+} from '../uploader.js';
 import { restructure, isStructured } from '../restructure.js';
-import { generateDailyQuiz, generateFlashcards, generateKeyFacts, generateSchemes, schemeNameProblem } from '../generators.js';
+import {
+  generateDailyQuiz,
+  generateFlashcards,
+  generateKeyFacts,
+  generateSchemes,
+  primaryCategory,
+  schemeNameProblem,
+} from '../generators.js';
 
 const base = 'https://www.upsc.gov.in/sites/default/files/';
 
@@ -764,4 +776,56 @@ test('generateSchemes no longer emits the rejected shapes', () => {
   }
   // The genuine one in that text still comes through.
   assert.ok(names.some((n) => /Jal Jeevan Mission/i.test(n)), `got: ${names.join(' | ')}`);
+});
+
+
+// Roundup generation calls the same exported helper as the content generators.
+// It was previously file-private, so every content-producing scheduled run
+// finished its other writes and then failed twice (weekly + monthly) with
+// `ReferenceError: primaryCategory is not defined`.
+test('roundups can use the exported primary article category', () => {
+  assert.equal(
+    primaryCategory({ categoryTags: ['General', 'Economy', 'Polity'] }),
+    'Economy'
+  );
+  assert.equal(primaryCategory({ categoryTags: [] }), 'General');
+  assert.equal(primaryCategory({}), 'General');
+});
+
+
+test('the complete roundup transform executes with canonical article data', () => {
+  const articles = [
+    {
+      ...sampleArticle,
+      id: 'roundup-1',
+      title: '  Monetary Policy Review  ',
+      summary: '  The RBI retained its policy rate.  ',
+      categoryTags: ['General', 'Economy'],
+      newspaper: 'The Hindu',
+      publishedDate: '2026-09-26',
+      upscPaper: 'GS-III',
+    },
+    {
+      ...sampleArticle,
+      id: 'roundup-2',
+      title: 'Wetland Conservation',
+      categoryTags: ['Environment'],
+      newspaper: null,
+      publishedDate: '2026-09-25',
+      upscPaper: 'GS-III',
+    },
+  ];
+  const roundup = buildRoundupDocument(
+    articles,
+    { id: 'week_2026-09-21', start: '2026-09-21', end: '2026-09-26' },
+    'weekly'
+  );
+
+  assert.equal(roundup.id, 'week_2026-09-21');
+  assert.equal(roundup.storyCount, 2);
+  assert.deepEqual(roundup.categoryCounts, { Economy: 1, Environment: 1 });
+  assert.equal(roundup.keyStories[0].title, 'Monetary Policy Review');
+  assert.equal(roundup.keyStories[1].newspaper, '');
+  assert.ok(Array.isArray(roundup.reviewQuestions));
+  assert.ok(!('generatedAt' in roundup), 'server timestamp belongs in the writer');
 });

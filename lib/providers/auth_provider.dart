@@ -12,9 +12,15 @@ import '../services/firebase_services.dart';
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseServices.auth;
   final FirebaseFirestore _firestore = FirebaseServices.userFirestore;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: DefaultFirebaseOptions.androidAuthWebClientId,
-  );
+  GoogleSignIn? _googleSignIn;
+
+  /// The google_sign_in plugin is mobile-only in this app. Web authentication
+  /// uses FirebaseAuth.signInWithPopup below; constructing GoogleSignIn eagerly
+  /// on web initializes its JS plugin without a client ID and raises an uncaught
+  /// page error during startup even when the user never touches Sign In.
+  GoogleSignIn get _mobileGoogleSignIn => _googleSignIn ??= GoogleSignIn(
+        serverClientId: DefaultFirebaseOptions.androidAuthWebClientId,
+      );
 
   late final StreamSubscription<User?> _authSub;
 
@@ -63,7 +69,7 @@ class AuthProvider extends ChangeNotifier {
         userCredential = await _auth.signInWithPopup(provider);
       } else {
         // Mobile: Use google_sign_in package
-        final googleUser = await _googleSignIn.signIn();
+        final googleUser = await _mobileGoogleSignIn.signIn();
         if (googleUser == null) {
           _isLoading = false;
           _isSigningUp = false;
@@ -169,7 +175,10 @@ class AuthProvider extends ChangeNotifier {
 
       // Write profile to Firestore
       try {
-        await _firestore.collection('users').doc(credential.user!.uid).set(profile.toMap());
+        await _firestore
+            .collection('users')
+            .doc(credential.user!.uid)
+            .set(profile.toMap());
       } catch (e) {
         debugPrint('Firestore profile write failed: $e');
       }
@@ -238,7 +247,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// Sign out from Firebase and Google.
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    if (!kIsWeb) await _mobileGoogleSignIn.signOut();
     await _auth.signOut();
     _userProfile = null;
     notifyListeners();
@@ -248,7 +257,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadUserProfile() async {
     if (_firebaseUser == null) return;
     try {
-      final doc = await _firestore.collection('users').doc(_firebaseUser!.uid).get();
+      final doc =
+          await _firestore.collection('users').doc(_firebaseUser!.uid).get();
       if (doc.exists) {
         _userProfile = UserProfile.fromMap(doc.data()!);
         // Update streak
@@ -261,7 +271,10 @@ class AuthProvider extends ChangeNotifier {
           photoUrl: _firebaseUser!.photoURL ?? '',
           lastActiveDate: DateTime.now(),
         );
-        await _firestore.collection('users').doc(_firebaseUser!.uid).set(_userProfile!.toMap());
+        await _firestore
+            .collection('users')
+            .doc(_firebaseUser!.uid)
+            .set(_userProfile!.toMap());
       }
     } catch (_) {
       _userProfile = UserProfile(
@@ -283,7 +296,8 @@ class AuthProvider extends ChangeNotifier {
     int newStreak = _userProfile!.streakDays;
     if (lastActive != null) {
       final diff = DateTime(now.year, now.month, now.day)
-          .difference(DateTime(lastActive.year, lastActive.month, lastActive.day))
+          .difference(
+              DateTime(lastActive.year, lastActive.month, lastActive.day))
           .inDays;
       if (diff == 1) {
         newStreak = _userProfile!.streakDays + 1;
@@ -393,7 +407,8 @@ class AuthProvider extends ChangeNotifier {
     final scores = _userProfile?.quizScores ?? [];
     if (scores.isEmpty) return 0;
     final totalCorrect = scores.fold<int>(0, (sum, s) => sum + s.score);
-    final totalQuestions = scores.fold<int>(0, (sum, s) => sum + s.totalQuestions);
+    final totalQuestions =
+        scores.fold<int>(0, (sum, s) => sum + s.totalQuestions);
     return totalQuestions > 0 ? totalCorrect / totalQuestions : 0;
   }
 

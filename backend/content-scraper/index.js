@@ -25,7 +25,7 @@ import {
   uploadArticles,
   uploadVocabulary,
   uploadFlashcards,
-  uploadSchemes,
+  enrichSchemes,
   uploadPyqs,
   uploadKeyFacts,
   uploadDailyQuiz,
@@ -104,8 +104,13 @@ async function scrapeForDate(dateStr, dryRun) {
   ]);
 
   if (drishtiArticles.length === 0 && insightsArticles.length === 0) {
-    console.log(`[Info] No articles found for ${dateStr} (may be Sunday/holiday)`);
-    return { uploaded: 0, skipped: 0, errors: 0 };
+    console.log(`[Info] No new source articles found for ${dateStr} (may be Sunday/holiday).`);
+    // Roundups are derived from the canonical Firestore article store, not only
+    // from this fetch. Rebuilding them here makes a no-new-article/manual run a
+    // valid repair path instead of silently skipping the phase that made the
+    // preceding scheduled runs red.
+    const roundupStats = await rebuildRoundups(dateStr, dryRun);
+    return roundupStats;
   }
 
   // 2. Deduplicate and merge
@@ -167,7 +172,15 @@ async function scrapeForDate(dateStr, dryRun) {
 
   const vocabStats = await uploadVocabulary(vocabulary, dryRun);
   const flashStats = await uploadFlashcards(derived.flashcards, dryRun);
-  const schemeStats = await uploadSchemes(derived.schemes, dryRun);
+  const schemeEnrichment = await enrichSchemes(derived.schemes, dryRun);
+  // Match the common upload stats shape for the aggregate report while still
+  // filling fields on an existing scheme. uploadSchemes() skipped existing ids,
+  // so new coverage could never enrich a scheme after its first mention.
+  const schemeStats = {
+    uploaded: schemeEnrichment.created + schemeEnrichment.enriched,
+    skipped: schemeEnrichment.unchanged,
+    errors: schemeEnrichment.errors,
+  };
   const factStats = await uploadKeyFacts(derived.keyFacts, dryRun);
 
   const dailyQuiz = generateDailyQuiz(mergedArticles, dateStr, { limit: 10 });

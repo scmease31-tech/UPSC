@@ -69,7 +69,10 @@ class _SplashScreenState extends State<SplashScreen>
       Future.delayed(const Duration(milliseconds: 800), () async {
         if (!mounted) return;
         try {
-          final user = await FirebaseServices.auth.authStateChanges().first;
+          final user = await FirebaseServices.auth
+              .authStateChanges()
+              .first
+              .timeout(const Duration(seconds: 4));
           if (!mounted) return;
           if (user != null) {
             Navigator.pushReplacementNamed(context, '/main');

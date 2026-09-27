@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_fonts.dart';
 import '../../config/theme.dart';
+import '../../models/government_scheme.dart';
 import '../../services/firestore_content_service.dart';
 
 /// ──────────────────────────────────────────────────────────────────────────────
@@ -28,20 +29,17 @@ import '../../services/firestore_content_service.dart';
 /// section that has no content.
 /// ──────────────────────────────────────────────────────────────────────────────
 class SchemeDetailSheet extends StatelessWidget {
-  const SchemeDetailSheet({super.key, required this.scheme, this.scrollController});
+  const SchemeDetailSheet(
+      {super.key, required this.scheme, this.scrollController});
 
   final Map<String, dynamic> scheme;
   final ScrollController? scrollController;
 
   static String _str(Map<String, dynamic> m, String key) =>
-      (m[key] as String? ?? '').trim();
+      GovernmentScheme.text(m, key);
 
   static List<String> _list(Map<String, dynamic> m, String key) =>
-      (m[key] as List<dynamic>?)
-          ?.map((e) => e.toString().trim())
-          .where((e) => e.isNotEmpty)
-          .toList() ??
-      const <String>[];
+      GovernmentScheme.stringList(m, key);
 
   /// The best available prose for the scheme. Scraper documents only have
   /// `description`, so preferring `detailedDescription` but falling back is what
@@ -156,7 +154,11 @@ class SchemeDetailSheet extends StatelessWidget {
                     value: ministry
                   ),
                 if (sector.isNotEmpty)
-                  (icon: Icons.category_rounded, label: 'Sector', value: sector),
+                  (
+                    icon: Icons.category_rounded,
+                    label: 'Sector',
+                    value: sector
+                  ),
                 if (year.isNotEmpty)
                   (
                     icon: Icons.event_rounded,
@@ -235,7 +237,6 @@ class SchemeDetailSheet extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// A small capitalised section heading with an accent rule, so the sheet reads as

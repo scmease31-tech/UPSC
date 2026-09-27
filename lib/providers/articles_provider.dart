@@ -16,6 +16,9 @@ class ArticlesProvider extends ChangeNotifier {
   bool _isLoading = false;
   List<Article>? _cachedFiltered;
   String _cacheKey = '';
+  int _dataRevision = 0;
+  int _loadGeneration = 0;
+  final Set<Timer> _pendingTimeouts = <Timer>{};
 
   final FirebaseFirestore _firestore = FirebaseServices.contentFirestore;
   StreamSubscription<QuerySnapshot>? _firestoreSub;
@@ -23,7 +26,8 @@ class ArticlesProvider extends ChangeNotifier {
   List<Article> get allArticles => _articles;
 
   List<Article> get articles {
-    final key = '$_selectedDate|$_selectedCategory|$_selectedNewspaper|$_searchQuery|${_articles.length}';
+    final key =
+        '$_selectedDate|$_selectedCategory|$_selectedNewspaper|$_searchQuery|$_dataRevision';
     if (key == _cacheKey && _cachedFiltered != null) return _cachedFiltered!;
 
     var list = allArticles;
@@ -31,25 +35,32 @@ class ArticlesProvider extends ChangeNotifier {
     // Filter by date
     if (_selectedDate.isNotEmpty) {
       list = list.where((a) {
-        final d = '${a.publishedDate.year}-${a.publishedDate.month.toString().padLeft(2, '0')}-${a.publishedDate.day.toString().padLeft(2, '0')}';
+        final d =
+            '${a.publishedDate.year}-${a.publishedDate.month.toString().padLeft(2, '0')}-${a.publishedDate.day.toString().padLeft(2, '0')}';
         return d == _selectedDate;
       }).toList();
     }
 
     // Filter by newspaper
     if (_selectedNewspaper.isNotEmpty) {
-      list = list.where((a) => a.newspaper.toLowerCase() == _selectedNewspaper.toLowerCase()).toList();
+      list = list
+          .where((a) =>
+              a.newspaper.toLowerCase() == _selectedNewspaper.toLowerCase())
+          .toList();
     }
 
     // Filter by category
     if (_selectedCategory != 'All') {
-      list = list.where((a) => a.categoryTags.contains(_selectedCategory)).toList();
+      list = list
+          .where((a) => a.categoryTags.contains(_selectedCategory))
+          .toList();
     }
 
     // Filter by search — deep search across all relevant fields for UPSC aspirants
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
-      final queryWords = q.split(RegExp(r'\s+')).where((w) => w.length > 1).toList();
+      final queryWords =
+          q.split(RegExp(r'\s+')).where((w) => w.length > 1).toList();
       list = list.where((a) {
         final searchableText = [
           a.title,
@@ -91,7 +102,8 @@ class ArticlesProvider extends ChangeNotifier {
   List<String> get availableDates {
     final dates = <String>{};
     for (final a in allArticles) {
-      dates.add('${a.publishedDate.year}-${a.publishedDate.month.toString().padLeft(2, '0')}-${a.publishedDate.day.toString().padLeft(2, '0')}');
+      dates.add(
+          '${a.publishedDate.year}-${a.publishedDate.month.toString().padLeft(2, '0')}-${a.publishedDate.day.toString().padLeft(2, '0')}');
     }
     final sorted = dates.toList()..sort((a, b) => b.compareTo(a));
     return sorted;
@@ -121,87 +133,117 @@ class ArticlesProvider extends ChangeNotifier {
     'Social Issues',
   ];
 
+  void _replaceArticles(List<Article> articles) {
+    _articles = articles.isEmpty ? DummyData.articles : articles;
+    _dataRevision++;
+    _cacheKey = '';
+    _cachedFiltered = null;
+  }
+
   ArticlesProvider() {
     loadArticles();
   }
 
   @override
   void dispose() {
+    _loadGeneration++;
+    for (final timer in _pendingTimeouts) {
+      timer.cancel();
+    }
+    _pendingTimeouts.clear();
     _firestoreSub?.cancel();
     super.dispose();
   }
 
-  /// Load articles from Firestore with real-time listener; falls back to dummy data.
+  Future<T> _bounded<T>(Future<T> operation, Duration duration) {
+    final completer = Completer<T>();
+    late final Timer timer;
+    timer = Timer(duration, () {
+      _pendingTimeouts.remove(timer);
+      if (!completer.isCompleted) {
+        completer.completeError(
+          TimeoutException('Article request timed out', duration),
+        );
+      }
+    });
+    _pendingTimeouts.add(timer);
+    operation.then((value) {
+      if (!completer.isCompleted) completer.complete(value);
+    }, onError: (Object error, StackTrace stackTrace) {
+      if (!completer.isCompleted) completer.completeError(error, stackTrace);
+    }).whenComplete(() {
+      timer.cancel();
+      _pendingTimeouts.remove(timer);
+    });
+    return completer.future;
+  }
+
+  /// Load articles from Firestore with a real-time listener and a bounded first
+  /// fetch. A generation token prevents an older refresh completing after a
+  /// newer one and overwriting its result.
   Future<void> loadArticles() async {
+    final generation = ++_loadGeneration;
     _isLoading = true;
     notifyListeners();
 
-    try {
-      // Set up real-time listener
-      _firestoreSub?.cancel();
-      _firestoreSub = _firestore
-          .collection('articles')
-          .orderBy('publishedDate', descending: true)
-          .snapshots()
-          .listen((snapshot) {
-        if (snapshot.docs.isNotEmpty) {
-          try {
-            _articles = snapshot.docs
-                .map((doc) {
-                  try {
-                    return Article.fromMap(doc.data(), doc.id);
-                  } catch (e) {
-                    debugPrint('Skipping bad article doc ${doc.id}: $e');
-                    return null;
-                  }
-                })
-                .whereType<Article>()
-                .toList();
-            if (_articles.isEmpty) _articles = DummyData.articles;
-            // Update scheduled notification with latest article
-            _updateNotificationWithLatest();
-          } catch (_) {
-            _articles = DummyData.articles;
-          }
-        } else {
-          _articles = DummyData.articles;
-        }
-        _isLoading = false;
-        notifyListeners();
-      }, onError: (e) {
-        debugPrint('Firestore articles stream error: $e');
-        _articles = DummyData.articles;
-        _isLoading = false;
-        notifyListeners();
-      });
+    var streamDelivered = false;
+    await _firestoreSub?.cancel();
+    if (generation != _loadGeneration) return;
 
-      // Initial fetch for immediate data (before stream fires)
-      final snapshot = await _firestore
-          .collection('articles')
-          .orderBy('publishedDate', descending: true)
-          .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        _articles = snapshot.docs
+    List<Article> parse(QuerySnapshot<Map<String, dynamic>> snapshot) =>
+        snapshot.docs
             .map((doc) {
               try {
                 return Article.fromMap(doc.data(), doc.id);
-              } catch (e) {
-                debugPrint('Skipping bad article doc ${doc.id}: $e');
+              } catch (error) {
+                debugPrint('Skipping bad article doc ${doc.id}: $error');
                 return null;
               }
             })
             .whereType<Article>()
-            .toList();
-        if (_articles.isEmpty) _articles = DummyData.articles;
-      } else {
-        _articles = DummyData.articles;
+            .toList(growable: false);
+
+    _firestoreSub = _firestore
+        .collection('articles')
+        .orderBy('publishedDate', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      if (generation != _loadGeneration) return;
+      streamDelivered = true;
+      try {
+        _replaceArticles(parse(snapshot));
+        _updateNotificationWithLatest();
+      } catch (error) {
+        debugPrint('Could not parse article stream: $error');
+        _replaceArticles(const <Article>[]);
       }
-    } catch (e) {
-      debugPrint('Initial articles fetch error: $e');
-      _articles = DummyData.articles;
+      _isLoading = false;
+      notifyListeners();
+    }, onError: (Object error) {
+      if (generation != _loadGeneration) return;
+      debugPrint('Firestore articles stream error: $error');
+      if (_articles.isEmpty) _replaceArticles(const <Article>[]);
+      _isLoading = false;
+      notifyListeners();
+    });
+
+    try {
+      final snapshot = await _bounded(
+        _firestore
+            .collection('articles')
+            .orderBy('publishedDate', descending: true)
+            .get(),
+        const Duration(seconds: 18),
+      );
+      if (generation != _loadGeneration || streamDelivered) return;
+      _replaceArticles(parse(snapshot));
+    } catch (error) {
+      if (generation != _loadGeneration || streamDelivered) return;
+      debugPrint('Initial articles fetch error: $error');
+      if (_articles.isEmpty) _replaceArticles(const <Article>[]);
     }
 
+    if (generation != _loadGeneration || streamDelivered) return;
     _isLoading = false;
     notifyListeners();
   }
@@ -268,7 +310,8 @@ class ArticlesProvider extends ChangeNotifier {
               if (kpLower.contains(topic)) score++;
             }
           }
-          if (a.upscPaper == article.upscPaper && article.upscPaper.isNotEmpty) score++;
+          if (a.upscPaper == article.upscPaper && article.upscPaper.isNotEmpty)
+            score++;
           return MapEntry(a, score);
         })
         .where((e) => e.value > 0)
