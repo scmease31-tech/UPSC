@@ -8,7 +8,7 @@ import {
   loadVocabularyIndex,
   persistDerivedLibraries,
   uploadPyqs,
-  uploadVocabulary,
+  upsertVocabularyFromIndex,
 } from './uploader.js';
 import { generateAll } from './generators.js';
 import { runHistoricalVocabulary, toIsoDate } from './vocabulary-pipeline.js';
@@ -209,7 +209,8 @@ async function main() {
     limit: options.vocabPerBatch,
     dryRun: options.dryRun,
     existingByWord,
-    upload: uploadVocabulary,
+    upload: (docs, isDryRun) =>
+      upsertVocabularyFromIndex(docs, isDryRun, existingByWord),
   });
   const libraries = await persistDerivedLibraries(derived, { dryRun: options.dryRun });
 

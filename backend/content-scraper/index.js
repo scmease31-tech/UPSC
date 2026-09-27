@@ -12,7 +12,7 @@ import {
   uploadArticles,
   uploadDailyQuiz,
   uploadPyqs,
-  uploadVocabulary,
+  upsertVocabularyFromIndex,
 } from './uploader.js';
 import { generateAll, generateDailyQuiz } from './generators.js';
 import { processVocabularyDate } from './vocabulary-pipeline.js';
@@ -109,7 +109,8 @@ async function scrapeForDate(dateStr, dryRun, vocabularyState) {
     generatedVocabulary: derived.vocabulary,
     limit: 12,
     dryRun,
-    upload: uploadVocabulary,
+    upload: (docs, isDryRun) =>
+      upsertVocabularyFromIndex(docs, isDryRun, vocabularyState),
     // Daily publication remains best-effort, but exhausted transient lookups
     // are counted in the aggregate so automation is visibly red and rerunnable.
     failOnLookupErrors: false,

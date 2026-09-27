@@ -27,6 +27,7 @@ import {
   FLASHCARD_ENRICHMENT_FIELDS,
   persistDerivedLibraries,
   schemeEnrichmentPatch,
+  upsertVocabularyFromIndex,
   vocabularyEnrichmentPatch,
 } from '../uploader.js';
 
@@ -592,4 +593,43 @@ test('Wiktionary definitions are converted from structured HTML to plain text', 
     'Of acute discernment; having keen & perceptive insight.'
   );
   assert.ok(!/[<>]/.test(result.entry.meaning));
+});
+
+
+test('indexed vocabulary writer creates and enriches with zero Firestore reads', async () => {
+  const existing = new Map([
+    ['resilience', {
+      id: 'legacy-resilience',
+      word: 'Resilience',
+      normalizedWord: 'resilience',
+      meaning: 'The ability to recover.',
+      sourceUrl: '',
+      schemaVersion: 1,
+    }],
+  ]);
+  const stats = await upsertVocabularyFromIndex([
+    {
+      id: 'ignored-new-id',
+      word: 'Resilience',
+      normalizedWord: 'resilience',
+      meaning: 'Generated meaning must not replace curation.',
+      sourceUrl: 'https://example.com/resilience',
+      schemaVersion: 2,
+    },
+    {
+      id: 'v-perspicacious',
+      word: 'Perspicacious',
+      normalizedWord: 'perspicacious',
+      meaning: 'Having keen insight.',
+      schemaVersion: 2,
+    },
+  ], true, existing);
+
+  assert.equal(stats.created, 1);
+  assert.equal(stats.enriched, 1);
+  assert.equal(stats.errors, 0);
+  assert.equal(existing.get('resilience').id, 'legacy-resilience');
+  assert.equal(existing.get('resilience').meaning, 'The ability to recover.');
+  assert.equal(existing.get('resilience').sourceUrl, 'https://example.com/resilience');
+  assert.equal(existing.get('perspicacious').id, 'v-perspicacious');
 });

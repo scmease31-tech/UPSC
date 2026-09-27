@@ -488,6 +488,89 @@ export function enrichVocabulary(docs, dryRun = false) {
   });
 }
 
+/**
+ * Vocabulary writer for callers that already loaded the lexical index.
+ *
+ * Historical processing loads every existing word once so it can exclude those
+ * words BEFORE dictionary lookup. Calling enrichCollection afterwards used to
+ * read every same document again for every date and exhausted Firestore reads.
+ * This applies the identical pure patch policy against that authoritative index
+ * and writes directly: zero additional document reads per date.
+ */
+export async function upsertVocabularyFromIndex(
+  docs,
+  dryRun = false,
+  existingByWord = new Map(),
+) {
+  const stats = { uploaded: 0, skipped: 0, errors: 0, created: 0, enriched: 0, unchanged: 0 };
+  if (!docs?.length) return stats;
+  if (!db && !dryRun) initFirebase();
+
+  for (let offset = 0; offset < docs.length; offset += 400) {
+    const chunk = docs.slice(offset, offset + 400);
+    const batch = !dryRun ? db.batch() : null;
+    const stateUpdates = [];
+    let writes = 0;
+
+    for (const doc of chunk) {
+      const normalized = clean(doc.normalizedWord || doc.word).toLocaleLowerCase('en-US');
+      if (!doc.id || !normalized) {
+        stats.errors++;
+        continue;
+      }
+      const stored = existingByWord.get(normalized);
+      if (!stored) {
+        const { id, ...data } = doc;
+        if (!dryRun) {
+          batch.set(db.collection('vocabulary').doc(id), {
+            ...data,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+          writes++;
+        }
+        stats.created++;
+        stats.uploaded++;
+        stateUpdates.push([normalized, { ...doc }]);
+        continue;
+      }
+
+      const patch = vocabularyEnrichmentPatch(stored, doc);
+      if (Object.keys(patch).length === 0) {
+        stats.unchanged++;
+        stats.skipped++;
+        continue;
+      }
+      const id = stored.id || doc.id;
+      if (!dryRun) {
+        batch.update(db.collection('vocabulary').doc(id), {
+          ...patch,
+          enrichedAt: FieldValue.serverTimestamp(),
+        });
+        writes++;
+      }
+      stats.enriched++;
+      stats.uploaded++;
+      stateUpdates.push([normalized, { ...stored, ...patch, id }]);
+    }
+
+    if (!dryRun && writes > 0) {
+      try {
+        await batch.commit();
+      } catch (error) {
+        console.error(`[Firebase] Vocabulary batch commit failed: ${error.message}`);
+        stats.errors += writes;
+        continue;
+      }
+    }
+    for (const [key, value] of stateUpdates) existingByWord.set(key, value);
+  }
+  console.log(
+    `  [vocabulary-indexed] created=${stats.created} enriched=${stats.enriched} ` +
+    `unchanged=${stats.unchanged} errors=${stats.errors}`
+  );
+  return stats;
+}
+
 export function enrichFlashcards(docs, dryRun = false) {
   return enrichCollection('flashcards', docs, {
     dryRun,

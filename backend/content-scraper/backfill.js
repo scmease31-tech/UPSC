@@ -19,7 +19,7 @@ import {
   initFirebase,
   loadVocabularyIndex,
   persistDerivedLibraries,
-  uploadVocabulary,
+  upsertVocabularyFromIndex,
 } from './uploader.js';
 import {
   parseVocabularyBackfillArgs,
@@ -58,7 +58,7 @@ export async function runBackfill({
   persist = persistDerivedLibraries,
   loadExistingVocabulary = loadVocabularyIndex,
   runVocabulary = runHistoricalVocabulary,
-  uploadVocabularyFn = uploadVocabulary,
+  uploadVocabularyFn = upsertVocabularyFromIndex,
 } = {}) {
   const snapshot = await firestore.collection('articles').get();
   const articles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -86,7 +86,8 @@ export async function runBackfill({
     maxDates: options.maxDates,
     dryRun: options.dryRun,
     existingByWord,
-    upload: uploadVocabularyFn,
+    upload: (docs, dryRun) =>
+      uploadVocabularyFn(docs, dryRun, existingByWord),
     log,
   });
 
