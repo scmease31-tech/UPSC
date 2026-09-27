@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../data/offline_content.dart';
 import 'firebase_services.dart';
 
@@ -19,13 +22,43 @@ class FirestoreContentService {
   static List<Map<String, dynamic>>? _revisionNotes;
   static List<Map<String, dynamic>>? _roundups;
 
-  // Cache TTL = 6 hours
+  // A static value without a timestamp lived forever, even after the advertised
+  // six-hour disk TTL expired. Every memory hit is now subject to the same TTL.
+  static final Map<String, int> _memoryCachedAt = <String, int>{};
+  static final Map<String, Object> _lastErrors = <String, Object>{};
+
   static const _cacheTTL = Duration(hours: 6);
+  static const _requestTimeout = Duration(seconds: 18);
+  static const _cacheSchema = 3;
+
+  static int get _now => DateTime.now().millisecondsSinceEpoch;
+
+  static T? _freshMemory<T>(String collection, T? value) {
+    if (value == null) return null;
+    final cachedAt = _memoryCachedAt[collection] ?? 0;
+    if (_now - cachedAt >= _cacheTTL.inMilliseconds) return null;
+    return value;
+  }
+
+  static T _remember<T>(String collection, T value) {
+    _memoryCachedAt[collection] = _now;
+    return value;
+  }
+
+  static Object? lastErrorFor(String collection) => _lastErrors[collection];
+
+  static String _cacheStem(String collection) {
+    final project = FirebaseServices.contentApp.options.projectId;
+    // Project + schema scoping prevents data from the old Firebase project or an
+    // old field shape surviving a migration under the same collection key.
+    return 'fcs_v${_cacheSchema}_${project}_$collection';
+  }
 
   // ─── Current Affairs ─────────────────────────────────────────────────
 
   static Future<List<Map<String, dynamic>>> getCurrentAffairs() async {
-    if (_currentAffairs != null) return _currentAffairs!;
+    final memory = _freshMemory('currentAffairs', _currentAffairs);
+    if (memory != null) return memory;
     var data = await _fetchWithCache('currentAffairs');
     // The dedicated `currentAffairs` collection is usually empty — the daily
     // scraper writes news into `articles`. Fall back to that so the Week/Month/
@@ -36,8 +69,8 @@ class FirestoreContentService {
     if (data.isEmpty) {
       data = _copyFallback(OfflineContent.currentAffairs);
     }
-    _currentAffairs = data;
-    return _currentAffairs ?? [];
+    _currentAffairs = _remember('currentAffairs', data);
+    return _currentAffairs!;
   }
 
   /// Map the scraped `articles` collection into the current-affairs card shape,
@@ -54,19 +87,27 @@ class FirestoreContentService {
         final a = d.data();
         final tags = (a['categoryTags'] as List?) ?? const [];
         final category = tags.isNotEmpty ? tags.first.toString() : 'General';
-        final dateStr = (a['publishedDate'] ?? '').toString();
-        final pd = DateTime.tryParse(dateStr);
+        final rawDate = a['publishedDate'];
+        final pd = switch (rawDate) {
+          final Timestamp value => value.toDate(),
+          final DateTime value => value,
+          _ => DateTime.tryParse((rawDate ?? '').toString()),
+        };
+        final dateStr = pd?.toIso8601String() ?? '';
         final daysAgo = pd == null ? 9999 : now.difference(pd).inDays;
         return <String, dynamic>{
           'title': a['title'] ?? '',
           'summary': a['summary'] ?? '',
           'detail': (a['content'] ?? a['summary'] ?? '').toString(),
-          'keyPoints': (a['keyPoints'] as List?)?.map((e) => e.toString()).toList() ?? <String>[],
+          'keyPoints':
+              (a['keyPoints'] as List?)?.map((e) => e.toString()).toList() ??
+                  <String>[],
           'category': category,
           'date': dateStr,
           'important': a['isTopNews'] == true,
           'daysAgo': daysAgo,
-          'upscRelevance': (a['syllabusMapping'] ?? a['examRelevance'] ?? '').toString(),
+          'upscRelevance':
+              (a['syllabusMapping'] ?? a['examRelevance'] ?? '').toString(),
           'colorHex': '',
         };
       }).toList();
@@ -75,77 +116,105 @@ class FirestoreContentService {
     }
   }
 
-  static List<Map<String, dynamic>> getWeeklyAffairs(List<Map<String, dynamic>> all) =>
-      all.where((a) => a['period'] == 'weekly' || (a['daysAgo'] is int && a['daysAgo'] <= 7)).toList();
+  static List<Map<String, dynamic>> getWeeklyAffairs(
+          List<Map<String, dynamic>> all) =>
+      all
+          .where((a) =>
+              a['period'] == 'weekly' ||
+              (a['daysAgo'] is int && a['daysAgo'] <= 7))
+          .toList();
 
-  static List<Map<String, dynamic>> getMonthlyAffairs(List<Map<String, dynamic>> all) =>
-      all.where((a) => a['period'] == 'monthly' || (a['daysAgo'] is int && a['daysAgo'] <= 31)).toList();
+  static List<Map<String, dynamic>> getMonthlyAffairs(
+          List<Map<String, dynamic>> all) =>
+      all
+          .where((a) =>
+              a['period'] == 'monthly' ||
+              (a['daysAgo'] is int && a['daysAgo'] <= 31))
+          .toList();
 
-  static List<Map<String, dynamic>> getImportantAffairs(List<Map<String, dynamic>> all) =>
+  static List<Map<String, dynamic>> getImportantAffairs(
+          List<Map<String, dynamic>> all) =>
       all.where((a) => a['important'] == true).toList();
 
   static Future<Map<String, dynamic>?> getLatestRoundup(String period) async {
-    _roundups ??= await _fetchWithCache('currentAffairsRoundups');
+    final memory = _freshMemory('currentAffairsRoundups', _roundups);
+    _roundups = memory ??
+        _remember(
+          'currentAffairsRoundups',
+          await _fetchWithCache('currentAffairsRoundups'),
+        );
     final matches = _roundups!
         .where((roundup) => roundup['period'] == period)
         .toList()
-      ..sort((a, b) =>
-          (b['endDate'] ?? '').toString().compareTo((a['endDate'] ?? '').toString()));
+      ..sort((a, b) => (b['endDate'] ?? '')
+          .toString()
+          .compareTo((a['endDate'] ?? '').toString()));
     return matches.isEmpty ? null : matches.first;
   }
 
   // ─── Mock Tests ──────────────────────────────────────────────────────
 
   static Future<List<Map<String, dynamic>>> getMockTests() async {
-    if (_mockTests != null) return _mockTests!;
+    final memory = _freshMemory('mockTests', _mockTests);
+    if (memory != null) return memory;
     final remote = await _fetchWithCache('mockTests');
-    _mockTests = remote.isNotEmpty
-        ? remote
-        : _copyFallback(OfflineContent.mockTests);
+    _mockTests = _remember(
+      'mockTests',
+      remote.isNotEmpty ? remote : _copyFallback(OfflineContent.mockTests),
+    );
     return _mockTests!;
   }
 
   // ─── Vocabulary ──────────────────────────────────────────────────────
 
   static Future<List<Map<String, dynamic>>> getVocabulary() async {
-    if (_vocabulary != null) return _vocabulary!;
-    _vocabulary = await _fetchWithCache('vocabulary');
-    return _vocabulary ?? [];
+    final memory = _freshMemory('vocabulary', _vocabulary);
+    if (memory != null) return memory;
+    _vocabulary = _remember(
+      'vocabulary',
+      await _fetchWithCache('vocabulary'),
+    );
+    return _vocabulary!;
   }
 
   // ─── Government Schemes ──────────────────────────────────────────────
 
   static Future<List<Map<String, dynamic>>> getGovtSchemes() async {
-    if (_govtSchemes != null) return _govtSchemes!;
+    final memory = _freshMemory('govtSchemes', _govtSchemes);
+    if (memory != null) return memory;
     final remote = await _fetchWithCache('govtSchemes');
-    _govtSchemes = remote.isNotEmpty
-        ? remote
-        : _copyFallback(OfflineContent.govtSchemes);
+    _govtSchemes = _remember(
+      'govtSchemes',
+      remote.isNotEmpty ? remote : _copyFallback(OfflineContent.govtSchemes),
+    );
     return _govtSchemes!;
   }
 
   // ─── Revision Notes ──────────────────────────────────────────────────
 
   static Future<List<Map<String, dynamic>>> getRevisionNotes() async {
-    if (_revisionNotes != null) return _revisionNotes!;
+    final memory = _freshMemory('revisionNotes', _revisionNotes);
+    if (memory != null) return memory;
     final remote = await _fetchWithCache('revisionNotes');
-    _revisionNotes = remote.isNotEmpty
-        ? remote
-        : _copyFallback(OfflineContent.revisionNotes);
+    _revisionNotes = _remember(
+      'revisionNotes',
+      remote.isNotEmpty ? remote : _copyFallback(OfflineContent.revisionNotes),
+    );
     return _revisionNotes!;
   }
 
   static List<Map<String, dynamic>> _copyFallback(
     List<Map<String, dynamic>> source,
-  ) => source.map((item) => Map<String, dynamic>.from(item)).toList();
+  ) =>
+      source.map((item) => Map<String, dynamic>.from(item)).toList();
 
   /// Group revision notes by paper.
   static Map<String, List<Map<String, dynamic>>> groupByPaper(
       List<Map<String, dynamic>> notes) {
     final map = <String, List<Map<String, dynamic>>>{};
     for (final n in notes) {
-      final paper = n['paper'] as String? ?? 'Other';
-      map.putIfAbsent(paper, () => []).add(n);
+      final paper = (n['paper'] ?? 'Other').toString().trim();
+      map.putIfAbsent(paper.isEmpty ? 'Other' : paper, () => []).add(n);
     }
     return map;
   }
@@ -154,55 +223,88 @@ class FirestoreContentService {
 
   static Future<List<Map<String, dynamic>>> _fetchWithCache(
       String collection) async {
-    final prefs = await SharedPreferences.getInstance();
-    final cacheKey = 'fcs_$collection';
-    final tsKey = 'fcs_ts_$collection';
+    SharedPreferences? prefs;
+    String? cachedJson;
+    var cachedTs = 0;
+    final stem = _cacheStem(collection);
+    final cacheKey = '${stem}_data';
+    final tsKey = '${stem}_at';
+    final now = _now;
 
-    // Check local cache validity
-    final cachedJson = prefs.getString(cacheKey);
-    final cachedTs = prefs.getInt(tsKey) ?? 0;
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    if (cachedJson != null && (now - cachedTs) < _cacheTTL.inMilliseconds) {
-      try {
-        return (jsonDecode(cachedJson) as List).cast<Map<String, dynamic>>();
-      } catch (_) {
-        // Corrupt cache — ignore and refetch.
-      }
+    try {
+      prefs = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 4));
+      cachedJson = prefs.getString(cacheKey);
+      cachedTs = prefs.getInt(tsKey) ?? 0;
+    } catch (error) {
+      debugPrint('Local content cache unavailable for $collection: $error');
     }
 
-    // Fetch from Firestore
+    if (cachedJson != null && now - cachedTs < _cacheTTL.inMilliseconds) {
+      final cached = _decodeDocuments(cachedJson);
+      if (cached != null) return cached;
+      // A corrupt entry cannot remain the preferred result for six hours.
+      await prefs?.remove(cacheKey);
+      await prefs?.remove(tsKey);
+      cachedJson = null;
+    }
+
     try {
-      final snapshot = await _firestore.collection(collection).get();
+      final snapshot = await _firestore
+          .collection(collection)
+          .limit(1000)
+          .get()
+          .timeout(_requestTimeout);
       final docs = snapshot.docs
           .map((d) => <String, dynamic>{'docId': d.id, ..._jsonSafe(d.data())})
-          .toList();
+          .toList(growable: false);
+      _lastErrors.remove(collection);
 
-      if (docs.isNotEmpty) {
-        // Caching must NEVER block returning the data. Firestore values such as
-        // Timestamps are not JSON-serializable; _jsonSafe converts them, but we
-        // still guard the write so no edge case can blank out a real result.
-        try {
-          await prefs.setString(cacheKey, jsonEncode(docs));
-          await prefs.setInt(tsKey, now);
-        } catch (_) {
-          // Skip caching this time; the data is still returned below.
-        }
-        return docs;
+      if (docs.isEmpty) {
+        // A successful empty response is authoritative. The old implementation
+        // fell through to an expired cache here, so deleted/pruned documents
+        // could survive forever.
+        await prefs?.remove(cacheKey);
+        await prefs?.remove(tsKey);
+        return const <Map<String, dynamic>>[];
       }
-    } catch (_) {
-      // Fall through to cached or empty
-    }
 
-    // Return expired cache if Firestore failed
-    if (cachedJson != null) {
       try {
-        return (jsonDecode(cachedJson) as List).cast<Map<String, dynamic>>();
-      } catch (_) {
-        // Corrupt cache — nothing usable.
+        await prefs?.setString(cacheKey, jsonEncode(docs));
+        await prefs?.setInt(tsKey, now);
+      } catch (error) {
+        debugPrint('Could not cache $collection: $error');
       }
+      return docs;
+    } catch (error) {
+      _lastErrors[collection] = error;
+      debugPrint('Firestore $collection fetch failed: $error');
     }
-    return [];
+
+    // On an actual network/permission failure, expired data is still more useful
+    // than a blank route. Unlike the old code this path is distinguishable via
+    // lastErrorFor(collection), so screens can say that they are showing saved
+    // data rather than presenting it as current.
+    if (cachedJson != null) {
+      final stale = _decodeDocuments(cachedJson);
+      if (stale != null) return stale;
+    }
+    return const <Map<String, dynamic>>[];
+  }
+
+  static List<Map<String, dynamic>>? _decodeDocuments(String encoded) {
+    try {
+      final value = jsonDecode(encoded);
+      if (value is! List) return null;
+      return value
+          .whereType<Map>()
+          .map((doc) => doc.map(
+                (key, item) => MapEntry(key.toString(), _safeValue(item)),
+              ))
+          .toList(growable: false);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Convert Firestore-specific types (Timestamp, GeoPoint, DocumentReference)
@@ -228,21 +330,46 @@ class FirestoreContentService {
     return v;
   }
 
-  /// Force-refresh a collection (bypasses cache).
+  /// Force-refresh a collection (bypasses memory and disk caches).
   static Future<List<Map<String, dynamic>>> refresh(String collection) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('fcs_$collection');
-    await prefs.remove('fcs_ts_$collection');
+    SharedPreferences? prefs;
+    try {
+      prefs = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 4));
+    } catch (error) {
+      debugPrint('Could not clear local cache for $collection: $error');
+    }
+    final stem = _cacheStem(collection);
+    await prefs?.remove('${stem}_data');
+    await prefs?.remove('${stem}_at');
+    // Remove the unscoped v1 cache too. It may belong to the stale Firebase
+    // project and must never be resurrected by an older app process.
+    await prefs?.remove('fcs_$collection');
+    await prefs?.remove('fcs_ts_$collection');
+    _memoryCachedAt.remove(collection);
+    _lastErrors.remove(collection);
 
-    // Clear in-memory cache
     switch (collection) {
-      case 'currentAffairs': _currentAffairs = null; return getCurrentAffairs();
-      case 'mockTests': _mockTests = null; return getMockTests();
-      case 'vocabulary': _vocabulary = null; return getVocabulary();
-      case 'govtSchemes': _govtSchemes = null; return getGovtSchemes();
-      case 'revisionNotes': _revisionNotes = null; return getRevisionNotes();
-      case 'currentAffairsRoundups': _roundups = null; return _fetchWithCache(collection);
-      default: return _fetchWithCache(collection);
+      case 'currentAffairs':
+        _currentAffairs = null;
+        return getCurrentAffairs();
+      case 'mockTests':
+        _mockTests = null;
+        return getMockTests();
+      case 'vocabulary':
+        _vocabulary = null;
+        return getVocabulary();
+      case 'govtSchemes':
+        _govtSchemes = null;
+        return getGovtSchemes();
+      case 'revisionNotes':
+        _revisionNotes = null;
+        return getRevisionNotes();
+      case 'currentAffairsRoundups':
+        _roundups = null;
+        return _fetchWithCache(collection);
+      default:
+        return _fetchWithCache(collection);
     }
   }
 
@@ -290,7 +417,8 @@ class FirestoreContentService {
   static Color parseColor(String? hex) {
     if (hex == null || hex.isEmpty) return Colors.blueAccent;
     try {
-      return Color(int.parse(hex.replaceFirst('0x', '').replaceFirst('#', 'FF'), radix: 16));
+      return Color(int.parse(hex.replaceFirst('0x', '').replaceFirst('#', 'FF'),
+          radix: 16));
     } catch (_) {
       return Colors.blueAccent;
     }

@@ -20,6 +20,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:upsc_daily_edge/config/theme.dart';
 import 'package:upsc_daily_edge/data/offline_content.dart';
+import 'package:upsc_daily_edge/models/government_scheme.dart';
+import 'package:upsc_daily_edge/screens/features/govt_schemes_screen.dart';
 import 'package:upsc_daily_edge/screens/features/scheme_detail_sheet.dart';
 
 import 'support/load_app_fonts.dart';
@@ -56,18 +58,20 @@ Future<void> _pumpSheet(
   await tester.pump(const Duration(milliseconds: 300));
 }
 
-void main() {
+void _detailSheetTests() {
   setUpAll(loadAppFonts);
 
   group('a complete scheme (embedded content)', () {
-    final complete = Map<String, dynamic>.from(OfflineContent.govtSchemes.first);
+    final complete =
+        Map<String, dynamic>.from(OfflineContent.govtSchemes.first);
 
     testWidgets('shows every section', (tester) async {
       await _pumpSheet(tester, complete);
 
       expect(find.text(complete['name'] as String), findsOneWidget);
       expect(find.text('OVERVIEW'), findsOneWidget);
-      expect(find.text(complete['detailedDescription'] as String), findsOneWidget);
+      expect(
+          find.text(complete['detailedDescription'] as String), findsOneWidget);
       expect(find.text('KEY FEATURES'), findsOneWidget);
       expect(
         find.text((complete['keyFeatures'] as List).cast<String>().first),
@@ -105,7 +109,8 @@ void main() {
 
       expect(find.text(s['name'] as String), findsOneWidget);
       expect(find.text(s['description'] as String), findsOneWidget,
-          reason: 'with no detailedDescription the sheet must show description');
+          reason:
+              'with no detailedDescription the sheet must show description');
       expect(tester.takeException(), isNull);
     });
 
@@ -137,12 +142,14 @@ void main() {
 
     test('a name-only scheme is classed as sparse', () {
       expect(
-        SchemeDetailSheet.isSparse({'name': 'Some Mission', 'sector': 'Economy'}),
+        SchemeDetailSheet.isSparse(
+            {'name': 'Some Mission', 'sector': 'Economy'}),
         isTrue,
       );
     });
 
-    testWidgets('a name-only scheme explains the gap instead of showing nothing',
+    testWidgets(
+        'a name-only scheme explains the gap instead of showing nothing',
         (tester) async {
       await _pumpSheet(tester, {'name': 'Some Mission', 'sector': 'Economy'});
 
@@ -158,7 +165,8 @@ void main() {
         'GS-II — Government policies and interventions. Expect questions.',
       );
       expect(r.paper, 'GS-II');
-      expect(r.rest, 'Government policies and interventions. Expect questions.');
+      expect(
+          r.rest, 'Government policies and interventions. Expect questions.');
     });
 
     test('handles a combined paper label', () {
@@ -192,7 +200,8 @@ void main() {
   group('field handling', () {
     test('bodyText prefers detailedDescription, falls back to description', () {
       expect(
-        SchemeDetailSheet.bodyText({'detailedDescription': 'long', 'description': 'short'}),
+        SchemeDetailSheet.bodyText(
+            {'detailedDescription': 'long', 'description': 'short'}),
         'long',
       );
       expect(SchemeDetailSheet.bodyText({'description': 'short'}), 'short');
@@ -201,7 +210,8 @@ void main() {
 
     test('whitespace-only values count as absent', () {
       expect(
-        SchemeDetailSheet.bodyText({'detailedDescription': '   ', 'description': 'real'}),
+        SchemeDetailSheet.bodyText(
+            {'detailedDescription': '   ', 'description': 'real'}),
         'real',
       );
       expect(SchemeDetailSheet.isSparse({'description': '  '}), isTrue);
@@ -233,8 +243,9 @@ void main() {
           (tester) async {
         await _pumpSheet(tester, scraperScheme(), mode: mode);
 
-        final bg = (mode == ThemeMode.dark ? AppTheme.darkTheme : AppTheme.lightTheme)
-            .scaffoldBackgroundColor;
+        final bg =
+            (mode == ThemeMode.dark ? AppTheme.darkTheme : AppTheme.lightTheme)
+                .scaffoldBackgroundColor;
         var checked = 0;
         for (final t in tester.widgetList<Text>(find.byType(Text))) {
           final data = t.data;
@@ -250,4 +261,181 @@ void main() {
       });
     }
   });
+}
+
+Future<void> _pumpScreen(
+  WidgetTester tester,
+  SchemeDataLoader loader, {
+  SchemeDataLoader? refresher,
+}) async {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(MaterialApp(
+    theme: AppTheme.lightTheme,
+    home: GovtSchemesScreen(
+      loadSchemes: loader,
+      refreshSchemes: refresher ?? loader,
+    ),
+  ));
+  for (var i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 150));
+  }
+}
+
+void governmentSchemeDataTests() {
+  group('GovernmentScheme normalization', () {
+    test('accepts legacy scalar and string-list field shapes', () {
+      final scheme = GovernmentScheme.fromMap({
+        'name': 'Legacy Yojana',
+        'year': 2019,
+        'keyFeatures': 'First feature; Second feature\nThird feature',
+        'sector': 'Financial',
+      });
+      expect(scheme.year, '2019');
+      expect(scheme.keyFeatures,
+          ['First feature', 'Second feature', 'Third feature']);
+      expect(scheme.sector, 'Financial Inclusion');
+    });
+
+    test('malformed map/list scalar fields do not throw or print Dart dumps',
+        () {
+      final scheme = GovernmentScheme.fromMap({
+        'name': ['not', 'a', 'name'],
+        'year': {'seconds': 123},
+        'ministry': <String>['wrong container'],
+        'keyFeatures': 42,
+      });
+      expect(scheme.name, '');
+      expect(scheme.year, '');
+      expect(scheme.ministry, '');
+      expect(scheme.keyFeatures, isEmpty);
+    });
+
+    test('canonicalizes every sector emitted by the generator', () {
+      expect(
+          GovernmentScheme.canonicalSector('Women & Child'), 'Social Welfare');
+      expect(GovernmentScheme.canonicalSector('Rural'), 'Social Welfare');
+      expect(
+          GovernmentScheme.canonicalSector('Financial'), 'Financial Inclusion');
+      expect(GovernmentScheme.canonicalSector('Energy'), 'Infrastructure');
+      expect(GovernmentScheme.canonicalSector('Governance'), 'Governance');
+    });
+
+    test('curated essentials remain when remote data is non-empty', () {
+      final records = GovernmentScheme.combine(
+        [
+          {
+            'name': 'A New Remote Mission',
+            'description': 'Remote-only record',
+            'sector': 'Governance',
+          }
+        ],
+        OfflineContent.govtSchemes,
+      );
+      expect(records.any((s) => s.name == 'A New Remote Mission'), isTrue);
+      expect(records.any((s) => s.name == 'PM-KISAN'), isTrue,
+          reason: 'one remote doc must not suppress all curated essentials');
+      expect(records.length, OfflineContent.govtSchemes.length + 1);
+    });
+
+    test('blank remote fields cannot erase richer curated fields', () {
+      final records = GovernmentScheme.combine(
+        [
+          {
+            'name': 'PM-KISAN',
+            'description': '',
+            'ministry': null,
+            'year': 2026,
+          }
+        ],
+        OfflineContent.govtSchemes,
+      );
+      final pmKisan = records.singleWhere((s) => s.name == 'PM-KISAN');
+      expect(pmKisan.description, isNotEmpty);
+      expect(pmKisan.ministry, isNotEmpty);
+      expect(pmKisan.year, '2026');
+    });
+  });
+
+  group('Government schemes screen', () {
+    testWidgets('renders remote and curated records together', (tester) async {
+      await _pumpScreen(tester, () async => [scraperScheme()]);
+      expect(find.text('Gaganyaan Mission'), findsWidgets);
+      expect(find.text('${OfflineContent.govtSchemes.length + 1} schemes'),
+          findsOneWidget,
+          reason: 'the remote record must be added to all curated essentials');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('search includes ministry, features, and UPSC relevance',
+        (tester) async {
+      final remote = scraperScheme()
+        ..['ministry'] = 'Ministry of Space'
+        ..['keyFeatures'] = ['Crew escape system']
+        ..['upscRelevance'] = 'GS-III space technology';
+      await _pumpScreen(tester, () async => [remote]);
+
+      await tester.enterText(find.byType(TextField), 'escape system');
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Gaganyaan Mission'), findsWidgets);
+      expect(find.textContaining('1 of '), findsOneWidget);
+    });
+
+    testWidgets('generator sector aliases match a visible filter chip',
+        (tester) async {
+      final remote = scraperScheme()
+        ..['name'] = 'Financial Access Scheme'
+        ..['sector'] = 'Financial';
+      await _pumpScreen(tester, () async => [remote]);
+
+      final chipList = find.byWidgetPredicate(
+        (widget) =>
+            widget is ListView && widget.scrollDirection == Axis.horizontal,
+      );
+      await tester.drag(chipList, const Offset(-500, 0));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(
+        find.widgetWithText(FilterChip, 'Financial Inclusion'),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Financial Access Scheme'), findsWidgets);
+      final all = GovernmentScheme.combine(
+        [remote],
+        OfflineContent.govtSchemes,
+      );
+      final matches =
+          all.where((scheme) => scheme.sector == 'Financial Inclusion').length;
+      expect(find.text('$matches of ${all.length} schemes'), findsOneWidget);
+    });
+
+    testWidgets('a backend failure still shows bundled essentials',
+        (tester) async {
+      await _pumpScreen(tester, () async => throw Exception('offline'));
+      expect(find.text('${OfflineContent.govtSchemes.length} schemes'),
+          findsOneWidget);
+      expect(find.textContaining('Showing saved essentials'), findsOneWidget);
+      expect(find.text('Failed to load schemes'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('no-match state explains filters and clears them',
+        (tester) async {
+      await _pumpScreen(tester, () async => [scraperScheme()]);
+      await tester.enterText(find.byType(TextField), 'definitely absent');
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('No schemes match'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      await tester.tap(find.text('Clear filters'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('${OfflineContent.govtSchemes.length + 1} schemes'),
+          findsOneWidget);
+    });
+  });
+}
+
+void main() {
+  _detailSheetTests();
+  governmentSchemeDataTests();
 }

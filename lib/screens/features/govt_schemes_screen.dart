@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/app_fonts.dart';
-import 'package:lottie/lottie.dart';
 import '../../config/theme.dart';
+import '../../data/offline_content.dart';
+import '../../models/government_scheme.dart';
 import '../../services/firestore_content_service.dart';
 import '../../widgets/glass_widgets.dart';
 import 'scheme_detail_sheet.dart';
+
+typedef SchemeDataLoader = Future<List<Map<String, dynamic>>> Function();
 
 /// ──────────────────────────────────────────────────────────────────────────────
 /// GovtSchemesScreen — Searchable database of important government schemes
 /// organized by ministry/sector for UPSC preparation.
 /// ──────────────────────────────────────────────────────────────────────────────
 class GovtSchemesScreen extends StatefulWidget {
-  const GovtSchemesScreen({super.key});
+  const GovtSchemesScreen({
+    super.key,
+    this.loadSchemes,
+    this.refreshSchemes,
+  });
+
+  /// Injection points keep the complete loading/filter/rendering path testable
+  /// without a Firebase process. Production callers use the service defaults.
+  final SchemeDataLoader? loadSchemes;
+  final SchemeDataLoader? refreshSchemes;
 
   @override
   State<GovtSchemesScreen> createState() => _GovtSchemesScreenState();
@@ -23,15 +35,33 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
   String _selectedSector = 'All';
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
-  List<Map<String, dynamic>> _schemes = [];
+  List<GovernmentScheme> _schemes = const <GovernmentScheme>[];
   bool _loading = true;
-
+  bool _refreshing = false;
   bool _hasError = false;
 
-  static const _sectors = [
-    'All', 'Agriculture', 'Education', 'Health', 'Employment',
-    'Financial Inclusion', 'Infrastructure', 'Social Welfare', 'Environment',
+  static const _preferredSectors = <String>[
+    'Agriculture',
+    'Education',
+    'Health',
+    'Employment',
+    'Financial Inclusion',
+    'Infrastructure',
+    'Social Welfare',
+    'Environment',
+    'Governance',
+    'Other',
   ];
+
+  List<String> get _sectors {
+    final present = _schemes.map((scheme) => scheme.sector).toSet();
+    final ordered = _preferredSectors.where(present.contains).toList();
+    final extra = present
+        .where((sector) => !_preferredSectors.contains(sector))
+        .toList()
+      ..sort();
+    return <String>['All', ...ordered, ...extra];
+  }
 
   @override
   void initState() {
@@ -39,28 +69,53 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
     _loadSchemes();
   }
 
+  List<GovernmentScheme> _normalize(List<Map<String, dynamic>> remote) =>
+      GovernmentScheme.combine(remote, OfflineContent.govtSchemes);
+
   Future<void> _loadSchemes() async {
     try {
-      final data = await FirestoreContentService.getGovtSchemes();
-      if (mounted) setState(() { _schemes = data; _loading = false; });
-    } catch (e) {
-      debugPrint('Failed to load schemes: $e');
-      if (mounted) setState(() { _loading = false; _hasError = true; });
+      final loader =
+          widget.loadSchemes ?? FirestoreContentService.getGovtSchemes;
+      final data = await loader().timeout(const Duration(seconds: 20));
+      if (!mounted) return;
+      setState(() {
+        _schemes = _normalize(data);
+        _loading = false;
+        _hasError = widget.loadSchemes == null &&
+            FirestoreContentService.lastErrorFor('govtSchemes') != null;
+      });
+    } catch (error) {
+      debugPrint('Failed to load schemes: $error');
+      if (!mounted) return;
+      // A backend problem must not hide the feature. The curated essentials are
+      // shipped in the APK specifically for this path.
+      setState(() {
+        _schemes = _normalize(const <Map<String, dynamic>>[]);
+        _loading = false;
+        _hasError = true;
+      });
     }
   }
 
-  /// Pull-to-refresh. Goes through FirestoreContentService.refresh so BOTH the
-  /// in-memory and the 6-hour SharedPreferences cache are dropped — plain
-  /// getGovtSchemes() would hand back the same cached list and the gesture would
-  /// look broken. Without this there was no way to pick up corrected scheme data
-  /// for up to six hours.
+  /// Pull-to-refresh drops BOTH the process and project/schema-scoped disk cache.
   Future<void> _refreshSchemes() async {
+    if (_refreshing) return;
+    setState(() => _refreshing = true);
     try {
-      final data = await FirestoreContentService.refresh('govtSchemes');
-      if (mounted) setState(() { _schemes = data; _hasError = false; });
-    } catch (e) {
-      debugPrint('Failed to refresh schemes: $e');
-      if (mounted) setState(() => _hasError = _schemes.isEmpty);
+      final loader = widget.refreshSchemes ??
+          () => FirestoreContentService.refresh('govtSchemes');
+      final data = await loader().timeout(const Duration(seconds: 20));
+      if (!mounted) return;
+      setState(() {
+        _schemes = _normalize(data);
+        _hasError = widget.refreshSchemes == null &&
+            FirestoreContentService.lastErrorFor('govtSchemes') != null;
+      });
+    } catch (error) {
+      debugPrint('Failed to refresh schemes: $error');
+      if (mounted) setState(() => _hasError = true);
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
     }
   }
 
@@ -71,16 +126,19 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get _filtered {
-    return _schemes.where((s) {
-      final sector = s['sector'] as String? ?? '';
-      final name = (s['name'] as String? ?? '').toLowerCase();
-      final fullForm = (s['fullForm'] as String? ?? '').toLowerCase();
-      final desc = (s['description'] as String? ?? '').toLowerCase();
-      if (_selectedSector != 'All' && sector != _selectedSector) return false;
-      if (_searchQuery.isNotEmpty && !name.contains(_searchQuery) && !fullForm.contains(_searchQuery) && !desc.contains(_searchQuery)) return false;
-      return true;
-    }).toList();
+  List<GovernmentScheme> get _filtered {
+    final queryWords = _searchQuery
+        .trim()
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList();
+    return _schemes.where((scheme) {
+      if (_selectedSector != 'All' && scheme.sector != _selectedSector) {
+        return false;
+      }
+      return queryWords.every(scheme.searchableText.contains);
+    }).toList(growable: false);
   }
 
   @override
@@ -89,27 +147,19 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
       return GradientScaffold(
         title: 'Govt Schemes',
         extendBodyBehindAppBar: false,
-        child: Center(child: Lottie.asset('assets/animations/loading.json', width: 120, height: 120)),
-      );
-    }
-    if (_hasError) {
-      return GradientScaffold(
-        title: 'Govt Schemes',
-        extendBodyBehindAppBar: false,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: AppTheme.textT(context)),
-              const SizedBox(height: 12),
-              Text('Failed to load schemes', style: AppFonts.inter(color: AppTheme.textS(context))),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() { _loading = true; _hasError = false; });
-                  _loadSchemes();
-                },
-                child: const Text('Retry'),
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Loading schemes…',
+                style: AppFonts.inter(color: AppTheme.textS(context)),
               ),
             ],
           ),
@@ -136,12 +186,15 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
               ),
               child: TextField(
                 controller: _searchCtrl,
-                onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+                onChanged: (v) =>
+                    setState(() => _searchQuery = v.toLowerCase()),
                 style: AppFonts.inter(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'Search schemes...',
-                  hintStyle: AppFonts.inter(fontSize: 14, color: AppTheme.textT(context)),
-                  prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textT(context), size: 20),
+                  hintStyle: AppFonts.inter(
+                      fontSize: 14, color: AppTheme.textT(context)),
+                  prefixIcon: Icon(Icons.search_rounded,
+                      color: AppTheme.textT(context), size: 20),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -168,22 +221,86 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                     label: Text(sec),
                     selected: selected,
                     onSelected: (_) => setState(() => _selectedSector = sec),
-                    backgroundColor: AppTheme.isDark(context) ? Colors.white.withValues(alpha: 0.06) : Colors.white.withValues(alpha: 0.7),
-                    selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
-                    labelStyle: AppFonts.inter(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? AppTheme.primaryColor : AppTheme.textS(context)),
-                    side: BorderSide(color: selected ? AppTheme.primaryColor : Colors.transparent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    backgroundColor: AppTheme.isDark(context)
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.white.withValues(alpha: 0.7),
+                    selectedColor:
+                        AppTheme.primaryColor.withValues(alpha: 0.15),
+                    labelStyle: AppFonts.inter(
+                        fontSize: 12,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                        color: selected
+                            ? AppTheme.primaryColor
+                            : AppTheme.textS(context)),
+                    side: BorderSide(
+                        color: selected
+                            ? AppTheme.primaryColor
+                            : Colors.transparent),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 );
               },
             ),
           ),
-          // Count
+          if (_hasError)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: AppTheme.warningOrange.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.warningOrange.withValues(alpha: 0.24),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.cloud_off_rounded,
+                      size: 17, color: AppTheme.warningOrange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Showing saved essentials. Pull down or tap refresh to retry live data.',
+                      style: AppFonts.inter(
+                        fontSize: 11,
+                        height: 1.35,
+                        color: AppTheme.textS(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          // Count and an explicit refresh affordance. Pull-to-refresh alone is
+          // easy to miss when the list is short or empty.
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+            padding: const EdgeInsets.fromLTRB(20, 4, 12, 4),
             child: Row(
               children: [
-                Text('${schemes.length} schemes', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
+                Text(
+                  schemes.length == _schemes.length
+                      ? '${_schemes.length} schemes'
+                      : '${schemes.length} of ${_schemes.length} schemes',
+                  style: AppFonts.inter(
+                    fontSize: 12,
+                    color: AppTheme.textS(context),
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: _refreshing ? null : _refreshSchemes,
+                  tooltip: 'Refresh schemes',
+                  visualDensity: VisualDensity.compact,
+                  icon: _refreshing
+                      ? const SizedBox(
+                          width: 17,
+                          height: 17,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 20),
+                ),
               ],
             ),
           ),
@@ -196,14 +313,53 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
               child: schemes.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
                       children: [
-                        SizedBox(height: MediaQuery.sizeOf(context).height * 0.25),
-                        Center(
-                          child: Text(
-                            'No schemes found',
-                            style: AppFonts.inter(color: AppTheme.textS(context)),
+                        SizedBox(
+                            height: MediaQuery.sizeOf(context).height * 0.18),
+                        Icon(Icons.search_off_rounded,
+                            size: 46, color: AppTheme.textT(context)),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No schemes match',
+                          textAlign: TextAlign.center,
+                          style: AppFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textP(context),
                           ),
                         ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _searchQuery.trim().isNotEmpty ||
+                                  _selectedSector != 'All'
+                              ? 'Clear the search and category to see all available schemes.'
+                              : 'Pull down to fetch the latest scheme library.',
+                          textAlign: TextAlign.center,
+                          style: AppFonts.inter(
+                            fontSize: 12,
+                            height: 1.45,
+                            color: AppTheme.textS(context),
+                          ),
+                        ),
+                        if (_searchQuery.trim().isNotEmpty ||
+                            _selectedSector != 'All') ...[
+                          const SizedBox(height: 14),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                  _selectedSector = 'All';
+                                });
+                              },
+                              icon: const Icon(Icons.filter_alt_off_rounded,
+                                  size: 18),
+                              label: const Text('Clear filters'),
+                            ),
+                          ),
+                        ],
                       ],
                     )
                   : ListView.builder(
@@ -220,23 +376,16 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
     );
   }
 
-  Widget _buildSchemeCard(Map<String, dynamic> s) {
-    final name = s['name'] as String? ?? '';
-    final fullForm = s['fullForm'] as String? ?? '';
-    final description = s['description'] as String? ?? '';
-    final sector = s['sector'] as String? ?? '';
-    final year = s['year'] as String? ?? '';
-    final ministry = s['ministry'] as String? ?? '';
-    final keyFeatures = (s['keyFeatures'] as List<dynamic>?)?.cast<String>() ?? const <String>[];
-    final icon = FirestoreContentService.getIcon(s['iconName'] as String? ?? '');
-    final color = FirestoreContentService.parseColor(s['colorHex'] as String? ?? '');
+  Widget _buildSchemeCard(GovernmentScheme scheme) {
+    final icon = FirestoreContentService.getIcon(scheme.iconName);
+    final color = FirestoreContentService.parseColor(scheme.colorHex);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: AnimatedGlassCard(
         onTap: () {
           HapticFeedback.lightImpact();
-          _showSchemeDetail(s);
+          _showSchemeDetail(scheme);
         },
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -246,7 +395,8 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 40, height: 40,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
@@ -261,15 +411,20 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                       // Scheme names run long ("Pradhan Mantri Jan Arogya
                       // Yojana"); cap them so cards keep a consistent rhythm.
                       Text(
-                        name,
-                        style: AppFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textP(context)),
+                        scheme.name,
+                        style: AppFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textP(context)),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (fullForm.isNotEmpty && fullForm != name)
+                      if (scheme.fullForm.isNotEmpty &&
+                          scheme.fullForm != scheme.name)
                         Text(
-                          fullForm,
-                          style: AppFonts.inter(fontSize: 11, color: AppTheme.textT(context)),
+                          scheme.fullForm,
+                          style: AppFonts.inter(
+                              fontSize: 11, color: AppTheme.textT(context)),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -277,25 +432,43 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.chevron_right_rounded, size: 18, color: AppTheme.textT(context)),
+                Icon(Icons.chevron_right_rounded,
+                    size: 18, color: AppTheme.textT(context)),
               ],
             ),
             const SizedBox(height: 8),
-            Text(description, style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context), height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+            Text(
+              scheme.description.isNotEmpty
+                  ? scheme.description
+                  : (scheme.body.isNotEmpty
+                      ? scheme.body
+                      : 'Open for available scheme notes.'),
+              style: AppFonts.inter(
+                fontSize: 12,
+                color: AppTheme.textS(context),
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
 
             // Ministry was only visible after opening the sheet, yet "which
             // ministry runs this scheme" is standard exam material — surface it
             // on the card so it is skimmable.
-            if (ministry.isNotEmpty) ...[
+            if (scheme.ministry.isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.account_balance_rounded, size: 13, color: AppTheme.textT(context)),
+                  Icon(Icons.account_balance_rounded,
+                      size: 13, color: AppTheme.textT(context)),
                   const SizedBox(width: 5),
                   Expanded(
                     child: Text(
-                      ministry,
-                      style: AppFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textT(context)),
+                      scheme.ministry,
+                      style: AppFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textT(context)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -305,18 +478,19 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
             ],
 
             const SizedBox(height: 10),
-            // Wrap, not Row: sector names like "Social Justice and Empowerment"
-            // overflowed the old fixed Row. Empty values are skipped rather than
-            // rendering a blank pill or a bare "Launched: ".
+            // `year` on generated records is the article coverage year, not a
+            // guaranteed launch date, so label it honestly.
             Wrap(
               spacing: 8,
               runSpacing: 6,
               children: [
-                if (sector.isNotEmpty) _schemeBadge(sector, color),
-                if (year.isNotEmpty) _schemeBadge('Launched: $year', AppTheme.textTertiary),
-                if (keyFeatures.isNotEmpty)
+                _schemeBadge(scheme.sector, color),
+                if (scheme.year.isNotEmpty)
                   _schemeBadge(
-                    '${keyFeatures.length} key ${keyFeatures.length == 1 ? 'feature' : 'features'}',
+                      'Coverage: ${scheme.year}', AppTheme.textTertiary),
+                if (scheme.keyFeatures.isNotEmpty)
+                  _schemeBadge(
+                    '${scheme.keyFeatures.length} key ${scheme.keyFeatures.length == 1 ? 'feature' : 'features'}',
                     AppTheme.primaryColor,
                   ),
               ],
@@ -334,10 +508,12 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(text, style: AppFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+      child: Text(text,
+          style: AppFonts.inter(
+              fontSize: 10, fontWeight: FontWeight.w600, color: color)),
     );
   }
 
-  void _showSchemeDetail(Map<String, dynamic> s) =>
-      showSchemeDetailSheet(context, s);
+  void _showSchemeDetail(GovernmentScheme scheme) =>
+      showSchemeDetailSheet(context, scheme.toMap());
 }
