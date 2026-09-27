@@ -5,7 +5,9 @@
  * scraper populates that map — which is why the vocabulary collection never
  * grew. This module derives words from the article text instead: it picks the
  * genuinely exam-worthy words out of the day's editorials and defines them via
- * the free Dictionary API (dictionaryapi.dev — no key, no quota).
+ * Wikimedia's structured Wiktionary definition endpoint (no key required).
+ * The previous dictionaryapi.dev endpoint timed out for every candidate from
+ * GitHub Actions, so historical backfills could never complete.
  *
  * Words are chosen the way an aspirant would highlight them while reading:
  * uncommon, editorial-register English, seen in a real sentence today.
@@ -189,7 +191,43 @@ function uniqueWords(values, limit) {
   return out;
 }
 
+function htmlText(value) {
+  const entities = new Map([
+    ['amp', '&'], ['lt', '<'], ['gt', '>'], ['quot', '"'], ['apos', "'"], ['nbsp', ' '],
+  ]);
+  return clean(String(value ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (_, entity) => {
+      if (entity[0] === '#') {
+        const hex = entity[1]?.toLowerCase() === 'x';
+        const code = Number.parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
+        return Number.isFinite(code) ? String.fromCodePoint(code) : ' ';
+      }
+      return entities.get(entity.toLowerCase()) ?? ' ';
+    }))
+    .replace(/\s+([,.;:!?])/g, '$1');
+}
+
 function parseDictionaryEntry(data) {
+  // Wiktionary: { en: [{ partOfSpeech, definitions: [{ definition }] }] }
+  const wiktionaryEntries = Array.isArray(data?.en) ? data.en : null;
+  if (wiktionaryEntries) {
+    for (const entry of wiktionaryEntries) {
+      for (const definition of entry?.definitions || []) {
+        const text = htmlText(definition?.definition);
+        if (text.length < 12) continue;
+        return {
+          partOfSpeech: clean(entry.partOfSpeech) || 'word',
+          meaning: text,
+          synonyms: [],
+          antonyms: [],
+        };
+      }
+    }
+    return null;
+  }
+
+  // Backward-compatible parser for injected tests and any legacy provider.
   if (!Array.isArray(data) || data.length === 0) return null;
   for (const entry of data) {
     for (const meaning of entry?.meanings || []) {
@@ -232,14 +270,17 @@ export async function lookupDictionaryWord(word, {
 } = {}) {
   if (typeof fetchImpl !== 'function') throw new TypeError('fetchImpl must be a function');
   const maxAttempts = Math.max(1, Math.trunc(retries) + 1);
-  const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+  const url = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
     try {
       const response = await fetchImpl(url, {
-        headers: { Accept: 'application/json' },
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'UPSC-Daily-Edge/1.6 (educational vocabulary backfill; contact via repository)',
+        },
         signal: controller.signal,
       });
       const httpStatus = Number(response?.status || 0);

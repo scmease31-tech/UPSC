@@ -561,3 +561,35 @@ test('existing lexical document ids are retained during key-term enrichment', as
   assert.equal(uploaded[0].id, 'legacy-vocabulary-id');
   assert.match(uploaded[0].meaning, /principle requiring public institutions/i);
 });
+
+
+test('Wiktionary definitions are converted from structured HTML to plain text', async () => {
+  let requestedUrl = '';
+  const result = await lookupDictionaryWord('perspicacious', {
+    fetchImpl: async (url) => {
+      requestedUrl = url;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          en: [{
+            partOfSpeech: 'Adjective',
+            definitions: [{
+              definition: 'Of acute <a href="/wiki/discernment">discernment</a>; having keen &amp; perceptive insight.',
+            }],
+          }],
+        }),
+      };
+    },
+    retries: 0,
+  });
+
+  assert.match(requestedUrl, /en\.wiktionary\.org\/api\/rest_v1\/page\/definition/);
+  assert.equal(result.status, 'success');
+  assert.equal(result.entry.partOfSpeech, 'Adjective');
+  assert.equal(
+    result.entry.meaning,
+    'Of acute discernment; having keen & perceptive insight.'
+  );
+  assert.ok(!/[<>]/.test(result.entry.meaning));
+});
