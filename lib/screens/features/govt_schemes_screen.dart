@@ -408,14 +408,13 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Scheme names run long ("Pradhan Mantri Jan Arogya
-                      // Yojana"); cap them so cards keep a consistent rhythm.
                       Text(
                         scheme.name,
                         style: AppFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textP(context)),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textP(context),
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -424,7 +423,9 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                         Text(
                           scheme.fullForm,
                           style: AppFonts.inter(
-                              fontSize: 11, color: AppTheme.textT(context)),
+                            fontSize: 11,
+                            color: AppTheme.textT(context),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -432,8 +433,11 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.chevron_right_rounded,
-                    size: 18, color: AppTheme.textT(context)),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: AppTheme.textT(context),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -452,23 +456,25 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
               overflow: TextOverflow.ellipsis,
             ),
 
-            // Ministry was only visible after opening the sheet, yet "which
-            // ministry runs this scheme" is standard exam material — surface it
-            // on the card so it is skimmable.
+            // Ministry is both a useful scan cue and common exam material.
             if (scheme.ministry.isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.account_balance_rounded,
-                      size: 13, color: AppTheme.textT(context)),
+                  Icon(
+                    Icons.account_balance_rounded,
+                    size: 13,
+                    color: AppTheme.textT(context),
+                  ),
                   const SizedBox(width: 5),
                   Expanded(
                     child: Text(
                       scheme.ministry,
                       style: AppFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.textT(context)),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textT(context),
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -478,19 +484,33 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
             ],
 
             const SizedBox(height: 10),
-            // `year` on generated records is the article coverage year, not a
-            // guaranteed launch date, so label it honestly.
             Wrap(
               spacing: 8,
               runSpacing: 6,
               children: [
                 _schemeBadge(scheme.sector, color),
-                if (scheme.year.isNotEmpty)
+                // Legacy `year` is coverage metadata. Only the explicit
+                // launchYear field may ever receive a launch label.
+                if (scheme.coverageYear.isNotEmpty)
                   _schemeBadge(
-                      'Coverage: ${scheme.year}', AppTheme.textTertiary),
-                if (scheme.keyFeatures.isNotEmpty)
+                    'Coverage: ${scheme.coverageYear}',
+                    AppTheme.textTertiary,
+                  ),
+                if (scheme.launchYear.isNotEmpty)
                   _schemeBadge(
-                    '${scheme.keyFeatures.length} key ${scheme.keyFeatures.length == 1 ? 'feature' : 'features'}',
+                    'Launch: ${scheme.launchYear}',
+                    AppTheme.primaryColor,
+                  ),
+                if (scheme.beneficiaries.isNotEmpty)
+                  _schemeBadge(
+                    '${scheme.beneficiaries.length} beneficiary ${scheme.beneficiaries.length == 1 ? 'group' : 'groups'}',
+                    color,
+                  ),
+                if (scheme.hasVerifiedOfficialSource)
+                  _schemeBadge('Verified source', AppTheme.successGreen)
+                else if (scheme.structuredDetailCount > 0)
+                  _schemeBadge(
+                    '${scheme.structuredDetailCount}/8 detail areas',
                     AppTheme.primaryColor,
                   ),
               ],
@@ -508,9 +528,14 @@ class _GovtSchemesScreenState extends State<GovtSchemesScreen> {
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(text,
-          style: AppFonts.inter(
-              fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+      child: Text(
+        text,
+        style: AppFonts.inter(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 
