@@ -224,66 +224,142 @@ export async function uploadToCollection(collectionName, docs, dryRun = false, l
   return stats;
 }
 
-/** Upload derived vocabulary docs to the `vocabulary` collection. */
-export function uploadVocabulary(docs, dryRun = false) {
-  return uploadToCollection('vocabulary', docs, dryRun, 'word');
-}
-
-/** Upload derived flashcard docs to the `flashcards` collection. */
-export function uploadFlashcards(docs, dryRun = false) {
-  return uploadToCollection('flashcards', docs, dryRun, 'front');
-}
-
-/** Upload derived scheme docs to the `govtSchemes` collection. */
-export function uploadSchemes(docs, dryRun = false) {
-  return uploadToCollection('govtSchemes', docs, dryRun, 'name');
-}
-
 /** True for values that carry no information and should be treated as absent. */
 export function isBlank(value) {
   if (value === undefined || value === null) return true;
   if (typeof value === 'string') return value.trim() === '';
-  if (Array.isArray(value)) {
-    return value.filter((v) => !isBlank(v)).length === 0;
-  }
+  if (Array.isArray(value)) return value.filter((item) => !isBlank(item)).length === 0;
   if (typeof value === 'object') return Object.keys(value).length === 0;
   return false;
 }
 
-/**
- * The fields of [incoming] that [existing] is missing.
- *
- * Fill-only on purpose: a field already holding real content is never
- * overwritten, so hand-curated text survives a re-derive and running this twice
- * changes nothing the second time.
- *
- * Pure, so the semantics are unit-tested without touching Firestore.
- */
+/** Fill only fields that are blank in storage and meaningful in the input. */
 export function missingFieldPatch(existing, incoming, fields) {
   const patch = {};
   for (const field of fields) {
-    if (!isBlank(existing?.[field])) continue;
-    if (isBlank(incoming?.[field])) continue;
+    if (!isBlank(existing?.[field]) || isBlank(incoming?.[field])) continue;
     patch[field] = incoming[field];
   }
   return patch;
 }
 
+export function canonicalEnrichmentPatch(existing, incoming, fields) {
+  const patch = missingFieldPatch(existing, incoming, fields);
+  const oldVersion = Number(existing?.schemaVersion || 0);
+  const newVersion = Number(incoming?.schemaVersion || 0);
+  if (fields.includes('schemaVersion') && newVersion > oldVersion) {
+    patch.schemaVersion = newVersion;
+  }
+  return patch;
+}
+
+export const VOCABULARY_ENRICHMENT_FIELDS = [
+  'schemaVersion', 'word', 'normalizedWord', 'partOfSpeech', 'meaning', 'example',
+  'synonyms', 'antonyms', 'category', 'articleRef', 'sourceUrl', 'upscPaper',
+  'publishedDate', 'newspaper', 'upscUsage',
+];
+
+/** Known machine placeholders may be improved; substantive/curated values stay. */
+export function vocabularyEnrichmentPatch(
+  existing,
+  incoming,
+  fields = VOCABULARY_ENRICHMENT_FIELDS,
+) {
+  const patch = canonicalEnrichmentPatch(existing, incoming, fields);
+  const oldMeaning = clean(existing?.meaning);
+  const newMeaning = clean(incoming?.meaning);
+  if (oldMeaning.length > 0 && oldMeaning.length < 12 && newMeaning.length >= 12) {
+    patch.meaning = incoming.meaning;
+  }
+  if (/^(word|unknown|n\/?a)$/i.test(clean(existing?.partOfSpeech)) &&
+      !/^(word|unknown|n\/?a)$/i.test(clean(incoming?.partOfSpeech))) {
+    patch.partOfSpeech = incoming.partOfSpeech;
+  }
+  if (/^(general|current affairs)$/i.test(clean(existing?.category)) &&
+      !/^(general|current affairs)?$/i.test(clean(incoming?.category))) {
+    patch.category = incoming.category;
+  }
+  if (clean(existing?.example).length > 0 && clean(existing?.example).length < 25 &&
+      clean(incoming?.example).length >= 25) {
+    patch.example = incoming.example;
+  }
+  return patch;
+}
+
+export const FLASHCARD_ENRICHMENT_FIELDS = [
+  'schemaVersion', 'front', 'normalizedFront', 'back', 'category', 'articleRef',
+  'sourceUrl', 'upscPaper', 'kind', 'publishedDate', 'newspaper',
+];
+
+export const DAILY_FACT_ENRICHMENT_FIELDS = [
+  'schemaVersion', 'category', 'title', 'facts', 'articleRef', 'sourceUrl',
+  'upscPaper', 'publishedDate', 'newspaper',
+];
+
+/** Every canonical field that can safely fill or merge into a scheme. */
+export const SCHEME_DETAIL_FIELDS = [
+  'schemaVersion', 'name', 'normalizedName', 'fullForm', 'description',
+  'detailedDescription', 'keyFeatures', 'upscRelevance', 'ministry', 'sector',
+  'year', 'coverageYear', 'objective', 'beneficiaries', 'eligibility', 'benefits',
+  'funding', 'implementation', 'launchYear', 'officialUrl', 'sources',
+  'iconName', 'colorHex',
+];
+
+const SCHEME_LIST_FIELDS = [
+  'keyFeatures', 'beneficiaries', 'eligibility', 'benefits', 'sources',
+];
+
+function scalarListKey(value) {
+  return clean(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function sourceListKey(value) {
+  return clean(value?.articleId) || clean(value?.url) ||
+    [clean(value?.title), clean(value?.publisher), clean(value?.publishedDate)].join('|');
+}
+
+function mergeUniqueList(existing, incoming, field) {
+  const keyFor = field === 'sources' ? sourceListKey : scalarListKey;
+  const seen = new Set();
+  const merged = [];
+  for (const value of [...(Array.isArray(existing) ? existing : []), ...(Array.isArray(incoming) ? incoming : [])]) {
+    const key = keyFor(value);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(value);
+  }
+  return merged;
+}
+
+/** Scheme arrays are deterministic unions; scalar curated content is fill-only. */
+export function schemeEnrichmentPatch(
+  existing,
+  incoming,
+  fields = SCHEME_DETAIL_FIELDS,
+) {
+  const patch = canonicalEnrichmentPatch(existing, incoming, fields);
+  for (const field of SCHEME_LIST_FIELDS) {
+    if (!fields.includes(field) || !Array.isArray(incoming?.[field])) continue;
+    const merged = mergeUniqueList(existing?.[field], incoming[field], field);
+    if (JSON.stringify(merged) !== JSON.stringify(existing?.[field] || [])) patch[field] = merged;
+  }
+  return patch;
+}
+
 /**
- * Backfill named fields onto documents that already exist, and create the ones
- * that do not.
- *
- * uploadToCollection deliberately SKIPS a doc whose id is already present, which
- * is right for "derive new content" but means a doc can never gain a field it
- * was first written without. Scheme ids are hashed from the name alone, so every
- * govtSchemes doc created before detailedDescription / keyFeatures /
- * upscRelevance / ministry existed would have kept its thin shape permanently
- * and the app's detail sheet would have stayed near-empty forever.
+ * Create missing documents and enrich existing documents according to a pure
+ * patch policy. Dry runs inspect Firestore when already initialized; local dry
+ * runs without credentials report attempts without trying to initialize it.
  */
 export async function enrichCollection(
   collectionName,
   docs,
-  { dryRun = false, labelField = 'title', fields = [] } = {}
+  {
+    dryRun = false,
+    labelField = 'title',
+    fields = [],
+    patcher = canonicalEnrichmentPatch,
+  } = {},
 ) {
   const stats = { created: 0, enriched: 0, unchanged: 0, errors: 0 };
   if (!docs || docs.length === 0 || fields.length === 0) {
@@ -291,12 +367,17 @@ export async function enrichCollection(
     return stats;
   }
 
+  if (!db && dryRun) {
+    console.log(`[DryRun] Would create/enrich ${docs.length} docs in '${collectionName}'`);
+    stats.created = docs.length;
+    return stats;
+  }
   if (!db) initFirebase();
   const collection = db.collection(collectionName);
   const BATCH_SIZE = 400;
 
-  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-    const chunk = docs.slice(i, i + BATCH_SIZE);
+  for (let offset = 0; offset < docs.length; offset += BATCH_SIZE) {
+    const chunk = docs.slice(offset, offset + BATCH_SIZE);
     const batch = db.batch();
     let writes = 0;
 
@@ -309,8 +390,8 @@ export async function enrichCollection(
       const label = String(doc[labelField] || doc.id).slice(0, 60);
       const docRef = collection.doc(doc.id);
       try {
-        const snap = await docRef.get();
-        if (!snap.exists) {
+        const snapshot = await docRef.get();
+        if (!snapshot.exists) {
           const { id, ...data } = doc;
           if (!dryRun) {
             batch.set(docRef, { ...data, createdAt: FieldValue.serverTimestamp() });
@@ -321,7 +402,7 @@ export async function enrichCollection(
           continue;
         }
 
-        const patch = missingFieldPatch(snap.data(), doc, fields);
+        const patch = patcher(snapshot.data() || {}, doc, fields);
         if (Object.keys(patch).length === 0) {
           stats.unchanged++;
           continue;
@@ -331,11 +412,9 @@ export async function enrichCollection(
           writes++;
         }
         stats.enriched++;
-        console.log(
-          `  [fill] ${collectionName}: ${label} → ${Object.keys(patch).join(', ')}`
-        );
-      } catch (e) {
-        console.error(`  [err] ${collectionName}/${doc.id}: ${e.message}`);
+        console.log(`  [fill] ${collectionName}: ${label} → ${Object.keys(patch).join(', ')}`);
+      } catch (error) {
+        console.error(`  [err] ${collectionName}/${doc.id}: ${error.message}`);
         stats.errors++;
       }
     }
@@ -343,40 +422,100 @@ export async function enrichCollection(
     if (writes > 0) {
       try {
         await batch.commit();
-      } catch (e) {
-        console.error(`[Firebase] Batch commit failed for ${collectionName}: ${e.message}`);
+      } catch (error) {
+        console.error(`[Firebase] Batch commit failed for ${collectionName}: ${error.message}`);
         stats.errors += writes;
       }
     }
   }
-
   return stats;
 }
 
-/** Fields the app's scheme detail sheet renders beyond the card's own. */
-export const SCHEME_DETAIL_FIELDS = [
-  'detailedDescription',
-  'keyFeatures',
-  'upscRelevance',
-  'ministry',
-];
+function asUploadStats(stats) {
+  return {
+    ...stats,
+    uploaded: Number(stats.created || 0) + Number(stats.enriched || 0),
+    skipped: Number(stats.unchanged || 0),
+  };
+}
 
-/** Fill scheme detail onto existing `govtSchemes` docs. */
+export function enrichVocabulary(docs, dryRun = false) {
+  return enrichCollection('vocabulary', docs, {
+    dryRun,
+    labelField: 'word',
+    fields: VOCABULARY_ENRICHMENT_FIELDS,
+    patcher: vocabularyEnrichmentPatch,
+  });
+}
+
+export function enrichFlashcards(docs, dryRun = false) {
+  return enrichCollection('flashcards', docs, {
+    dryRun,
+    labelField: 'front',
+    fields: FLASHCARD_ENRICHMENT_FIELDS,
+  });
+}
+
 export function enrichSchemes(docs, dryRun = false) {
   return enrichCollection('govtSchemes', docs, {
     dryRun,
     labelField: 'name',
     fields: SCHEME_DETAIL_FIELDS,
+    patcher: schemeEnrichmentPatch,
   });
 }
 
-/**
- * Upload key-fact docs to the `dailyFacts` collection, which the "UPSC Must
- * Know" screen merges with its built-in bank. Nothing wrote this collection
- * before, so the screen only ever showed its static content.
- */
-export function uploadKeyFacts(docs, dryRun = false) {
-  return uploadToCollection('dailyFacts', docs, dryRun, 'title');
+export function enrichKeyFacts(docs, dryRun = false) {
+  return enrichCollection('dailyFacts', docs, {
+    dryRun,
+    labelField: 'title',
+    fields: DAILY_FACT_ENRICHMENT_FIELDS,
+  });
+}
+
+/** Compatibility wrappers now use the same canonical enrichment policies. */
+export async function uploadVocabulary(docs, dryRun = false) {
+  return asUploadStats(await enrichVocabulary(docs, dryRun));
+}
+
+export async function uploadFlashcards(docs, dryRun = false) {
+  return asUploadStats(await enrichFlashcards(docs, dryRun));
+}
+
+export async function uploadSchemes(docs, dryRun = false) {
+  return asUploadStats(await enrichSchemes(docs, dryRun));
+}
+
+export async function uploadKeyFacts(docs, dryRun = false) {
+  return asUploadStats(await enrichKeyFacts(docs, dryRun));
+}
+
+/** Load global lexical state once so extraction can exclude words pre-lookup. */
+export async function loadVocabularyIndex({ dryRun = false } = {}) {
+  if (!db && dryRun) return new Map();
+  if (!db) initFirebase();
+  const snapshot = await db.collection('vocabulary').get();
+  const index = new Map();
+  for (const doc of snapshot.docs) {
+    const data = { id: doc.id, ...doc.data() };
+    const key = clean(data.normalizedWord || data.word).toLocaleLowerCase('en-US');
+    if (key && !index.has(key)) index.set(key, data);
+  }
+  console.log(`[Vocabulary] Loaded ${index.size} existing lexical document(s)`);
+  return index;
+}
+
+/** Shared daily/backfill/repair contract; keyFacts cannot be accidentally omitted. */
+export async function persistDerivedLibraries(derived, {
+  dryRun = false,
+  uploadFlashcardsFn = uploadFlashcards,
+  uploadSchemesFn = uploadSchemes,
+  uploadKeyFactsFn = uploadKeyFacts,
+} = {}) {
+  const flashcards = await uploadFlashcardsFn(derived?.flashcards || [], dryRun);
+  const schemes = await uploadSchemesFn(derived?.schemes || [], dryRun);
+  const keyFacts = await uploadKeyFactsFn(derived?.keyFacts || [], dryRun);
+  return { flashcards, schemes, keyFacts };
 }
 
 /**

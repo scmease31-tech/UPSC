@@ -1,25 +1,44 @@
-name: Backfill Derived Content
-
-# Derives vocabulary, flashcards, and government schemes from the articles
-# already stored in Firestore. Run manually after enabling the generators, or
-# any time you want to (re)derive content from the full article history.
-# Dedup-safe: existing docs are skipped.
+name: Backfill Canonical Study Libraries
 
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Dry run (no upload)'
+        description: 'Read and derive only; do not write Firestore'
+        type: boolean
+        default: true
+      vocab_only:
+        description: 'Run only the per-date vocabulary backfill'
         type: boolean
         default: false
+      from:
+        description: 'Inclusive vocabulary start date (YYYY-MM-DD); use printed resume date'
+        type: string
+        required: false
+      to:
+        description: 'Inclusive vocabulary end date (YYYY-MM-DD)'
+        type: string
+        required: false
+      max_dates:
+        description: 'Maximum publication dates in this chunk'
+        type: string
+        default: '30'
       prune_schemes:
-        description: 'Delete scheme docs whose names are not real schemes'
+        description: 'Delete rejected legacy scheme names (ignored for vocabulary-only runs)'
         type: boolean
         default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canonical-study-library-backfill-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   backfill:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,53 +50,50 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/content-scraper/package-lock.json
 
-      - name: Install dependencies
+      - name: Install locked dependencies
         working-directory: backend/content-scraper
-        run: npm ci || npm install
+        run: npm ci
 
-      - name: Run backfill
+      - name: Run scraper tests
+        working-directory: backend/content-scraper
+        run: npm test
+
+      - name: Check backfill script syntax
+        working-directory: backend/content-scraper
+        run: |
+          node --check backfill.js
+          node --check vocabulary-pipeline.js
+          node --check vocab-extract.js
+
+      - name: Run bounded canonical backfill
         working-directory: backend/content-scraper
         env:
           FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          INPUT_FROM: ${{ inputs.from }}
+          INPUT_TO: ${{ inputs.to }}
+          INPUT_MAX_DATES: ${{ inputs.max_dates }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_VOCAB_ONLY: ${{ inputs.vocab_only }}
         run: |
-          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
-            node backfill.js --dry-run
-          else
-            node backfill.js
-          fi
+          args=(--max-dates "${INPUT_MAX_DATES:-30}")
+          if [ -n "$INPUT_FROM" ]; then args+=(--from "$INPUT_FROM"); fi
+          if [ -n "$INPUT_TO" ]; then args+=(--to "$INPUT_TO"); fi
+          if [ "$INPUT_DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ "$INPUT_VOCAB_ONLY" = "true" ]; then args+=(--vocab-only); fi
+          node backfill.js "${args[@]}"
 
-      # backfill.js can only CREATE docs — uploadToCollection skips ids that
-      # already exist. Schemes are keyed on their name alone, so ones stored
-      # before generateSchemes produced detailedDescription / keyFeatures /
-      # upscRelevance / ministry would keep their thin shape forever and the
-      # app's detail sheet would stay near-empty. This fills those fields in.
-      - name: Fill scheme detail onto existing docs
+      - name: Audit legacy scheme names
+        if: ${{ !inputs.vocab_only }}
         working-directory: backend/content-scraper
         env:
           FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_PRUNE: ${{ inputs.prune_schemes }}
         run: |
-          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
-            node enrich-schemes.js --dry-run
-          else
-            node enrich-schemes.js
-          fi
-
-      # Names are pattern-matched out of prose, so earlier, looser runs stored
-      # headings ("Conclusion The PM SHRI Scheme"), sentence fragments and
-      # organisations that are not schemes. generateSchemes now filters these at
-      # write time; this removes the ones already stored. Always audits; only
-      # deletes when prune_schemes is set.
-      - name: Audit scheme names
-        working-directory: backend/content-scraper
-        env:
-          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
-        run: |
-          if [ "${{ github.event.inputs.prune_schemes }}" == "true" ]; then
-            if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
-              node audit-schemes.js --prune --dry-run
-            else
-              node audit-schemes.js --prune
-            fi
+          if [ "$INPUT_PRUNE" = "true" ]; then
+            args=(--prune)
+            if [ "$INPUT_DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+            node audit-schemes.js "${args[@]}"
           else
             node audit-schemes.js
           fi

@@ -1,22 +1,14 @@
 /**
- * Content Generators
+ * Pure generators for the study-library collections.
  *
- * Derives supplementary UPSC study content from scraped article objects:
- *   - vocabulary  → `vocabulary` collection
- *   - flashcards  → `flashcards` collection
- *   - schemes     → `govtSchemes` collection
- *
- * These functions are pure: they take an array of article objects (the same
- * shape produced by scrapers.js) and return arrays of Firestore-ready docs.
- * No network, no file I/O — so they can be unit-tested and reused by both the
- * daily scraper and the PDF ingest script.
+ * Every generated document uses a stable, legacy-compatible id and schema v2
+ * provenance. Persistence is deliberately handled elsewhere so these
+ * transforms stay deterministic and straightforward to test.
  */
 
 import crypto from 'crypto';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared helpers
-// ─────────────────────────────────────────────────────────────────────────────
+export const CONTENT_SCHEMA_VERSION = 2;
 
 function hashId(prefix, ...parts) {
   const h = crypto
@@ -28,108 +20,153 @@ function hashId(prefix, ...parts) {
 }
 
 export function clean(str) {
-  return String(str ?? '').replace(/\s+/g, ' ').trim();
+  return String(str ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim();
 }
 
-/** Find the first sentence in `text` that contains `term` (for usage examples). */
+export function normalizeVocabularyWord(word) {
+  return clean(word).toLocaleLowerCase('en-US');
+}
+
+export function vocabularyId(word) {
+  return hashId('v', normalizeVocabularyWord(word));
+}
+
+export function normalizeFlashcardFront(front) {
+  return clean(front).toLocaleLowerCase('en-US').replace(/[^a-z0-9]/g, '');
+}
+
+export function flashcardId(front) {
+  // Keep the established id contract: hash the cleaned display front, not the
+  // punctuation-free dedup key. Existing cards therefore remain addressable.
+  return hashId('fc', clean(front));
+}
+
+export function keyFactId(title) {
+  // This is the live collection's established id contract. Provenance is now
+  // carried as metadata rather than changing ids and duplicating old cards.
+  return hashId('kf', clean(title));
+}
+
+const CATEGORY_ALIASES = new Map([
+  ['science and technology', 'Science & Technology'],
+  ['science & technology', 'Science & Technology'],
+  ['sci-tech', 'Science & Technology'],
+  ['international relations', 'International Relations'],
+  ['international relation', 'International Relations'],
+  ['environment and ecology', 'Environment'],
+  ['environment & ecology', 'Environment'],
+  ['environment', 'Environment'],
+  ['indian polity', 'Polity'],
+  ['polity', 'Polity'],
+  ['economics', 'Economy'],
+  ['economy', 'Economy'],
+  ['geography', 'Geography'],
+  ['history', 'History'],
+  ['governance', 'Governance'],
+  ['ethics', 'Ethics'],
+  ['agriculture', 'Agriculture'],
+  ['social issues', 'Social Issues'],
+  ['internal security', 'Internal Security'],
+  ['current affairs', 'Current Affairs'],
+  ['general', 'General'],
+]);
+
+export function normalizeCategory(value) {
+  const category = clean(value || 'General');
+  return CATEGORY_ALIASES.get(category.toLocaleLowerCase('en-US')) || category;
+}
+
+/** Map an article's primary tag to one normalized UPSC category. */
+export function primaryCategory(article) {
+  const tags = article?.categoryTags || [];
+  const first = tags.find((tag) => clean(tag) && clean(tag).toLowerCase() !== 'general');
+  return normalizeCategory(first || tags[0] || 'General');
+}
+
+export function articleMetadata(article) {
+  return {
+    articleRef: clean(article?.id),
+    sourceUrl: clean(article?.sourceUrl),
+    upscPaper: clean(article?.upscPaper),
+    publishedDate: clean(article?.publishedDate),
+    newspaper: clean(article?.newspaper),
+  };
+}
+
+function articleSortKey(article) {
+  const meta = articleMetadata(article);
+  return [meta.publishedDate, meta.articleRef, meta.sourceUrl, clean(article?.title)].join('|');
+}
+
+function sortedArticles(articles) {
+  return [...(articles || [])].sort((a, b) => articleSortKey(a).localeCompare(articleSortKey(b)));
+}
+
+/** Find the first sentence in text that explicitly contains term. */
 function findExampleSentence(text, term) {
   if (!text || !term) return '';
-  const sentences = text.split(/(?<=[.!?])\s+/);
-  const lower = term.toLowerCase();
-  const hit = sentences.find(
-    (s) => s.toLowerCase().includes(lower) && s.length > 25 && s.length < 260
-  );
-  return hit ? clean(hit) : '';
-}
-
-/** Map an article's primary category tag to a broad UPSC sector label. */
-export function primaryCategory(article) {
-  const tags = article.categoryTags || [];
-  const first = tags.find((t) => t && t.toLowerCase() !== 'general');
-  return clean(first || tags[0] || 'General');
+  const lower = clean(term).toLowerCase();
+  const hit = String(text)
+    .split(/(?<=[.!?])\s+/)
+    .map(clean)
+    .find((sentence) =>
+      sentence.toLowerCase().includes(lower) && sentence.length > 25 && sentence.length < 260
+    );
+  return hit || '';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Vocabulary
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Words too common to be worth a flashcard even if they look "hard".
-const STOPWORDS = new Set([
-  'India', 'Indian', 'Government', 'Minister', 'Ministry', 'National',
-  'Central', 'State', 'Union', 'Committee', 'Report', 'Scheme', 'Policy',
-  'Council', 'Board', 'Authority', 'Commission', 'Department', 'Programme',
-  'Program', 'Mission', 'Yojana', 'January', 'February', 'March', 'April',
-  'May', 'June', 'July', 'August', 'September', 'October', 'November',
-  'December', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-  'Saturday', 'Sunday',
-]);
-
-/**
- * Build vocabulary docs from an article's `keyTerms` map. That map is the
- * cleanest source ({ term: definition }) since it is curated by the scraper.
- */
 function vocabFromKeyTerms(article) {
   const out = [];
-  const keyTerms = article.keyTerms || {};
   const category = primaryCategory(article);
+  const metadata = articleMetadata(article);
 
-  for (const [term, definition] of Object.entries(keyTerms)) {
+  for (const [term, definition] of Object.entries(article.keyTerms || {})) {
     const word = clean(term);
     const meaning = clean(definition);
     if (!word || word.length < 3 || meaning.length < 15) continue;
 
     out.push({
-      id: hashId('v', word),
+      id: vocabularyId(word),
+      schemaVersion: CONTENT_SCHEMA_VERSION,
       word,
+      normalizedWord: normalizeVocabularyWord(word),
       partOfSpeech: word.includes(' ') ? 'phrase' : 'noun',
       meaning,
       example: findExampleSentence(article.content, word),
       synonyms: [],
       antonyms: [],
       category,
-      upscUsage: `Relevant to ${article.upscPaper || category} — appeared in current affairs on ${article.publishedDate}.`,
+      ...metadata,
+      upscUsage: `Relevant to ${metadata.upscPaper || category}${
+        metadata.publishedDate ? ` — appeared in current affairs on ${metadata.publishedDate}` : ''
+      }.`,
     });
   }
   return out;
 }
 
-/**
- * Generate vocabulary docs for a batch of articles.
- * De-duplicates by word (case-insensitive) within the batch.
- */
 export function generateVocabulary(articles) {
   const byWord = new Map();
-
-  for (const article of articles) {
+  for (const article of sortedArticles(articles)) {
     for (const doc of vocabFromKeyTerms(article)) {
-      const key = doc.word.toLowerCase();
-      if (!byWord.has(key)) byWord.set(key, doc);
+      if (!byWord.has(doc.normalizedWord)) byWord.set(doc.normalizedWord, doc);
     }
   }
-
-  return [...byWord.values()];
+  return [...byWord.values()].sort((a, b) => a.normalizedWord.localeCompare(b.normalizedWord));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Flashcards
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Generate flashcard docs (front/back/category) from articles.
- * Two kinds of cards:
- *   1. Term cards   — front = key term, back = its definition
- *   2. Concept cards — front = "Why in news: <title>?", back = summary
- */
-/**
- * Split a structured body into "## Heading" → content blocks.
- * Bodies without headings yield nothing, which is correct — there is no
- * section to build a card from.
- */
 function sections(content) {
   const out = [];
   let heading = null;
   let buf = [];
-
   const flush = () => {
     if (heading && buf.length) {
       const body = buf.join(' ').replace(/^[•◦]\s*/gm, '').replace(/\s+/g, ' ').trim();
@@ -138,191 +175,155 @@ function sections(content) {
     buf = [];
   };
 
-  for (const line of (content || '').split('\n')) {
-    const t = line.trim();
-    if (!t) continue;
-    const h = t.match(/^#{2,3}\s+(.+)$/);
-    if (h) { flush(); heading = h[1].replace(/[:?]+$/, '').trim(); continue; }
-    buf.push(t.replace(/^[•◦]\s*/, ''));
+  for (const line of String(content || '').split('\n')) {
+    const text = line.trim();
+    if (!text) continue;
+    const headingMatch = text.match(/^#{2,3}\s+(.+)$/);
+    if (headingMatch) {
+      flush();
+      heading = headingMatch[1].replace(/[:?]+$/, '').trim();
+      continue;
+    }
+    buf.push(text.replace(/^[•◦]\s*/, ''));
   }
   flush();
   return out;
 }
 
-/** Section names too generic to make a useful card front on their own. */
 const WEAK_HEADING = /^(summary|context|source|introduction|conclusion|note|about|overview|background)$/i;
-
-/** "X is a statutory body that …" — a definition worth its own card. */
 const DEFINITION_RE = /^([A-Z][A-Za-z0-9 ()'&/-]{3,70}?)\s+(?:is|are|was|were|refers to|means|stands for|is defined as)\s+(.{25,300}?[.!])/;
 
-/**
- * A definition card is only useful if the term is a name, not a clause.
- * "The capital, Skopje, is the birthplace of…" matches the definition shape but
- * its subject is a fragment — the comma is the giveaway.
- */
 function isNamedTerm(term) {
   if (/[,;:]/.test(term)) return false;
   const words = term.split(/\s+/);
   if (words.length > 8) return false;
   if (/^(It|This|That|These|Those|There|He|She|They|Which|What|Such|Both|One|Some|Many|Most)\b/i.test(term)) return false;
-  // A bare "The …" opener is usually a sentence subject rather than a name.
   if (/^The\s/i.test(term) && words.length <= 2) return false;
   return true;
 }
 
-/**
- * Generate flashcard docs from articles.
- *
- * Four kinds of card, in descending reliability:
- *   1. Term → definition, when a source supplies a glossary (`keyTerms`)
- *   2. Section cards — a "## What is X?" heading and the text under it
- *   3. Definition cards — "X is a …" sentences found in the body
- *   4. One concept card per article — "Why in news: <title>"
- *
- * Only (1) and (4) existed before, and no scraper populates keyTerms, so every
- * article produced exactly one card. Sections and definitions are where the
- * real volume is: a typical Drishti article carries six to ten of them.
- */
 export function generateFlashcards(articles) {
   const byFront = new Map();
 
-  const add = (front, back, article, category) => {
+  const add = (front, back, article, category, kind) => {
     const f = clean(front);
     const b = clean(back);
-    if (!f || f.length < 6 || f.length > 160) return;
-    if (b.length < 30) return;
-    const key = f.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (byFront.has(key)) return;
-    byFront.set(key, {
-      id: hashId('fc', f),
+    if (!f || f.length < 6 || f.length > 160 || b.length < 30) return;
+    const normalizedFront = normalizeFlashcardFront(f);
+    if (!normalizedFront || byFront.has(normalizedFront)) return;
+    byFront.set(normalizedFront, {
+      id: flashcardId(f),
+      schemaVersion: CONTENT_SCHEMA_VERSION,
       front: f,
+      normalizedFront,
       back: b.slice(0, 600),
-      category,
-      newspaper: article.newspaper || '',
-      publishedDate: article.publishedDate || '',
+      category: normalizeCategory(category),
+      kind,
+      ...articleMetadata(article),
     });
   };
 
-  for (const article of articles) {
+  for (const article of sortedArticles(articles)) {
     const category = primaryCategory(article);
     const title = clean(article.title);
 
-    // 1. Curated glossary, when a source provides one.
     for (const [term, definition] of Object.entries(article.keyTerms || {})) {
-      add(term, definition, article, category);
+      add(term, definition, article, category, 'term');
     }
 
-    // 2. Section cards. A heading that already reads as a question becomes the
-    //    front verbatim; a plain one is qualified with the article topic so the
-    //    card still makes sense out of context.
     for (const { heading, body } of sections(article.content)) {
       if (WEAK_HEADING.test(heading)) continue;
-      // A question heading stands alone. A plain one is qualified with the
-      // article topic so the card still makes sense out of context — unless it
-      // already names that topic, which would read "X of Y — Y".
       const isQuestion = /\?$|^(what|why|how|who|when|where|which)\b/i.test(heading);
-      const words = (s) => new Set(s.toLowerCase().match(/[a-z]{4,}/g) || []);
+      const words = (value) => new Set(value.toLowerCase().match(/[a-z]{4,}/g) || []);
       const headingWords = words(heading);
-      const shared = [...words(title)].filter((w) => headingWords.has(w)).length;
+      const shared = [...words(title)].filter((word) => headingWords.has(word)).length;
       const front = isQuestion
         ? heading.replace(/\?*$/, '?')
         : (shared >= 2 ? heading : `${heading} — ${title}`);
-      add(front, body, article, category);
+      add(front, body, article, category, 'section');
     }
 
-    // 3. Definitions stated in the prose.
-    const plain = (article.content || '').replace(/^#{2,3}\s+.*$/gm, '').replace(/^[•◦]\s*/gm, '');
+    const plain = String(article.content || '')
+      .replace(/^#{2,3}\s+.*$/gm, '')
+      .replace(/^[•◦]\s*/gm, '');
     for (const sentence of plain.split(/(?<=[.!?])\s+/)) {
-      const m = sentence.trim().match(DEFINITION_RE);
-      if (!m) continue;
-      const term = m[1].trim();
-      if (!isNamedTerm(term)) continue;
-      add(term, sentence.trim(), article, category);
+      const match = sentence.trim().match(DEFINITION_RE);
+      if (!match) continue;
+      const term = match[1].trim();
+      if (isNamedTerm(term)) add(term, sentence.trim(), article, category, 'definition');
     }
 
-    // 4. The article itself.
     const summary = clean(article.summary);
     if (title && summary.length > 40) {
-      add(`Why in news: ${title}`, summary, article, category);
+      add(`Why in news: ${title}`, summary, article, category, 'why_in_news');
     }
   }
 
-  return [...byFront.values()];
+  return [...byFront.values()].sort((a, b) =>
+    a.normalizedFront.localeCompare(b.normalizedFront) || a.id.localeCompare(b.id)
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Key facts (the `dailyFacts` collection behind "UPSC Must Know")
+// Must Know facts
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** A fact is worth memorising when it pins down a number, date, body or law. */
 const FACT_SIGNAL = /(\b\d{4}\b|\b\d+(\.\d+)?\s*(%|per cent|crore|lakh|billion|million|km|GW|MW|tonnes?)\b|Article\s+\d+|Section\s+\d+|Schedule\b|Amendment\b|Convention\b|Treaty\b|Protocol\b|Mission\b|Yojana\b|Act,?\s+\d{4}|established|launched|headquarters|ranked|largest|first\b)/i;
-
-/** Sentences that reference the news cycle rather than stating a durable fact. */
 const NOT_A_FACT = /(recently|last week|yesterday|today|this week|has been in the news|why in news|according to the article)/i;
 
-/**
- * Build `dailyFacts` docs — one per article, grouped by subject.
- *
- * The Must Know screen merges these with its built-in bank, so every article
- * ingested adds to what the screen can teach. Nothing wrote this collection
- * before, which is why the screen only ever showed its static content.
- */
 export function generateKeyFacts(articles, { perArticle = 6 } = {}) {
-  const out = [];
+  const byId = new Map();
 
-  for (const article of articles) {
+  for (const article of sortedArticles(articles)) {
     const category = primaryCategory(article);
     const title = clean(article.title);
     if (!title) continue;
 
     const seen = new Set();
     const facts = [];
-
-    // Curated bullets first — they are already condensed.
     const candidates = [
       ...(article.keyPoints || []),
       ...(article.shortNotes || []),
-      ...(article.content || '')
+      ...String(article.content || '')
         .split('\n')
-        .filter((l) => /^[•◦]\s/.test(l.trim()))
-        .map((l) => l.replace(/^[•◦]\s*/, '')),
-      ...(article.content || '')
+        .filter((line) => /^[•◦]\s/.test(line.trim()))
+        .map((line) => line.replace(/^[•◦]\s*/, '')),
+      ...String(article.content || '')
         .replace(/^#{2,3}\s+.*$/gm, '')
         .split(/(?<=[.!?])\s+/),
     ];
 
     for (const raw of candidates) {
       const fact = clean(raw);
-      if (fact.length < 45 || fact.length > 260) continue;
-      if (!FACT_SIGNAL.test(fact)) continue;
-      if (NOT_A_FACT.test(fact)) continue;
+      if (fact.length < 45 || fact.length > 260 || !FACT_SIGNAL.test(fact) || NOT_A_FACT.test(fact)) continue;
       const key = fact.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60);
       if (seen.has(key)) continue;
       seen.add(key);
       facts.push(fact);
       if (facts.length >= perArticle) break;
     }
+    if (facts.length < 2) continue;
 
-    if (facts.length < 2) continue; // not worth a card
-
-    out.push({
-      id: hashId('kf', title),
+    const id = keyFactId(title);
+    const doc = {
+      id,
+      schemaVersion: CONTENT_SCHEMA_VERSION,
       category,
       title,
       facts,
-      publishedDate: article.publishedDate || '',
-      newspaper: article.newspaper || '',
-    });
+      ...articleMetadata(article),
+    };
+    const held = byId.get(id);
+    if (!held || doc.facts.length > held.facts.length) byId.set(id, doc);
   }
 
-  return out;
+  return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Government schemes
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Patterns that reliably indicate a government scheme / mission / programme.
 const SCHEME_PATTERNS = [
   /\b((?:Pradhan Mantri|PM[- ])[A-Z][\w'-]*(?:\s+[A-Z][\w'-]*){0,4})\b/g,
   /\b([A-Z][\w'-]*(?:\s+[A-Z][\w'-]*){0,4}\s+Yojana)\b/g,
@@ -343,57 +344,36 @@ const SECTOR_KEYWORDS = [
 ];
 
 function guessSector(text) {
-  const lower = (text || '').toLowerCase();
+  const lower = clean(text).toLowerCase();
   for (const [sector, keys] of SECTOR_KEYWORDS) {
-    if (keys.some((k) => lower.includes(k))) return sector;
+    if (keys.some((key) => lower.includes(key))) return sector;
   }
   return 'Governance';
 }
 
 function acronym(name) {
-  const words = name.split(/\s+/).filter((w) => /^[A-Z]/.test(w) && w.length > 2);
-  return words.length >= 2 ? words.map((w) => w[0]).join('') : '';
+  const words = name.split(/\s+/).filter((word) => /^[A-Z]/.test(word) && word.length > 2);
+  return words.length >= 2 ? words.map((word) => word[0]).join('') : '';
 }
 
-/**
- * The administering body, read out of the article text.
- *
- * Only ever reports a ministry the source actually names. Guessing one from the
- * sector would be worse than leaving it blank: "which ministry runs this" is
- * examinable, and a plausible-looking wrong answer is what a reader would
- * memorise.
- */
-// Ministry names carry commas and conjunctions ("Ministry of Micro, Small and
-// Medium Enterprises"), so the continuation allows ", ", " and ", " & " and a
-// plain space. A lowercase word ends the match, which is what stops it running
-// into the rest of the sentence.
-const MINISTRY_RE =
-  /\b(Ministry|Department)\s+of\s+([A-Z][A-Za-z&'-]*(?:(?:,\s+|\s+and\s+|\s+&\s+|\s+of\s+|\s+)[A-Z][A-Za-z&'-]*){0,6})/g;
+const MINISTRY_RE = /\b(Ministry|Department)\s+of\s+([A-Z][A-Za-z&'-]*(?:(?:,\s+|\s+and\s+|\s+&\s+|\s+of\s+|\s+)[A-Z][A-Za-z&'-]*){0,6})/g;
 
 function findMinistry(text) {
   if (!text) return '';
   MINISTRY_RE.lastIndex = 0;
   const counts = new Map();
-  let m;
-  while ((m = MINISTRY_RE.exec(text)) !== null) {
-    const name = clean(`${m[1]} of ${m[2]}`)
-        .replace(/[,\s]+(and|of|&)$/i, '')
-        .replace(/[,\s]+$/, '');
+  let match;
+  while ((match = MINISTRY_RE.exec(text)) !== null) {
+    const name = clean(`${match[1]} of ${match[2]}`)
+      .replace(/[,\s]+(and|of|&)$/i, '')
+      .replace(/[,\s]+$/, '');
     if (name.length > 80) continue;
-    counts.set(name, (counts.get(name) ?? 0) + 1);
+    counts.set(name, (counts.get(name) || 0) + 1);
   }
-  if (counts.size === 0) return '';
-  // The most frequently named body wins; ties go to the longer, more specific
-  // name ("Ministry of Health and Family Welfare" over "Ministry of Health").
-  return [...counts.entries()].sort(
-    (a, b) => b[1] - a[1] || b[0].length - a[0].length
-  )[0][0];
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length || a[0].localeCompare(b[0]))[0]?.[0] || '';
 }
 
-/**
- * Which GS paper a sector belongs to. This is syllabus mapping, not a claim
- * about the scheme, so it is safe to state without the article saying it.
- */
 const SECTOR_PAPER = {
   Health: 'GS-II — Issues relating to development and management of Social Sector/Services (Health)',
   Agriculture: 'GS-III — Issues related to direct and indirect farm subsidies, agricultural marketing',
@@ -406,99 +386,46 @@ const SECTOR_PAPER = {
   Governance: 'GS-II — Government policies and interventions for development in various sectors',
 };
 
-/**
- * A short note on why the scheme matters for the exam. Built only from the
- * sector mapping, the administering body and the launch year — all of which are
- * either syllabus facts or values read from the source. It deliberately makes no
- * claim about outcomes or scale.
- */
 function schemeRelevance({ sector, ministry, year }) {
-  const paper = SECTOR_PAPER[sector] || SECTOR_PAPER.Governance;
-  const parts = [paper + '.'];
-  if (ministry && year) {
-    parts.push(`Administered by the ${ministry}; appeared in coverage from ${year}.`);
-  } else if (ministry) {
-    parts.push(`Administered by the ${ministry}.`);
-  } else if (year) {
-    parts.push(`Appeared in coverage from ${year}.`);
-  }
-  parts.push(
-    'Expect questions pairing the scheme with its ministry, objective and target group.'
-  );
+  const parts = [`${SECTOR_PAPER[sector] || SECTOR_PAPER.Governance}.`];
+  if (ministry && year) parts.push(`Administered by the ${ministry}; appeared in coverage from ${year}.`);
+  else if (ministry) parts.push(`Administered by the ${ministry}.`);
+  else if (year) parts.push(`Appeared in coverage from ${year}.`);
+  parts.push('Expect questions pairing the scheme with its ministry, objective and target group.');
   return parts.join(' ');
 }
 
-/**
- * A real quantity, date or legal reference — the kind of detail worth revising.
- * Unlike FACT_SIGNAL this does NOT treat "Yojana"/"Mission"/"launched" as
- * signals, because every candidate sentence already names the scheme.
- */
-const SCHEME_FIGURE =
-  /(\b\d{4}\b|\b\d+(?:\.\d+)?\s*(?:%|per ?cent|crore|lakh|billion|million|km|GW|MW|tonnes?|rupees?)\b|\bRs\.?\s*\d|\bArticle\s+\d+|\bSection\s+\d+|\b\d+\s+(?:trades|districts|states|villages|beneficiaries|artisans|families|years|days|months|tranches)\b)/i;
+const SCHEME_FIGURE = /(\b\d{4}\b|\b\d+(?:\.\d+)?\s*(?:%|per ?cent|crore|lakh|billion|million|km|GW|MW|tonnes?|rupees?)\b|\bRs\.?\s*\d|\bArticle\s+\d+|\bSection\s+\d+|\b\d+\s+(?:trades|districts|states|villages|beneficiaries|artisans|families|years|days|months|tranches)\b)/i;
 
-/**
- * Concrete, checkable sentences about the scheme, pulled from the article.
- *
- * Reuses the key-fact signal (figures, years, Articles, targets) so the bullets
- * are the kind of detail worth revising rather than narrative filler. Returns []
- * when the source has nothing specific — the app omits the section entirely
- * rather than showing an empty heading.
- */
 function schemeFeatures(text, name, { limit = 4 } = {}) {
   if (!text || !name) return [];
   const lower = name.toLowerCase();
-  const seen = new Set();
   const out = [];
-  for (const raw of text.split(/(?<=[.!?])\s+/)) {
-    const s = clean(raw);
-    if (s.length < 40 || s.length > 240) continue;
-    if (!s.toLowerCase().includes(lower)) continue;
-    // SCHEME_FIGURE rather than FACT_SIGNAL: FACT_SIGNAL counts "Yojana" and
-    // "Mission" as signals, which every one of these sentences contains by
-    // definition, so it would promote "Cabinet has approved the X Yojana" to a
-    // key feature. Require an actual figure, date or legal reference.
-    if (!SCHEME_FIGURE.test(s) || NOT_A_FACT.test(s)) continue;
-    const key = s.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60);
+  const seen = new Set();
+  for (const raw of String(text).split(/(?<=[.!?])\s+/)) {
+    const sentence = clean(raw);
+    if (sentence.length < 40 || sentence.length > 240) continue;
+    if (!sentence.toLowerCase().includes(lower) || !SCHEME_FIGURE.test(sentence) || NOT_A_FACT.test(sentence)) continue;
+    const key = sentence.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(s);
+    out.push(sentence);
     if (out.length >= limit) break;
   }
   return out;
 }
 
-/**
- * A fuller body for the detail sheet: the sentences around the scheme mention,
- * rather than the single sentence used on the card.
- */
 function schemeDetail(text, name, { sentences = 3 } = {}) {
   if (!text || !name) return '';
-  const all = text.split(/(?<=[.!?])\s+/).map(clean).filter(Boolean);
+  const all = String(text).split(/(?<=[.!?])\s+/).map(clean).filter(Boolean);
   const lower = name.toLowerCase();
-  const at = all.findIndex((s) => s.toLowerCase().includes(lower));
+  const at = all.findIndex((sentence) => sentence.toLowerCase().includes(lower));
   if (at === -1) return '';
-  const picked = all.slice(at, at + sentences).join(' ');
-  return picked.length > 900 ? picked.slice(0, 900).trim() : picked;
+  return clean(all.slice(at, at + sentences).join(' ')).slice(0, 900);
 }
 
-/**
- * Detect government schemes mentioned across articles and build `govtSchemes`
- * docs. Uses the explicit `governmentScheme` field when present, plus pattern
- * matching on title/content.
- */
-/**
- * Tidy a detected scheme name.
- *
- * Pattern matching over article text picks up the same scheme in several
- * surface forms — with a leading article ("The Mobile Phone Manufacturing
- * Scheme"), or with the phrase accidentally doubled where the text repeated it
- * ("Gaganyaan Mission Gaganyaan Mission"). Left alone these become separate
- * entries and the Govt Schemes tab fills with near-duplicates.
- */
 function tidySchemeName(raw) {
   let name = clean(raw).replace(/[.,;:]+$/, '').replace(/^(the|a|an)\s+/i, '');
-
-  // Collapse an exactly-doubled phrase.
   const words = name.split(/\s+/);
   if (words.length % 2 === 0) {
     const half = words.length / 2;
@@ -506,51 +433,18 @@ function tidySchemeName(raw) {
       name = words.slice(0, half).join(' ');
     }
   }
-
-  // Trim a reporting verb that got swept into the match.
-  name = name.replace(/^(PM|Government|Centre|Cabinet)\s+(Announces?|Launches?|Approves?|Unveils?)\s+/i, '');
-
-  return name;
+  return name.replace(/^(PM|Government|Centre|Cabinet)\s+(Announces?|Launches?|Approves?|Unveils?)\s+/i, '');
 }
 
-/** Key used to merge surface variants of one scheme. */
-function schemeKey(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+export function schemeKey(name) {
+  return clean(name).toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-/**
- * Names that describe a *category* of scheme rather than naming one. They match
- * the patterns perfectly and tell a reader nothing.
- */
 const GENERIC_SCHEME = /^(centrally sponsored|central sector|authorised use|state sponsored|government|national|new|old|special|various|other|similar|such|this|that|above|following|flagship|umbrella)\s+(scheme|mission|programme|program|yojana)s?$/i;
-
-/// Article-structure words that get swept in when a heading runs into the
-/// scheme name: "Conclusion The PM SHRI Scheme", "Questions The PM SHRI Scheme".
-const SECTION_WORD =
-  /^(conclusion|introduction|summary|overview|background|context|question|questions|answer|answers|note|notes|highlight|highlights|about|significance|challenge|challenges|way|analysis|editorial|source|sources|reference|references|prelims|mains|syllabus|topic|news|why|what|how|when|where)\b/i;
-
-/// A trailing verb phrase means the match captured a sentence, not a name:
-/// "PM SHRI Schools Transform School Education", "Delivering Development
-/// Through Scheme".
-/// Note: "Revamped", "Restructured" and "Modified" are NOT listed. They read as
-/// verbs but are part of real scheme names — the Revamped Distribution Sector
-/// Scheme (RDSS), the Restructured Weather-Based Crop Insurance Scheme. They sit
-/// in GENERIC_TOKEN instead, so "Revamped Scheme" on its own is still rejected
-/// for having no identity while the full names survive.
-const VERB_PHRASE =
-  /\b(transform|transforms|transforming|deliver|delivers|delivering|aims?|aiming|seeks?|seeking|provides?|providing|ensures?|ensuring|promotes?|promoting|strengthens?|strengthening|boosts?|boosting|covers?|covering|helps?|helping|enables?|enabling|launches|launched|approves|approved|announces|announced|extends|extended|replaces|replaced|supports?|supporting|improves?|improving|addresses|addressing|marks?|shows?|said|says)\b/i;
-
-/// Bodies and institutions that match the "... Mission/Society" shape but are
-/// not government schemes. Keeping them makes the whole list look unreliable.
-const NOT_A_SCHEME =
-  /^(ramakrishna|sri ramakrishna|aurobindo|brahmo|arya samaj|theosophical|salvation|jesuit|christian|catholic|baptist|methodist|lutheran|anglican|evangelical|mormon|scientology|red cross|rotary|lions|unesco|unicef|undp|unhcr|who|world bank|imf|asian development|oxfam|greenpeace|amnesty)\b/i;
-
-/// The words that make a name look like a government programme.
-const SCHEME_NOUN =
-  /\b(yojana|abhiyan|mission|scheme|programme|program|nidhi|kosh|bima|pension|awas|gram|sarva|shiksha|kaushal|kisan|jan|bachao|padhao|jeevan|poshan|suraksha|samman|ujjwala|saubhagya|ayushman|swachh|amrit|setu|vikas|kalyan|anna|garib|mudra|ujala|saksham)\b/i;
-
-/// Tokens that carry no identity. A name made only of these describes a
-/// category, not a scheme: "Technology Mission", "Parent Scheme", "The Mission".
+const SECTION_WORD = /^(conclusion|introduction|summary|overview|background|context|question|questions|answer|answers|note|notes|highlight|highlights|about|significance|challenge|challenges|way|analysis|editorial|source|sources|reference|references|prelims|mains|syllabus|topic|news|why|what|how|when|where|objective|objectives|aim|aims|beneficiary|beneficiaries|eligibility|benefit|benefits|funding|implementation|launch)\b/i;
+const VERB_PHRASE = /\b(transform|transforms|transforming|deliver|delivers|delivering|aims?|aiming|seeks?|seeking|provides?|providing|ensures?|ensuring|promotes?|promoting|strengthens?|strengthening|boosts?|boosting|covers?|covering|helps?|helping|enables?|enabling|launches|launched|approves|approved|announces|announced|extends|extended|replaces|replaced|supports?|supporting|improves?|improving|addresses|addressing|marks?|shows?|said|says)\b/i;
+const NOT_A_SCHEME = /^(ramakrishna|sri ramakrishna|aurobindo|brahmo|arya samaj|theosophical|salvation|jesuit|christian|catholic|baptist|methodist|lutheran|anglican|evangelical|mormon|scientology|red cross|rotary|lions|unesco|unicef|undp|unhcr|who|world bank|imf|asian development|oxfam|greenpeace|amnesty)\b/i;
+const SCHEME_NOUN = /\b(yojana|abhiyan|mission|scheme|programme|program|nidhi|kosh|bima|pension|awas|gram|sarva|shiksha|kaushal|kisan|jan|bachao|padhao|jeevan|poshan|suraksha|samman|ujjwala|saubhagya|ayushman|swachh|amrit|setu|vikas|kalyan|anna|garib|mudra|ujala|saksham)\b/i;
 const GENERIC_TOKEN = new Set([
   'the', 'a', 'an', 'of', 'and', 'for', 'in', 'on', 'to', 'its', 'this', 'that',
   'new', 'old', 'existing', 'current', 'proposed', 'revised', 'revamped',
@@ -562,29 +456,12 @@ const GENERIC_TOKEN = new Set([
   'technology', 'ecosystem', 'development', 'welfare', 'support', 'assistance',
   'scheme', 'schemes', 'mission', 'missions', 'programme', 'program', 'yojana',
   'abhiyan', 'plan', 'policy', 'fund', 'initiative', 'project', 'package',
-  // Common nouns that follow "PM" in ordinary reporting rather than in a scheme
-  // name: "PM Visit", "PM Schools", "PM Special". Listing them lets the
-  // PM-prefix rule stay permissive for real two-word names such as
-  // "PM GatiShakti" and "PM Vishwakarma".
   'visit', 'visits', 'schools', 'school', 'fellowship', 'fellowships',
   'court', 'courts', 'address', 'speech', 'meeting', 'rally', 'interview',
   'statement', 'remarks', 'message', 'greeting', 'tribute', 'inauguration',
 ]);
+const TRAILING_JUNK = /\b(target|targets|highlights?|details?|features?|benefits?|eligibility|objectives?|outcomes?|status|progress|update|updates|data|report|reports|coverage|allocation|budget|outlay|funding|guidelines?|criteria|beneficiaries|implementation|launch|review)$/i;
 
-/// Words that end a fragment rather than a name: "PM-KUSUM Target".
-const TRAILING_JUNK =
-  /\b(target|targets|highlights?|details?|features?|benefits?|eligibility|objectives?|outcomes?|status|progress|update|updates|data|report|reports|coverage|allocation|budget|outlay|funding|guidelines?|criteria|beneficiaries|implementation|launch|review)$/i;
-
-/**
- * Why a detected scheme name should be rejected, or null when it looks usable.
- *
- * Returns a reason string rather than a boolean so the audit can group rejects
- * and a human can see whether a rule is too aggressive.
- *
- * Exported so the generator and the Firestore audit apply ONE definition — the
- * generator filters at write time, the audit prunes what earlier, looser runs
- * already stored.
- */
 export function schemeNameProblem(raw) {
   const name = clean(raw);
   if (!name) return 'empty';
@@ -592,124 +469,377 @@ export function schemeNameProblem(raw) {
   if (name.length > 90) return 'too long';
 
   const words = name.split(/\s+/);
-  // A lone word is usually a false positive, EXCEPT an acronym — real schemes
-  // are known by them: PM-KISAN, PMAY, MGNREGA, PM-JAY.
-  const isAcronym = (w) =>
-    /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$/.test(w) && w.replace(/-/g, '').length >= 4;
+  const isAcronym = (word) =>
+    /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$/.test(word) && word.replace(/-/g, '').length >= 4;
   if (words.length < 2 && !isAcronym(words[0])) return 'single word';
   if (words.length > 9) return 'too many words (sentence fragment)';
-
   if (GENERIC_SCHEME.test(name)) return 'generic category, names no scheme';
   if (SECTION_WORD.test(name)) return 'starts with an article-structure word';
   if (VERB_PHRASE.test(name)) return 'contains a verb (sentence fragment)';
   if (NOT_A_SCHEME.test(name)) return 'organisation, not a government scheme';
   if (TRAILING_JUNK.test(name)) return 'ends with a non-name word';
-
-  // A stored name that tidies to something else was captured before the tidy
-  // rules existed — "Gaganyaan Mission Gaganyaan Mission". Reject it so the
-  // correctly-named doc can be written instead; ids hash the name, so the tidy
-  // form is a different document.
   if (tidySchemeName(name) !== name) return 'malformed (tidies differently)';
 
-  // Strip the words that carry no identity. Nothing left means the name
-  // describes a category: "Technology Mission", "Parent Scheme".
   const distinctive = words.filter(
-    (w) => !GENERIC_TOKEN.has(w.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+    (word) => !GENERIC_TOKEN.has(word.toLowerCase().replace(/[^a-z0-9-]/g, ''))
   );
   if (distinctive.length === 0) return 'no distinctive name';
 
   const hasSchemeNoun = SCHEME_NOUN.test(name);
   const hasAcronym = /\b[A-Z]{3,}\b/.test(name) || words.some(isAcronym);
-  // A PM/Rashtriya prefix alone is not enough — "PM Special" is a fragment. It
-  // needs a scheme noun or enough words to be a real title.
-  // "PM <Name>" is a strong signal in Indian governance, so a two-word name is
-  // accepted when the word after the prefix carries identity — GatiShakti,
-  // SVANidhi, Vishwakarma, Vidyalaxmi. Dropping a real scheme is worse than
-  // keeping a doubtful one, so this errs permissive; GENERIC_TOKEN carries the
-  // reporting nouns that must NOT qualify.
   const prefixed = /^(pm|pradhan mantri|mukhyamantri|rashtriya|atal)\b/i.test(name);
-  const tailCarriesIdentity = words
-      .slice(1)
-      .some((w) => !GENERIC_TOKEN.has(w.toLowerCase().replace(/[^a-z0-9-]/g, '')));
-  const hasKnownPrefix =
-    prefixed && (hasSchemeNoun || words.length >= 3 || tailCarriesIdentity);
-  // A three-or-more-word Title Case phrase is a proper name even when none of
-  // its words is an English scheme noun — "Beti Bachao Beti Padhao". Lowercase
-  // connectors are allowed. The verb, heading and generic rules above have
-  // already removed the fragments this would otherwise let through.
-  const isTitleCasePhrase =
-    words.length >= 3 &&
-    words.every(
-      (w) => /^[A-Z0-9]/.test(w) || /^(of|and|for|in|on|to|the|a|an)$/i.test(w)
-    );
+  const tailCarriesIdentity = words.slice(1).some(
+    (word) => !GENERIC_TOKEN.has(word.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+  );
+  const hasKnownPrefix = prefixed && (hasSchemeNoun || words.length >= 3 || tailCarriesIdentity);
+  const isTitleCasePhrase = words.length >= 3 && words.every(
+    (word) => /^[A-Z0-9]/.test(word) || /^(of|and|for|in|on|to|the|a|an)$/i.test(word)
+  );
   if (!hasSchemeNoun && !hasAcronym && !hasKnownPrefix && !isTitleCasePhrase) {
     return 'no scheme/programme noun';
   }
 
-  // A name that is mostly lowercase was lifted out of mid-sentence prose.
-  const capitalised = words.filter((w) => /^[A-Z0-9]/.test(w)).length;
+  const capitalised = words.filter((word) => /^[A-Z0-9]/.test(word)).length;
   if (capitalised / words.length < 0.6) return 'mostly lowercase (mid-sentence)';
-
   return null;
 }
 
-export function generateSchemes(articles) {
-  const byName = new Map();
+const HEADING_FIELDS = [
+  ['objective', /^(?:key\s+)?(?:objectives?|aims?|purpose)(?:\s+of\s+(?:the\s+)?scheme)?$/i],
+  ['beneficiaries', /^(?:(?:(?:target|intended)\s+)?beneficiaries|target\s+groups?|who\s+benefits)$/i],
+  ['eligibility', /^(?:eligibility|eligibility\s+criteria|who\s+(?:is\s+eligible|can\s+apply))$/i],
+  ['benefits', /^(?:key\s+)?(?:benefits?|assistance|incentives?)(?:\s+under\s+(?:the\s+)?scheme)?$/i],
+  ['funding', /^(?:funding|funding\s+pattern|financial\s+outlay|budget(?:ary\s+allocation)?|outlay)$/i],
+  ['implementation', /^(?:implementation|implementing\s+agency|nodal\s+(?:agency|ministry)|execution)$/i],
+  ['launchYear', /^(?:launch|launched|launch\s+year|year\s+(?:launched|of\s+launch)|inception)$/i],
+  ['officialUrl', /^(?:official\s+)?(?:website|web\s*site|url|portal|scheme\s+portal)$/i],
+];
 
-  const add = (rawName, article) => {
-    const name = tidySchemeName(rawName);
-    // One shared definition of "is this actually a scheme name", also used by
-    // audit-schemes.js to prune what looser earlier runs stored.
-    if (schemeNameProblem(name)) return;
+function headingField(value) {
+  const heading = clean(value).replace(/[:?]+$/, '').replace(/^\d+[.)]\s*/, '');
+  return HEADING_FIELDS.find(([, pattern]) => pattern.test(heading))?.[0] || '';
+}
 
-    const key = schemeKey(name);
-    if (byName.has(key)) return;
-
-    const context = `${article.title} ${article.summary}`;
-    const body = `${article.title}\n${article.summary || ''}\n${article.content || ''}`;
-    const sector = guessSector(context);
-    const year = String(new Date(article.publishedDate || Date.now()).getFullYear());
-    const ministry = findMinistry(body);
-
-    byName.set(key, {
-      id: hashId('gs', name),
-      name,
-      fullForm: acronym(name),
-      description:
-        findExampleSentence(article.content, name) ||
-        clean(article.summary).slice(0, 220),
-      // The detail sheet reads detailedDescription / keyFeatures /
-      // upscRelevance. Leaving them unset is what made every scraper-derived
-      // scheme open to a near-empty sheet.
-      detailedDescription:
-        schemeDetail(article.content, name) || clean(article.summary),
-      keyFeatures: schemeFeatures(article.content, name),
-      upscRelevance: schemeRelevance({ sector, ministry, year }),
-      ministry,
-      sector,
-      year,
-      iconName: '',
-      colorHex: '',
-    });
+function explicitHeadingBlocks(content) {
+  const blocks = [];
+  let current = null;
+  const flush = () => {
+    if (current && current.lines.length) {
+      blocks.push({ field: current.field, text: current.lines.join('\n') });
+    }
+    current = null;
   };
 
-  for (const article of articles) {
-    if (article.governmentScheme) add(article.governmentScheme, article);
+  for (const rawLine of String(content || '').split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const markdownHeading = line.match(/^#{1,6}\s+(.+)$/);
+    if (markdownHeading) {
+      flush();
+      const field = headingField(markdownHeading[1]);
+      current = field ? { field, lines: [] } : null;
+      continue;
+    }
+    const labelled = line.match(/^([^:]{3,45}):\s+(.+)$/);
+    if (labelled) {
+      const field = headingField(labelled[1]);
+      if (field) {
+        flush();
+        blocks.push({ field, text: labelled[2] });
+        continue;
+      }
+    }
+    if (current) current.lines.push(line);
+  }
+  flush();
+  return blocks;
+}
 
-    const haystack = `${article.title}\n${article.content || ''}`;
+function mentionsAlias(text, aliases) {
+  const lower = clean(text).toLowerCase();
+  return aliases.some((alias) => lower.includes(alias.toLowerCase()));
+}
+
+function splitExplicitItems(text) {
+  return String(text || '')
+    .split(/\n|(?<=[.!?;])\s+/)
+    .map((item) => clean(item).replace(/^[•◦*-]\s*/, ''))
+    .filter((item) => item.length >= 4);
+}
+
+function normalizedEvidenceKey(value) {
+  return clean(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function uniqueStrings(values, limit = Infinity) {
+  const byKey = new Map();
+  for (const value of values.flatMap((item) => splitExplicitItems(item))) {
+    const key = normalizedEvidenceKey(value);
+    if (!key || byKey.has(key)) continue;
+    byKey.set(key, value);
+  }
+  return [...byKey.values()]
+    .sort((a, b) => a.localeCompare(b))
+    .slice(0, limit);
+}
+
+function bestText(values, maxLength = 900) {
+  return uniqueStrings(values)
+    .sort((a, b) => b.length - a.length || a.localeCompare(b))[0]
+    ?.slice(0, maxLength) || '';
+}
+
+export function isVerifiedOfficialUrl(value) {
+  try {
+    const url = new URL(clean(value));
+    const host = url.hostname.toLowerCase().replace(/\.$/, '');
+    return ['gov.in', 'nic.in'].some((domain) => host === domain || host.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
+
+function approvedUrls(text) {
+  const urls = String(text || '').match(/https?:\/\/[^\s<>()"']+/gi) || [];
+  return urls
+    .map((url) => url.replace(/[.,;:!?\])}]+$/, ''))
+    .filter(isVerifiedOfficialUrl);
+}
+
+const SENTENCE_CUES = {
+  objective: /\b(objectives?|aims?|purpose|seeks?\s+to|intended\s+to)\b/i,
+  beneficiaries: /\b(beneficiar(?:y|ies)|target\s+groups?|intended\s+for|targeted\s+at)\b/i,
+  eligibility: /\b(eligib(?:le|ility)|can\s+apply|qualif(?:y|ies|ication))\b/i,
+  benefits: /\b(benefits?|assistance|incentives?|entitled|provides?)\b/i,
+  funding: /\b(fund(?:ed|ing)|outlay|budget(?:ary)?\s+allocation|cost[- ]sharing)\b/i,
+  implementation: /\b(implement(?:ed|ation|ing)|nodal\s+(?:agency|ministry)|administered|executed)\b/i,
+};
+
+function extractExplicitSchemeFields(article, aliases, allowHeadingContext) {
+  const fields = {
+    objective: [], beneficiaries: [], eligibility: [], benefits: [],
+    funding: [], implementation: [], launchYear: [], officialUrl: [],
+  };
+
+  for (const block of explicitHeadingBlocks(article.content)) {
+    if (!allowHeadingContext && !mentionsAlias(block.text, aliases)) continue;
+    if (block.field === 'launchYear') {
+      fields.launchYear.push(...(block.text.match(/\b(?:19|20)\d{2}\b/g) || []));
+    } else if (block.field === 'officialUrl') {
+      fields.officialUrl.push(...approvedUrls(block.text));
+    } else {
+      fields[block.field].push(block.text);
+    }
+  }
+
+  const sentences = String(article.content || '')
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map(clean)
+    .filter(Boolean);
+  for (const sentence of sentences) {
+    if (!mentionsAlias(sentence, aliases)) continue;
+    for (const [field, cue] of Object.entries(SENTENCE_CUES)) {
+      if (cue.test(sentence)) fields[field].push(sentence);
+    }
+    const launch = sentence.match(
+      /\b(?:launched|introduced|started|rolled\s+out|came\s+into\s+effect|inception)\b[^.!?]{0,80}\b((?:19|20)\d{2})\b/i
+    );
+    if (launch) fields.launchYear.push(launch[1]);
+    fields.officialUrl.push(...approvedUrls(sentence));
+  }
+
+  const titleMentions = mentionsAlias(article.title, aliases);
+  const explicitUrl = clean(article.officialUrl);
+  if ((allowHeadingContext || titleMentions) && isVerifiedOfficialUrl(explicitUrl)) {
+    fields.officialUrl.push(explicitUrl);
+  }
+  if (titleMentions && isVerifiedOfficialUrl(article.sourceUrl)) {
+    fields.officialUrl.push(clean(article.sourceUrl));
+  }
+  return fields;
+}
+
+function schemeSource(article) {
+  const url = clean(article.sourceUrl);
+  return {
+    articleId: clean(article.id),
+    title: clean(article.title),
+    url,
+    publisher: clean(article.newspaper),
+    publishedDate: clean(article.publishedDate),
+    official: isVerifiedOfficialUrl(url),
+  };
+}
+
+function sourceKey(source) {
+  return source.articleId || source.url || [source.title, source.publisher, source.publishedDate].join('|');
+}
+
+function uniqueSources(sources) {
+  const byKey = new Map();
+  for (const source of sources) {
+    const key = sourceKey(source);
+    if (key && !byKey.has(key)) byKey.set(key, source);
+  }
+  return [...byKey.values()].sort((a, b) =>
+    a.publishedDate.localeCompare(b.publishedDate) ||
+    a.articleId.localeCompare(b.articleId) ||
+    a.url.localeCompare(b.url) ||
+    a.title.localeCompare(b.title)
+  );
+}
+
+function chooseVoted(values) {
+  const counts = new Map();
+  for (const value of values.filter(Boolean)) counts.set(value, (counts.get(value) || 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || '';
+}
+
+function validCoverageYear(value) {
+  const match = clean(value).match(/^((?:19|20)\d{2})-\d{2}-\d{2}$/);
+  return match?.[1] || '';
+}
+
+export function generateSchemes(articles) {
+  const groups = new Map();
+
+  for (const article of sortedArticles(articles)) {
+    const detections = new Map();
+    const detect = (rawName, explicit = false) => {
+      const name = tidySchemeName(rawName);
+      if (schemeNameProblem(name)) return;
+      const key = schemeKey(name);
+      const held = detections.get(key) || { names: new Map(), explicit: false };
+      held.names.set(name, (held.names.get(name) || 0) + 1);
+      held.explicit ||= explicit;
+      detections.set(key, held);
+    };
+
+    if (article.governmentScheme) detect(article.governmentScheme, true);
+    const haystack = `${article.title || ''}\n${article.content || ''}`;
     for (const pattern of SCHEME_PATTERNS) {
-      let m;
       pattern.lastIndex = 0;
-      while ((m = pattern.exec(haystack)) !== null) {
-        const candidate = m[1];
-        if (candidate && !STOPWORDS.has(candidate.split(/\s+/)[0])) {
-          add(candidate, article);
-        }
+      let match;
+      while ((match = pattern.exec(haystack)) !== null) detect(match[1], false);
+    }
+
+    const articleSchemeCount = detections.size;
+    for (const [key, detection] of detections) {
+      if (!groups.has(key)) groups.set(key, { names: new Map(), mentions: new Map() });
+      const group = groups.get(key);
+      for (const [name, count] of detection.names) {
+        const vote = group.names.get(name) || { count: 0, explicit: 0 };
+        vote.count += count;
+        if (detection.explicit) vote.explicit++;
+        group.names.set(name, vote);
+      }
+      const mentionKey = articleSortKey(article);
+      if (!group.mentions.has(mentionKey)) {
+        group.mentions.set(mentionKey, { article, articleSchemeCount });
       }
     }
   }
 
-  return [...byName.values()];
+  const output = [];
+  for (const [key, group] of [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const name = [...group.names.entries()].sort((a, b) =>
+      b[1].explicit - a[1].explicit ||
+      b[1].count - a[1].count ||
+      a[0].length - b[0].length ||
+      a[0].localeCompare(b[0])
+    )[0][0];
+    const aliases = [...group.names.keys()].sort();
+    const mentions = [...group.mentions.values()];
+
+    const descriptions = [];
+    const details = [];
+    const features = [];
+    const objectives = [];
+    const beneficiaries = [];
+    const eligibility = [];
+    const benefits = [];
+    const funding = [];
+    const implementation = [];
+    const launchYears = [];
+    const officialUrls = [];
+    const ministries = [];
+    const sectors = [];
+    const coverageYears = [];
+    const sources = [];
+
+    for (const { article, articleSchemeCount } of mentions) {
+      const body = `${article.title || ''}\n${article.summary || ''}\n${article.content || ''}`;
+      const context = `${article.title || ''} ${article.summary || ''}`;
+      sectors.push(guessSector(context));
+      const coverageYear = validCoverageYear(article.publishedDate);
+      if (coverageYear) coverageYears.push(coverageYear);
+      sources.push(schemeSource(article));
+
+      for (const alias of aliases) {
+        const description = findExampleSentence(article.content, alias);
+        if (description) descriptions.push(description);
+        const detail = schemeDetail(article.content, alias);
+        if (detail) details.push(detail);
+        features.push(...schemeFeatures(article.content, alias));
+      }
+      if (!descriptions.length && clean(article.summary)) descriptions.push(clean(article.summary));
+
+      const explicit = extractExplicitSchemeFields(article, aliases, articleSchemeCount === 1);
+      objectives.push(...explicit.objective);
+      beneficiaries.push(...explicit.beneficiaries);
+      eligibility.push(...explicit.eligibility);
+      benefits.push(...explicit.benefits);
+      funding.push(...explicit.funding);
+      implementation.push(...explicit.implementation);
+      launchYears.push(...explicit.launchYear);
+      officialUrls.push(...explicit.officialUrl);
+
+      const schemeSentences = String(body)
+        .split(/(?<=[.!?])\s+|\n+/)
+        .map(clean)
+        .filter((sentence) => mentionsAlias(sentence, aliases));
+      for (const sentence of [...schemeSentences, ...explicit.implementation]) {
+        const ministry = findMinistry(sentence);
+        if (ministry) ministries.push(ministry);
+      }
+    }
+
+    const ministry = chooseVoted(ministries);
+    const sector = chooseVoted(sectors) || 'Governance';
+    const coverageYear = [...coverageYears].sort().at(-1) || '';
+    const launchYear = chooseVoted(launchYears.filter((year) => /^(?:19|20)\d{2}$/.test(year)));
+    const canonicalSources = uniqueSources(sources);
+    const officialUrl = uniqueStrings(officialUrls.filter(isVerifiedOfficialUrl), 1)[0] || '';
+
+    output.push({
+      id: hashId('gs', name),
+      schemaVersion: CONTENT_SCHEMA_VERSION,
+      name,
+      fullForm: acronym(name),
+      description: bestText(descriptions, 260),
+      detailedDescription: bestText(details.length ? details : descriptions, 900),
+      keyFeatures: uniqueStrings(features, 4),
+      objective: bestText(objectives, 700),
+      beneficiaries: uniqueStrings(beneficiaries, 12),
+      eligibility: uniqueStrings(eligibility, 12),
+      benefits: uniqueStrings(benefits, 12),
+      funding: bestText(funding, 700),
+      implementation: bestText(implementation, 700),
+      launchYear,
+      officialUrl,
+      sources: canonicalSources,
+      upscRelevance: schemeRelevance({ sector, ministry, year: coverageYear }),
+      ministry,
+      sector,
+      year: coverageYear,
+      coverageYear,
+      iconName: '',
+      colorHex: '',
+      normalizedName: key,
+    });
+  }
+
+  return output;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -730,10 +860,6 @@ function orderedOptions(correct, distractors, seed) {
   return { options: unique, correctAnswerIndex: unique.indexOf(clean(correct)) };
 }
 
-/**
- * Generate a stable quiz for one publication date. The same articles always
- * produce the same IDs, question order and option order, so re-runs are safe.
- */
 export function generateDailyQuiz(articles, dateStr, { limit = 10 } = {}) {
   const usable = [...articles]
     .filter((article) => clean(article.title))
@@ -764,8 +890,6 @@ export function generateDailyQuiz(articles, dateStr, { limit = 10 } = {}) {
     });
   };
 
-  // Strongest questions: key-term definitions with definitions from other
-  // articles as plausible distractors.
   const terms = usable.flatMap((article) => Object.entries(article.keyTerms || {})
     .map(([term, definition]) => ({ article, term: clean(term), definition: clean(definition) }))
     .filter((item) => item.term.length > 2 && item.definition.length > 20));
@@ -783,8 +907,6 @@ export function generateDailyQuiz(articles, dateStr, { limit = 10 } = {}) {
     );
   }
 
-  // Article comprehension questions: identify the key finding attached to one
-  // headline. Distractors come from other articles published the same day.
   const keyPointItems = usable
     .map((article) => ({ article, point: clean((article.keyPoints || [])[0] || (article.shortNotes || [])[0]) }))
     .filter((item) => item.point.length >= 25 && item.point.length <= 220);
@@ -802,7 +924,6 @@ export function generateDailyQuiz(articles, dateStr, { limit = 10 } = {}) {
     );
   }
 
-  // Category questions guarantee a useful fallback on sparse days.
   const categoryPool = [...new Set(usable.map(primaryCategory))];
   const defaultCategories = ['Polity', 'Economy', 'Environment', 'Science & Technology', 'International Relations', 'Social Issues'];
   for (const article of usable) {
@@ -822,7 +943,6 @@ export function generateDailyQuiz(articles, dateStr, { limit = 10 } = {}) {
   return candidates.slice(0, limit);
 }
 
-/** Convenience: run all library generators. */
 export function generateAll(articles) {
   return {
     vocabulary: generateVocabulary(articles),

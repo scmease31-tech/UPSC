@@ -163,48 +163,140 @@ function isOrdinary(word) {
   return false;
 }
 
-function hashId(word) {
-  return `v_${crypto.createHash('md5').update(word.toLowerCase()).digest('hex').slice(0, 16)}`;
+function clean(value) {
+  return String(value ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim();
 }
 
-async function getJson(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT);
-  try {
-    const res = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
+export function normalizeVocabularyWord(word) {
+  return clean(word).toLocaleLowerCase('en-US');
+}
+
+function hashId(word) {
+  return `v_${crypto.createHash('md5').update(normalizeVocabularyWord(word)).digest('hex').slice(0, 16)}`;
+}
+
+function uniqueWords(values, limit) {
+  const seen = new Set();
+  const out = [];
+  for (const value of values || []) {
+    const word = clean(value);
+    const key = word.toLowerCase();
+    if (!word || seen.has(key)) continue;
+    seen.add(key);
+    out.push(word);
+    if (out.length >= limit) break;
   }
+  return out;
+}
+
+function parseDictionaryEntry(data) {
+  if (!Array.isArray(data) || data.length === 0) return null;
+  for (const entry of data) {
+    for (const meaning of entry?.meanings || []) {
+      for (const definition of meaning?.definitions || []) {
+        const text = clean(definition?.definition);
+        if (text.length < 12) continue;
+        return {
+          partOfSpeech: clean(meaning.partOfSpeech) || 'word',
+          meaning: text,
+          synonyms: uniqueWords([...(meaning.synonyms || []), ...(definition.synonyms || [])], 5),
+          antonyms: uniqueWords([...(meaning.antonyms || []), ...(definition.antonyms || [])], 4),
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function retryDelay(attempt, { baseDelayMs, maxDelayMs, jitterRatio, random }) {
+  const raw = Math.min(maxDelayMs, baseDelayMs * (2 ** Math.max(0, attempt - 1)));
+  const jitter = raw * jitterRatio * ((random() * 2) - 1);
+  return Math.max(0, Math.round(raw + jitter));
+}
+
+/**
+ * Bounded dictionary lookup with observable attempts and transient backoff.
+ * 404/other ordinary client misses are final; 429, 5xx, timeouts and network
+ * failures are retried.
+ */
+export async function lookupDictionaryWord(word, {
+  fetchImpl = globalThis.fetch,
+  timeoutMs = TIMEOUT,
+  retries = 2,
+  baseDelayMs = 350,
+  maxDelayMs = 4_000,
+  jitterRatio = 0.15,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  random = Math.random,
+  onStatus = () => {},
+} = {}) {
+  if (typeof fetchImpl !== 'function') throw new TypeError('fetchImpl must be a function');
+  const maxAttempts = Math.max(1, Math.trunc(retries) + 1);
+  const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
+    try {
+      const response = await fetchImpl(url, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      const httpStatus = Number(response?.status || 0);
+      if (!response?.ok) {
+        const notFound = httpStatus === 404;
+        const retryable = httpStatus === 429 || httpStatus >= 500 || httpStatus === 0;
+        if (!notFound && retryable && attempt < maxAttempts) {
+          const delayMs = retryDelay(attempt, { baseDelayMs, maxDelayMs, jitterRatio, random });
+          onStatus({ word, attempt, maxAttempts, status: 'retry', httpStatus, delayMs });
+          await sleep(delayMs);
+          continue;
+        }
+        const status = notFound || (httpStatus >= 400 && httpStatus < 500 && httpStatus !== 429)
+          ? 'not_found'
+          : 'error';
+        onStatus({ word, attempt, maxAttempts, status, httpStatus });
+        return { status, attempts: attempt, httpStatus, error: status === 'error' ? `HTTP ${httpStatus}` : '' };
+      }
+
+      const entry = parseDictionaryEntry(await response.json());
+      const status = entry ? 'success' : 'not_found';
+      onStatus({ word, attempt, maxAttempts, status, httpStatus });
+      return { status, entry, attempts: attempt, httpStatus };
+    } catch (error) {
+      if (attempt < maxAttempts) {
+        const delayMs = retryDelay(attempt, { baseDelayMs, maxDelayMs, jitterRatio, random });
+        onStatus({ word, attempt, maxAttempts, status: 'retry', error: error?.message || String(error), delayMs });
+        await sleep(delayMs);
+        continue;
+      }
+      onStatus({ word, attempt, maxAttempts, status: 'error', error: error?.message || String(error) });
+      return { status: 'error', attempts: attempt, error: error?.message || String(error) };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return { status: 'error', attempts: maxAttempts, error: 'lookup exhausted' };
 }
 
 /** Sentence containing the word, for the "seen in context" example. */
 function exampleSentence(text, word) {
   if (!text) return '';
-  const re = new RegExp(`[^.!?\\n]*\\b${word}\\w*\\b[^.!?\\n]*[.!?]`, 'i');
-  const hit = text.match(re);
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`[^.!?\\n]*\\b${escaped}\\w*\\b[^.!?\\n]*[.!?]`, 'i');
+  const hit = String(text).match(re);
   if (!hit) return '';
-  const s = hit[0].replace(/\s+/g, ' ').trim();
-  return s.length > 30 && s.length < 300 ? s : '';
+  const sentence = clean(hit[0]);
+  return sentence.length > 30 && sentence.length < 300 ? sentence : '';
 }
 
-/**
- * Rank candidate words across the day's articles.
- *
- * A word qualifies when it is long enough to be worth learning, not in the
- * common list, and almost always lowercase in the corpus — capitalised words
- * are proper nouns (people, schemes, places), which belong in flashcards
- * rather than a vocabulary builder.
- */
-function candidates(articles) {
+/** Deterministic ranked candidates, exported for pure tests and planning. */
+export function rankVocabularyCandidates(articles) {
   const total = new Map();
   const capitalised = new Map();
   const homeArticle = new Map();
 
-  for (const article of articles) {
+  for (const article of articles || []) {
     const text = `${article.content || ''}\n${article.summary || ''}`;
     for (const raw of text.match(/\b[A-Za-z][a-z]{6,17}\b/g) || []) {
       const lower = raw.toLowerCase();
@@ -219,103 +311,144 @@ function candidates(articles) {
 
   const scored = [];
   for (const [word, count] of total) {
-    const capRatio = (capitalised.get(word) || 0) / count;
-    if (capRatio > 0.4) continue; // proper noun
-    // Rare words first, longer words as the tie-break: that is roughly the
-    // order in which a reader would flag something as "look this up".
+    if ((capitalised.get(word) || 0) / count > 0.4) continue;
     scored.push({ word, count, score: word.length - count * 1.5, article: homeArticle.get(word) });
   }
+  scored.sort((a, b) => b.score - a.score || a.word.localeCompare(b.word));
 
-  scored.sort((a, b) => b.score - a.score);
-
-  // Collapse inflections so "operationalised" and "operationalized" — or a word
-  // and its plural — cannot both be published on the same day.
   const bestByStem = new Map();
   for (const item of scored) {
     const key = stemKey(item.word);
     const held = bestByStem.get(key);
-    // Prefer the shorter surface form: it is closer to the dictionary headword.
-    if (!held || item.word.length < held.word.length) bestByStem.set(key, item);
+    if (!held || item.word.length < held.word.length ||
+        (item.word.length === held.word.length && item.word.localeCompare(held.word) < 0)) {
+      bestByStem.set(key, item);
+    }
   }
-
-  return [...bestByStem.values()].sort((a, b) => b.score - a.score);
+  return [...bestByStem.values()].sort(
+    (a, b) => b.score - a.score || a.word.localeCompare(b.word)
+  );
 }
 
-/** Look a word up in the free dictionary API. */
-async function define(word) {
-  const data = await getJson(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-  if (!Array.isArray(data) || data.length === 0) return null;
+function normalizeLookupResult(result) {
+  if (!result) return { status: 'not_found', attempts: 1 };
+  if (result.status) return result;
+  if (result.meaning) return { status: 'success', entry: result, attempts: 1 };
+  return { status: 'not_found', attempts: 1 };
+}
 
-  const entry = data[0];
-  const meaning = entry.meanings?.[0];
-  const def = meaning?.definitions?.[0];
-  if (!def?.definition || def.definition.length < 12) return null;
+function categoryFor(article) {
+  const tag = (article.categoryTags || []).find(
+    (value) => clean(value) && clean(value).toLowerCase() !== 'general'
+  );
+  return clean(tag || article.category || 'Current Affairs');
+}
 
-  const synonyms = [
-    ...(meaning.synonyms || []),
-    ...(def.synonyms || []),
-  ].filter(Boolean).slice(0, 5);
-
-  const antonyms = [
-    ...(meaning.antonyms || []),
-    ...(def.antonyms || []),
-  ].filter(Boolean).slice(0, 4);
-
+function documentFor(item, entry) {
+  const article = item.article || {};
+  const category = categoryFor(article);
+  const normalizedWord = normalizeVocabularyWord(item.word);
+  const word = item.word.charAt(0).toUpperCase() + item.word.slice(1);
+  const publishedDate = clean(article.publishedDate);
+  const newspaper = clean(article.newspaper);
   return {
-    partOfSpeech: meaning.partOfSpeech || 'word',
-    meaning: def.definition.trim(),
-    synonyms,
-    antonyms,
+    id: hashId(normalizedWord),
+    schemaVersion: 2,
+    word,
+    normalizedWord,
+    partOfSpeech: clean(entry.partOfSpeech) || 'word',
+    meaning: clean(entry.meaning),
+    example: exampleSentence(article.content || '', item.word),
+    synonyms: uniqueWords(entry.synonyms, 5),
+    antonyms: uniqueWords(entry.antonyms, 4),
+    category,
+    articleRef: clean(article.id),
+    sourceUrl: clean(article.sourceUrl),
+    upscPaper: clean(article.upscPaper),
+    publishedDate,
+    newspaper,
+    upscUsage: `Seen in ${newspaper || "today's"} coverage of ${category}${
+      publishedDate ? ` on ${publishedDate}` : ''
+    }.`,
   };
 }
 
 /**
- * Build vocabulary docs from the day's articles.
- *
- * @param {Array} articles  Scraped article objects.
- * @param {object} [opts]
- * @param {number} [opts.limit=12]   Words to publish for the day.
- * @param {number} [opts.pool=40]    Candidates to look up before giving up.
- * @returns {Promise<Array>} Firestore-ready `vocabulary` docs.
+ * Detailed extractor used by daily and historical orchestration. Effects are
+ * injectable, existing normalized words are excluded before any lookup, and
+ * candidate-order batches make the chosen limit independent of response timing.
  */
-export async function extractDailyVocabulary(articles, { limit = 12, pool = 40, log = console.log } = {}) {
-  const ranked = candidates(articles).slice(0, pool);
-  if (ranked.length === 0) return [];
-
-  const out = [];
-  let cursor = 0;
-
-  const runners = Array.from({ length: 4 }, async () => {
-    while (cursor < ranked.length && out.length < limit) {
-      const item = ranked[cursor++];
-      const entry = await define(item.word);
-      if (!entry) continue; // not a real dictionary word — drop it silently
-      if (out.length >= limit) break;
-
-      const article = item.article || {};
-      const category = (article.categoryTags || []).find((t) => t && t !== 'General') || 'Current Affairs';
-      const word = item.word.charAt(0).toUpperCase() + item.word.slice(1);
-
-      out.push({
-        id: hashId(item.word),
-        word,
-        partOfSpeech: entry.partOfSpeech,
-        meaning: entry.meaning,
-        example: exampleSentence(article.content || '', item.word),
-        synonyms: entry.synonyms,
-        antonyms: entry.antonyms,
-        category,
-        publishedDate: article.publishedDate || '',
-        newspaper: article.newspaper || '',
-        upscUsage: `Seen in ${article.newspaper || 'today\'s'} coverage of ${category}${
-          article.publishedDate ? ` on ${article.publishedDate}` : ''
-        }.`,
-      });
-    }
+export async function extractDailyVocabularyDetailed(articles, {
+  limit = 12,
+  pool = 40,
+  concurrency = 4,
+  excludeWords = new Set(),
+  lookup = lookupDictionaryWord,
+  lookupOptions = {},
+  log = console.log,
+  onStats = () => {},
+  onLookupStatus,
+} = {}) {
+  const ranked = rankVocabularyCandidates(articles).slice(0, Math.max(0, pool));
+  const excluded = new Set([...excludeWords].map(normalizeVocabularyWord));
+  const pending = ranked.filter((item) => !excluded.has(normalizeVocabularyWord(item.word)));
+  const stats = {
+    candidateCount: ranked.length,
+    excludedCount: ranked.length - pending.length,
+    lookupCount: 0,
+    attemptCount: 0,
+    successCount: 0,
+    missCount: 0,
+    errorCount: 0,
+  };
+  const docs = [];
+  const width = Math.max(1, Math.trunc(concurrency) || 1);
+  const statusLogger = onLookupStatus || ((status) => {
+    const detail = status.httpStatus ? ` http=${status.httpStatus}` : '';
+    const wait = status.delayMs !== undefined ? ` backoffMs=${status.delayMs}` : '';
+    log(`[VocabLookup] word=${status.word} attempt=${status.attempt}/${status.maxAttempts} status=${status.status}${detail}${wait}`);
   });
 
-  await Promise.all(runners);
+  for (let offset = 0; offset < pending.length && docs.length < limit; offset += width) {
+    const batch = pending.slice(offset, offset + width);
+    const results = await Promise.all(batch.map(async (item) => {
+      stats.lookupCount++;
+      try {
+        return normalizeLookupResult(await lookup(item.word, {
+          ...lookupOptions,
+          onStatus: statusLogger,
+        }));
+      } catch (error) {
+        statusLogger({ word: item.word, attempt: 1, maxAttempts: 1, status: 'error', error: error?.message || String(error) });
+        return { status: 'error', attempts: 1, error: error?.message || String(error) };
+      }
+    }));
 
-  log(`[Vocab] ${out.length} word(s) from ${ranked.length} candidate(s)`);
-  return out.sort((a, b) => a.word.localeCompare(b.word));
+    for (let index = 0; index < batch.length; index++) {
+      const result = results[index];
+      stats.attemptCount += Number(result.attempts || 1);
+      if (result.status === 'success' && result.entry) {
+        stats.successCount++;
+        if (docs.length < limit) docs.push(documentFor(batch[index], result.entry));
+      } else if (result.status === 'error') {
+        stats.errorCount++;
+      } else {
+        stats.missCount++;
+      }
+    }
+  }
+
+  log(
+    `[Vocab] candidates=${stats.candidateCount} excluded=${stats.excludedCount} ` +
+    `lookups=${stats.lookupCount} attempts=${stats.attemptCount} ` +
+    `success=${stats.successCount} misses=${stats.missCount} errors=${stats.errorCount}`
+  );
+  onStats({ ...stats });
+  return { docs: docs.sort((a, b) => a.normalizedWord.localeCompare(b.normalizedWord)), stats };
+}
+
+/** Backward-compatible array-only daily API. */
+export async function extractDailyVocabulary(articles, options = {}) {
+  const { docs } = await extractDailyVocabularyDetailed(articles, options);
+  return docs;
 }
