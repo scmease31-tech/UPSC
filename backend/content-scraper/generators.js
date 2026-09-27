@@ -73,7 +73,28 @@ const CATEGORY_ALIASES = new Map([
 
 export function normalizeCategory(value) {
   const category = clean(value || 'General');
-  return CATEGORY_ALIASES.get(category.toLocaleLowerCase('en-US')) || category;
+  const alias = CATEGORY_ALIASES.get(category.toLocaleLowerCase('en-US'));
+  if (alias) return alias;
+
+  const key = category.toLocaleLowerCase('en-US');
+  const families = [
+    ['Polity', /constitution|parliament|judiciar|election|fundamental right|polit(y|ical)/],
+    ['Governance', /governance|public administration|government polic|transparency|accountability|welfare scheme/],
+    ['Agriculture', /agricultur|farmer|crop|irrigation|food security/],
+    ['Economy', /econom|financ|bank|monetary|fiscal|tax|trade|industry|infrastructure|employment/],
+    ['Environment', /environment|ecolog|climate|biodiversity|conservation|pollution|forest/],
+    ['Science & Technology', /science|technology|space|biotech|artificial intelligence|digital|cyber tech/],
+    ['International Relations', /international|foreign|diplomac|bilateral|multilateral|global relation|world order/],
+    ['History', /history|culture|heritage|ancient|medieval|modern india|art and architecture/],
+    ['Geography', /geograph|disaster|earthquake|cyclone|river|monsoon|ocean/],
+    ['Ethics', /ethic|integrity|aptitude|moral|probity/],
+    ['Internal Security', /internal security|defen[cs]e|terror|insurgen|border|cybersecurity|money laundering/],
+    ['Social Issues', /social|society|women|child|health|education|poverty|vulnerable|tribal|caste/],
+  ];
+  for (const [family, pattern] of families) {
+    if (pattern.test(key)) return family;
+  }
+  return key === 'general' ? 'General' : 'Current Affairs';
 }
 
 /** Map an article's primary tag to one normalized UPSC category. */

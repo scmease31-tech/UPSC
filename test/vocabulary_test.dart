@@ -251,7 +251,7 @@ void vocabularyEntryTests() {
       expect(latest.first.publishedDateLabel, '9 Jun 2022');
     });
 
-    test('category counts are normalized and remain dynamic', () {
+    test('category counts collapse raw tags into UPSC subject families', () {
       final entries = VocabularyEntry.combine(
         <Map<String, dynamic>>[
           remoteWord(1, category: 'SCIENCE_and_TECHNOLOGY'),
@@ -263,7 +263,7 @@ void vocabularyEntryTests() {
       final counts = VocabularyEntry.categoryCounts(entries);
 
       expect(counts['Science & Technology'], 2);
-      expect(counts['Public Health'], 1);
+      expect(counts['Social'], 1);
     });
 
     test('only valid host-based HTTPS source URLs are actionable', () {
@@ -458,7 +458,7 @@ void vocabularyScreenTests() {
       );
 
       expect(find.text('Aardvark Legacy'), findsOneWidget);
-      expect(find.text('99'), findsOneWidget);
+      expect(find.text('General'), findsWidgets);
       expect(find.text('Opposite'), findsOneWidget);
       expect(find.text('Open source'), findsNothing);
       expect(find.text('51 words loaded'), findsOneWidget);

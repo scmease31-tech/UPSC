@@ -380,12 +380,48 @@ class VocabularyEntry {
     };
     final alias = aliases[lower];
     if (alias != null) return alias;
-    return spaced
-        .split(' ')
-        .map((part) => part.isEmpty
-            ? part
-            : '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}')
-        .join(' ');
+
+    bool containsAny(List<String> terms) =>
+        terms.any((term) => lower.contains(term));
+    if (containsAny(const [
+      'constitution',
+      'parliament',
+      'judiciar',
+      'election',
+      'polity',
+    ])) return 'Governance';
+    if (containsAny(const ['econom', 'financ', 'bank', 'fiscal', 'monetary'])) {
+      return 'Economy';
+    }
+    if (containsAny(const ['international', 'foreign', 'diplomac'])) {
+      return 'Diplomacy';
+    }
+    if (containsAny(const [
+      'environment',
+      'ecolog',
+      'climate',
+      'biodiversity',
+      'forest',
+    ])) return 'Environment';
+    if (containsAny(const ['ethic', 'integrity', 'moral', 'probity'])) {
+      return 'Ethics';
+    }
+    if (containsAny(const ['law', 'legal', 'court', 'judicial']))
+      return 'Legal';
+    if (containsAny(const [
+      'social',
+      'society',
+      'women',
+      'child',
+      'health',
+      'education',
+      'poverty',
+    ])) return 'Social';
+    if (containsAny(
+        const ['science', 'technology', 'space', 'biotech', 'digital'])) {
+      return 'Science & Technology';
+    }
+    return 'General';
   }
 
   /// Combines the curated pack with every usable library record by normalized

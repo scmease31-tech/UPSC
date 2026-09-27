@@ -403,20 +403,119 @@ class StudyCategory {
       'misc': 'General',
       'miscellaneous': 'General',
     };
-    return aliases[key] ?? _titleCase(original);
+    final alias = aliases[key];
+    if (alias != null) return alias;
+
+    bool containsAny(List<String> terms) =>
+        terms.any((term) => key.contains(term));
+    if (containsAny(const [
+      'constitution',
+      'parliament',
+      'judiciar',
+      'election',
+      'fundamental right',
+      'political',
+    ])) return 'Polity';
+    if (containsAny(const [
+      'governance',
+      'public administration',
+      'government policy',
+      'transparency',
+      'accountability',
+    ])) return 'Governance';
+    if (containsAny(const [
+      'agricultur',
+      'farmer',
+      'crop',
+      'irrigation',
+      'food security',
+    ])) return 'Agriculture';
+    if (containsAny(const [
+      'econom',
+      'financ',
+      'bank',
+      'monetary',
+      'fiscal',
+      'tax',
+      'trade',
+      'industry',
+      'infrastructure',
+      'employment',
+    ])) return 'Economy';
+    if (containsAny(const [
+      'environment',
+      'ecolog',
+      'climate',
+      'biodiversity',
+      'conservation',
+      'pollution',
+      'forest',
+    ])) return 'Environment';
+    if (containsAny(const [
+      'science',
+      'technology',
+      'space',
+      'biotech',
+      'artificial intelligence',
+      'digital',
+    ])) return 'Science & Technology';
+    if (containsAny(const [
+      'international',
+      'foreign',
+      'diplomac',
+      'bilateral',
+      'multilateral',
+      'global relation',
+      'world order',
+    ])) return 'International Relations';
+    if (containsAny(const [
+      'history',
+      'culture',
+      'heritage',
+      'ancient',
+      'medieval',
+      'modern india',
+      'art and architecture',
+    ])) return 'History';
+    if (containsAny(const [
+      'geograph',
+      'disaster',
+      'earthquake',
+      'cyclone',
+      'river',
+      'monsoon',
+      'ocean',
+    ])) return 'Geography';
+    if (containsAny(
+        const ['ethic', 'integrity', 'aptitude', 'moral', 'probity'])) {
+      return 'Ethics';
+    }
+    if (containsAny(const [
+      'internal security',
+      'defence',
+      'defense',
+      'terror',
+      'insurgen',
+      'border',
+      'cybersecurity',
+      'money laundering',
+    ])) return 'Internal Security';
+    if (containsAny(const [
+      'social',
+      'society',
+      'women',
+      'child',
+      'health',
+      'education',
+      'poverty',
+      'vulnerable',
+      'tribal',
+      'caste',
+    ])) return 'Social Issues';
+    return 'Current Affairs';
   }
 
   static String key(Object? value) => StudyText.searchKey(normalize(value));
-
-  static String _titleCase(String value) {
-    return StudyText.clean(value)
-        .split(' ')
-        .where((word) => word.isNotEmpty)
-        .map((word) => word.length == 1
-            ? word.toUpperCase()
-            : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
-        .join(' ');
-  }
 }
 
 /// Pure deterministic selection, filtering, counting, and de-duplication.
