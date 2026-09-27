@@ -3,27 +3,40 @@ import 'package:flutter/services.dart';
 import '../../config/app_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../config/theme.dart';
-import '../../config/app_images.dart';
 import '../../providers/daily_progress_provider.dart';
 import '../../services/daily_content_manager.dart';
 import '../../services/upsc_content_service.dart';
 import '../../widgets/glass_widgets.dart';
 
-/// ──────────────────────────────────────────────────────────────────────────────
-/// UpscMustKnowScreen — Comprehensive UPSC knowledge base with 10 categories,
-/// 250+ facts, search, category filters, and internet content fetching.
-/// ──────────────────────────────────────────────────────────────────────────────
+typedef DailyFactLibraryLoader = Future<StudyContentResult<DailyFactBundle>>
+    Function({bool forceRefresh});
+typedef SupplementalFactLoader = Future<List<Map<String, dynamic>>> Function();
+typedef StudyCacheClearer = Future<void> Function();
+
+/// Daily article bundles and a searchable, provenance-labelled full library.
 class UpscMustKnowScreen extends StatefulWidget {
-  const UpscMustKnowScreen({super.key});
+  const UpscMustKnowScreen({
+    super.key,
+    this.loadLibrary,
+    this.loadSupplemental,
+    this.clearDailyFactCache,
+    this.clearSupplementalCache,
+    this.now,
+  });
+
+  final DailyFactLibraryLoader? loadLibrary;
+  final SupplementalFactLoader? loadSupplemental;
+  final StudyCacheClearer? clearDailyFactCache;
+  final StudyCacheClearer? clearSupplementalCache;
+  final DateTime Function()? now;
 
   @override
   State<UpscMustKnowScreen> createState() => _UpscMustKnowScreenState();
 }
 
 class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
-  final ScrollController _scrollController = ScrollController();
   static const _ib = 'assets/flaticon_pngs/';
 
   // ── Massive local data: 10 categories, 25+ facts each ──
@@ -136,7 +149,8 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
       'Digital Health (ABDM): Health ID for every citizen. Digitized health records. DigiDoctor, Health Facility Registry. Interoperable',
       'Lithium Discovery: 5.9 million tonnes in Reasi, J&K. Critical for EV batteries. Reduces import dependence on China & Australia',
     ]),
-    _Section('${_ib}international.png', 'International Relations', 'international', [
+    _Section(
+        '${_ib}international.png', 'International Relations', 'international', [
       'QUAD: India, US, Japan, Australia — Free & Open Indo-Pacific. Not a military alliance. Vaccine initiative, cyber, climate, maritime',
       'BRICS: Now BRICS+ with 6 new members (Egypt, Ethiopia, Iran, Saudi, UAE). NDB — HQ: Shanghai. Counterweight to Western institutions',
       'G20: India presidency 2023 — "One Earth, One Family, One Future". New Delhi Declaration. AU as permanent member. DPI as global model',
@@ -275,325 +289,491 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
     ]),
   ];
 
-  List<_Section> _sections = [];
-  List<_Section> _allSections = [];
-  bool _isLoading = true;
-  bool _isLoadingWeb = false;
+  late final List<DailyFactBundle> _foundationBundles;
+  final ScrollController _bundleScrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+
+  StudyContentResult<DailyFactBundle>? _result;
+  List<DailyFactBundle> _liveBundles = const [];
+  List<DailyFactBundle> _supplementalBundles = const [];
+  List<DailyFactBundle> _modeBundles = const [];
+  List<DailyFactBundle> _visibleBundles = const [];
+  StudyLibraryMode _mode = StudyLibraryMode.daily;
+  String? _selectedCategory;
   String _searchQuery = '';
-  String _selectedCategory = 'All';
-  final _searchController = TextEditingController();
+  Object? _supplementalError;
+  int _loadGeneration = 0;
+  bool _isLoading = true;
+  bool _isLoadingSupplemental = false;
+  bool _isRefreshing = false;
 
-  static const _iconMap = {
-    'Polity': '${_ib}polity.png',
-    'Economy': '${_ib}economy.png',
-    'Environment': '${_ib}environment.png',
-    'Science & Technology': '${_ib}science.png',
-    'International Relations': '${_ib}international.png',
-    'History': '${_ib}history.png',
-    'Geography': '${_ib}environment.png',
-    'Governance': '${_ib}polity.png',
-    'Ethics': '${_ib}polity.png',
-    'Security': '${_ib}polity.png',
-    'Current Affairs': '${_ib}science.png',
-  };
-
-  static const _categoryMap = {
-    'Polity': 'polity',
-    'Economy': 'economy',
-    'Environment': 'environment',
-    'Science & Technology': 'science',
-    'International Relations': 'international',
-    'History': 'history',
-    'Geography': 'geography',
-    'Governance': 'governance',
-    'Ethics': 'ethics',
-    'Security': 'security',
-    'Current Affairs': 'current',
-  };
-
-  static const _categoryTabs = [
-    'All', 'Polity', 'Economy', 'Environment', 'Science',
-    'IR', 'History', 'Geography', 'Ethics', 'Security', 'Governance',
-  ];
+  DateTime get _now => widget.now?.call() ?? DateTime.now();
 
   @override
   void initState() {
     super.initState();
+    _foundationBundles = _localSections
+        .map(
+          (section) => DailyFactBundle.foundation(
+            id: 'foundation-${StudyText.stableHash(section.title)}',
+            category: section.category,
+            title: section.title,
+            facts: section.facts,
+          ),
+        )
+        .toList(growable: false);
     _loadAllContent();
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _loadGeneration++;
+    _bundleScrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAllContent() async {
-    setState(() => _isLoading = true);
-
-    // Start with rich local data
-    _allSections = List.from(_localSections);
-
-    // Merge Firestore data
-    final firestoreFacts = await DailyContentManager.fetchDailyFacts();
-    if (firestoreFacts.isNotEmpty) {
-      for (final fact in firestoreFacts) {
-        final cat = fact['category'] as String;
-        final title = fact['title'] as String;
-        final facts = (fact['facts'] as List<dynamic>).map((e) => e.toString()).toList();
-        final icon = _iconMap[cat] ?? '${_ib}polity.png';
-        final category = _categoryMap[cat] ?? cat.toLowerCase();
-
-        // Find existing section and merge facts, or add new section
-        final existing = _allSections.indexWhere((s) => s.category == category);
-        if (existing >= 0) {
-          final existingFacts = Set<String>.from(_allSections[existing].facts);
-          final newFacts = facts.where((f) => !existingFacts.contains(f)).toList();
-          if (newFacts.isNotEmpty) {
-            final merged = [..._allSections[existing].facts, ...newFacts];
-            _allSections[existing] = _Section(
-              _allSections[existing].iconPath, _allSections[existing].title,
-              _allSections[existing].category, merged,
-            );
-          }
-        } else {
-          _allSections.add(_Section(icon, title, category, facts));
-        }
+  Future<void> _loadAllContent({bool forceRefresh = false}) async {
+    final generation = ++_loadGeneration;
+    final previousLiveBundles = _liveBundles;
+    setState(() {
+      if (_result == null) {
+        _isLoading = true;
+      } else {
+        _isRefreshing = true;
       }
+      _isLoadingSupplemental = true;
+      _supplementalError = null;
+    });
+
+    if (forceRefresh) {
+      try {
+        await Future.wait([
+          _clearDailyFactCache(),
+          _clearSupplementalCache(),
+        ]);
+      } catch (error) {
+        // A cache backend failure must not strand refresh or hide core data.
+        _supplementalError = error;
+      }
+      if (!mounted || generation != _loadGeneration) return;
     }
 
-    _applyFilters();
-    if (mounted) setState(() => _isLoading = false);
+    final supplementalFuture = _loadSupplementalBundles();
+    StudyContentResult<DailyFactBundle> result;
+    try {
+      result = widget.loadLibrary != null
+          ? await widget.loadLibrary!(forceRefresh: forceRefresh)
+          : await DailyContentManager.loadDailyFactLibrary(
+              forceRefresh: forceRefresh,
+            );
+    } catch (error) {
+      result = StudyContentResult<DailyFactBundle>(
+        items: const [],
+        state: StudyContentLoadState.fallback,
+        source: StudyContentCollectionSource.foundation,
+        loadedAt: _now,
+        error: error,
+      );
+    }
 
-    // Fetch web content in background
-    _fetchWebContent();
-  }
-
-  Future<void> _fetchWebContent() async {
-    if (!mounted) return;
-    setState(() => _isLoadingWeb = true);
+    if (!mounted || generation != _loadGeneration) return;
+    if (forceRefresh &&
+        result.isFallback &&
+        result.hasError &&
+        previousLiveBundles.isNotEmpty) {
+      result = StudyContentResult<DailyFactBundle>(
+        items: previousLiveBundles,
+        state: StudyContentLoadState.stale,
+        source: StudyContentCollectionSource.firestore,
+        loadedAt: _result?.loadedAt ?? _now,
+        error: result.error,
+        truncated: _result?.truncated ?? false,
+        queriedCount: _result?.queriedCount ?? 0,
+        discardedCount: _result?.discardedCount ?? 0,
+      );
+    }
+    _result = result;
+    _liveBundles = result.items;
+    _isLoading = false;
+    _isRefreshing = false;
+    _rebuildView();
 
     try {
-      final webContent = await UpscContentService.fetchCurrentAffairs();
-      if (webContent.isNotEmpty && mounted) {
-        for (final item in webContent) {
-          final cat = item['category'] as String? ?? 'Current Affairs';
-          final title = item['title'] as String? ?? cat;
-          final facts = (item['facts'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-          if (facts.isEmpty) continue;
+      final supplemental = await supplementalFuture;
+      if (!mounted || generation != _loadGeneration) return;
+      _supplementalBundles = supplemental;
+      _isLoadingSupplemental = false;
+      _rebuildView();
+    } catch (error) {
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        _supplementalError = error;
+        _isLoadingSupplemental = false;
+      });
+    }
+  }
 
-          final icon = _iconMap[cat] ?? '${_ib}science.png';
-          final category = _categoryMap[cat] ?? cat.toLowerCase().replaceAll(' ', '');
+  Future<void> _clearDailyFactCache() async {
+    if (widget.clearDailyFactCache != null) {
+      await widget.clearDailyFactCache!();
+    } else {
+      DailyContentManager.clearDailyFactCache();
+    }
+  }
 
-          final existing = _allSections.indexWhere((s) => s.category == category);
-          if (existing >= 0) {
-            final existingFacts = Set<String>.from(_allSections[existing].facts);
-            final newFacts = facts.where((f) => !existingFacts.contains(f)).toList();
-            if (newFacts.isNotEmpty) {
-              final merged = [..._allSections[existing].facts, ...newFacts];
-              _allSections[existing] = _Section(
-                _allSections[existing].iconPath, _allSections[existing].title,
-                _allSections[existing].category, merged,
-              );
-            }
-          } else {
-            _allSections.add(_Section(icon, '$title (Live)', category, facts));
-          }
-        }
-        _applyFilters();
+  Future<void> _clearSupplementalCache() async {
+    if (widget.clearSupplementalCache != null) {
+      await widget.clearSupplementalCache!();
+    } else {
+      await UpscContentService.clearCache();
+    }
+  }
+
+  Future<List<DailyFactBundle>> _loadSupplementalBundles() async {
+    final raw = widget.loadSupplemental != null
+        ? await widget.loadSupplemental!()
+        : await UpscContentService.fetchCurrentAffairs();
+    final bundles = <DailyFactBundle>[];
+    for (final item in raw) {
+      final fromWeb = item['isFromWeb'] == true;
+      final origin =
+          fromWeb ? StudyContentOrigin.external : StudyContentOrigin.foundation;
+      final bundle = DailyFactBundle.tryFromDocument(
+        StudyContentDocument('', Map<String, dynamic>.from(item)),
+        origin: origin,
+      );
+      if (bundle != null) bundles.add(bundle);
+    }
+    return StudyLibrarySelectors.sortFactBundles(bundles);
+  }
+
+  List<DailyFactBundle> _bundlesForMode() {
+    if (_mode == StudyLibraryMode.daily) {
+      final daily = StudyLibrarySelectors.dailyFactBundles(
+        _liveBundles,
+        date: _now,
+      );
+      if (daily.isNotEmpty) {
+        return StudyLibrarySelectors.sortFactBundles(
+          StudyLibrarySelectors.deduplicateFactBundles(daily),
+        );
       }
-    } catch (e) {
-      debugPrint('Web content fetch error: $e');
+      if (_result?.isFallback == true) {
+        return StudyLibrarySelectors.sortFactBundles(_foundationBundles);
+      }
+      return const <DailyFactBundle>[];
     }
 
-    if (mounted) setState(() => _isLoadingWeb = false);
+    // Trusted news bundles win exact normalized-text de-duplication, while
+    // External and Foundation bundles remain separately attributed.
+    final combined = StudyLibrarySelectors.deduplicateFactBundles([
+      ..._liveBundles,
+      ..._supplementalBundles,
+      ..._foundationBundles,
+    ]);
+    return StudyLibrarySelectors.sortFactBundles(combined);
   }
 
-  void _applyFilters() {
-    var filtered = List<_Section>.from(_allSections);
-
-    // Category filter
-    if (_selectedCategory != 'All') {
-      final catKey = _selectedCategory.toLowerCase();
-      filtered = filtered.where((s) {
-        final sc = s.category.toLowerCase();
-        if (catKey == 'ir') return sc == 'international';
-        if (catKey == 'science') return sc == 'science';
-        return sc.contains(catKey);
-      }).toList();
+  void _rebuildView() {
+    final nextModeBundles = _bundlesForMode();
+    final counts = StudyLibrarySelectors.factCategoryCounts(nextModeBundles);
+    if (_selectedCategory != null && !counts.containsKey(_selectedCategory)) {
+      _selectedCategory = null;
     }
-
-    // Search filter
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      filtered = filtered.map((s) {
-        final matchingFacts = s.facts.where((f) => f.toLowerCase().contains(query)).toList();
-        if (matchingFacts.isNotEmpty) {
-          return _Section(s.iconPath, s.title, s.category, matchingFacts);
-        }
-        if (s.title.toLowerCase().contains(query)) return s;
-        return null;
-      }).whereType<_Section>().toList();
-    }
-
-    _sections = filtered;
+    final nextVisible = StudyLibrarySelectors.filterFactBundles(
+      nextModeBundles,
+      category: _selectedCategory,
+      query: _searchQuery,
+    );
+    setState(() {
+      _modeBundles = nextModeBundles;
+      _visibleBundles = nextVisible;
+    });
   }
+
+  void _changeMode(StudyLibraryMode mode) {
+    if (_mode == mode) return;
+    HapticFeedback.selectionClick();
+    _mode = mode;
+    _selectedCategory = null;
+    _rebuildView();
+  }
+
+  void _changeCategory(String? category) {
+    HapticFeedback.selectionClick();
+    _selectedCategory = category;
+    _rebuildView();
+  }
+
+  int _factCount(Iterable<DailyFactBundle> bundles) => bundles.fold<int>(
+        0,
+        (total, bundle) => total + bundle.facts.length,
+      );
 
   @override
   Widget build(BuildContext context) {
     final progress = context.watch<DailyProgressProvider>();
-    final totalFacts = _allSections.fold<int>(0, (sum, s) => sum + s.facts.length);
+    final categoryCounts =
+        StudyLibrarySelectors.factCategoryCounts(_modeBundles);
+    final visibleFactCount = _factCount(_visibleBundles);
+    final modeFactCount = _factCount(_modeBundles);
 
     return GradientScaffold(
       showAppBar: false,
       child: SafeArea(
         child: Column(
           children: [
-            _backBar(context, totalFacts),
+            _buildAppBar(context, visibleFactCount, modeFactCount),
+            _buildModeSelector(context),
             _buildSearchBar(context),
-            _buildCategoryTabs(context),
-            if (_isLoading)
-              Expanded(child: Center(child: Lottie.asset('assets/animations/loading.json', width: 120, height: 120)))
-            else
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    await UpscContentService.clearCache();
-                    await _loadAllContent();
-                  },
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-                    itemCount: _sections.length + (_isLoadingWeb ? 1 : 0),
-                    itemBuilder: (context, i) {
-                      if (_isLoadingWeb && i == _sections.length) {
-                        return Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor)),
-                              const SizedBox(width: 10),
-                              Text('Fetching latest content...', style: AppFonts.inter(fontSize: 12, color: AppTheme.textS(context))),
-                            ],
-                          ),
-                        );
-                      }
-                      return _buildSection(context, _sections[i], progress);
-                    },
-                  ),
-                ),
+            _buildCategoryChips(context, categoryCounts),
+            if (_result?.isFallback == true)
+              _statusBanner(
+                context,
+                icon: Icons.offline_bolt_rounded,
+                text:
+                    'Live daily facts unavailable — showing labelled Foundation content.',
+                color: AppTheme.warningOrange,
               ),
+            if (_result?.isStale == true)
+              _statusBanner(
+                context,
+                icon: Icons.history_rounded,
+                text: 'Refresh failed — showing saved live article bundles.',
+                color: AppTheme.warningOrange,
+              ),
+            if (_result?.truncated == true)
+              _statusBanner(
+                context,
+                icon: Icons.info_outline_rounded,
+                text:
+                    'Live library reached the ${DailyContentManager.maxDailyFactBundles}-bundle safety limit.',
+                color: AppTheme.primaryColor,
+              ),
+            if (_supplementalError != null &&
+                _mode == StudyLibraryMode.fullLibrary)
+              _statusBanner(
+                context,
+                icon: Icons.cloud_off_rounded,
+                text:
+                    'External supplemental content is unavailable; core content is unchanged.',
+                color: AppTheme.warningOrange,
+              ),
+            Expanded(
+              child: _isLoading
+                  ? Center(
+                      child: Lottie.asset(
+                        'assets/animations/loading.json',
+                        width: 120,
+                        height: 120,
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () => _loadAllContent(forceRefresh: true),
+                      child: ListView.builder(
+                        key: ValueKey(
+                          'must-know-${_mode.name}-${_selectedCategory ?? 'all'}-$_searchQuery',
+                        ),
+                        controller: _bundleScrollController,
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                        itemCount: _visibleBundles.isEmpty
+                            ? 1
+                            : _visibleBundles.length +
+                                (_isLoadingSupplemental ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (_visibleBundles.isEmpty) {
+                            return _buildEmptyState(context);
+                          }
+                          if (index == _visibleBundles.length) {
+                            return _supplementalLoadingRow(context);
+                          }
+                          final bundle = _visibleBundles[index];
+                          return _MustKnowBundleTile(
+                            key: ValueKey('must-know-bundle-${bundle.id}'),
+                            bundle: bundle,
+                            iconPath: _iconForCategory(bundle.category),
+                            searchQuery: _searchQuery,
+                            progress: progress,
+                          );
+                        },
+                      ),
+                    ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _backBar(BuildContext context, int totalFacts) {
+  Widget _buildAppBar(
+    BuildContext context,
+    int visibleFactCount,
+    int modeFactCount,
+  ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
+      padding: const EdgeInsets.fromLTRB(8, 8, 10, 0),
       child: Row(
         children: [
-          IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          }),
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.maybePop(context);
+            },
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('UPSC Must Know', style: AppFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-                Text('$totalFacts facts across ${_allSections.length} topics', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
+                Text(
+                  'UPSC Must Know',
+                  style: AppFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textP(context),
+                  ),
+                ),
+                Text(
+                  '$visibleFactCount of $modeFactCount facts • '
+                  '${_visibleBundles.length} article bundles',
+                  key: const ValueKey('must-know-visible-total'),
+                  style: AppFonts.inter(
+                    fontSize: 10,
+                    color: AppTheme.textS(context),
+                  ),
+                ),
               ],
             ),
           ),
-          if (_isLoadingWeb)
-            const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor)),
+          IconButton(
+            key: const ValueKey('refresh-must-know'),
+            tooltip: 'Refresh all sources',
+            onPressed: _isRefreshing
+                ? null
+                : () => _loadAllContent(forceRefresh: true),
+            icon: _isRefreshing
+                ? const SizedBox(
+                    width: 19,
+                    height: 19,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_rounded),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModeSelector(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 2),
+      child: Row(
+        children: StudyLibraryMode.values.map((mode) {
+          final selected = mode == _mode;
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: mode == StudyLibraryMode.daily ? 6 : 0,
+                left: mode == StudyLibraryMode.fullLibrary ? 6 : 0,
+              ),
+              child: ChoiceChip(
+                key: ValueKey('must-know-mode-${mode.name}'),
+                label: SizedBox(
+                  width: double.infinity,
+                  child: Text(mode.label, textAlign: TextAlign.center),
+                ),
+                selected: selected,
+                onSelected: (_) => _changeMode(mode),
+                selectedColor: AppTheme.primaryColor,
+                labelStyle: AppFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : AppTheme.textS(context),
+                ),
+                side: BorderSide.none,
+              ),
+            ),
+          );
+        }).toList(growable: false),
       ),
     );
   }
 
   Widget _buildSearchBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 2),
       child: GlassCard(
         padding: EdgeInsets.zero,
         child: TextField(
+          key: const ValueKey('must-know-search'),
           controller: _searchController,
-          style: AppFonts.inter(fontSize: 14, color: AppTheme.textP(context)),
+          style: AppFonts.inter(fontSize: 13, color: AppTheme.textP(context)),
           decoration: InputDecoration(
-            hintText: 'Search facts... (e.g., "Article 21", "GDP", "ISRO")',
-            hintStyle: AppFonts.inter(fontSize: 13, color: AppTheme.textS(context)),
-            prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textS(context), size: 20),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: Icon(Icons.clear_rounded, color: AppTheme.textS(context), size: 18),
+            hintText: 'Search facts, article, paper or source',
+            hintStyle:
+                AppFonts.inter(fontSize: 12, color: AppTheme.textS(context)),
+            prefixIcon: const Icon(Icons.search_rounded, size: 19),
+            suffixIcon: _searchQuery.isEmpty
+                ? null
+                : IconButton(
                     onPressed: () {
                       _searchController.clear();
-                      setState(() {
-                        _searchQuery = '';
-                        _applyFilters();
-                      });
+                      _searchQuery = '';
+                      _rebuildView();
                     },
-                  )
-                : null,
+                    icon: const Icon(Icons.clear_rounded, size: 18),
+                  ),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            fillColor: Colors.transparent,
-            filled: true,
+            isDense: true,
           ),
           onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-              _applyFilters();
-            });
+            _searchQuery = value;
+            _rebuildView();
           },
         ),
       ),
     );
   }
 
-  Widget _buildCategoryTabs(BuildContext context) {
+  Widget _buildCategoryChips(
+    BuildContext context,
+    Map<String, int> categoryCounts,
+  ) {
+    final entries = <MapEntry<String?, int>>[
+      MapEntry<String?, int>(null, _factCount(_modeBundles)),
+      ...categoryCounts.entries,
+    ];
     return SizedBox(
-      height: 40,
+      height: 43,
       child: ListView.builder(
+        key: const ValueKey('must-know-category-list'),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        itemCount: _categoryTabs.length,
-        itemBuilder: (context, i) {
-          final tab = _categoryTabs[i];
-          final isSelected = _selectedCategory == tab;
+        itemCount: entries.length,
+        itemBuilder: (context, index) {
+          final entry = entries[index];
+          final selected = entry.key == _selectedCategory;
+          final label = entry.key ?? 'All';
           return Padding(
             padding: const EdgeInsets.only(right: 6),
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() {
-                  _selectedCategory = tab;
-                  _applyFilters();
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryColor : AppTheme.primaryColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  tab,
-                  style: AppFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : AppTheme.textS(context),
-                  ),
-                ),
+            child: FilterChip(
+              key: ValueKey('must-know-category-${entry.key ?? 'all'}'),
+              selected: selected,
+              onSelected: (_) => _changeCategory(entry.key),
+              label: Text('$label (${entry.value})'),
+              selectedColor: AppTheme.primaryColor,
+              labelStyle: AppFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : AppTheme.textS(context),
               ),
+              side: BorderSide.none,
             ),
           );
         },
@@ -601,119 +781,393 @@ class _UpscMustKnowScreenState extends State<UpscMustKnowScreen> {
     );
   }
 
-  Widget _buildSection(BuildContext context, _Section section, DailyProgressProvider progress) {
+  Widget _buildEmptyState(BuildContext context) {
+    final noDatedDaily = _mode == StudyLibraryMode.daily &&
+        _liveBundles.isNotEmpty &&
+        _modeBundles.isEmpty;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(vertical: 70, horizontal: 24),
+      child: Column(
+        children: [
+          const Icon(Icons.library_books_outlined,
+              size: 54, color: AppTheme.primaryColor),
+          const SizedBox(height: 12),
+          Text(
+            noDatedDaily
+                ? 'No dated live bundle is available for Daily mode'
+                : 'No fact bundles match these filters',
+            textAlign: TextAlign.center,
+            style: AppFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textP(context),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              if (noDatedDaily) {
+                _changeMode(StudyLibraryMode.fullLibrary);
+              } else {
+                _searchController.clear();
+                _searchQuery = '';
+                _selectedCategory = null;
+                _rebuildView();
+              }
+            },
+            child: Text(noDatedDaily ? 'Open Full Library' : 'Clear filters'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _supplementalLoadingRow(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Checking optional external sources…',
+            style: AppFonts.inter(
+              fontSize: 11,
+              color: AppTheme.textS(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusBanner(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              text,
+              style: AppFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textP(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _iconForCategory(String category) {
+    final categoryKey = StudyCategory.key(category);
+    for (final section in _localSections) {
+      if (StudyCategory.key(section.category) == categoryKey) {
+        return section.iconPath;
+      }
+    }
+    switch (category) {
+      case 'Economy':
+        return '${_ib}economy.png';
+      case 'Environment':
+      case 'Geography':
+        return '${_ib}environment.png';
+      case 'Science & Technology':
+      case 'Current Affairs':
+        return '${_ib}science.png';
+      case 'International Relations':
+        return '${_ib}international.png';
+      case 'History':
+        return '${_ib}history.png';
+      default:
+        return '${_ib}polity.png';
+    }
+  }
+}
+
+class _MustKnowBundleTile extends StatefulWidget {
+  const _MustKnowBundleTile({
+    super.key,
+    required this.bundle,
+    required this.iconPath,
+    required this.searchQuery,
+    required this.progress,
+  });
+
+  final DailyFactBundle bundle;
+  final String iconPath;
+  final String searchQuery;
+  final DailyProgressProvider progress;
+
+  @override
+  State<_MustKnowBundleTile> createState() => _MustKnowBundleTileState();
+}
+
+class _MustKnowBundleTileState extends State<_MustKnowBundleTile> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bundle = widget.bundle;
+    final metadata = <String>[
+      if (bundle.publishedDateLabel.isNotEmpty) bundle.publishedDateLabel,
+      if (bundle.newspaper.isNotEmpty) bundle.newspaper,
+      if (bundle.upscPaper.isNotEmpty) bundle.upscPaper,
+      if (bundle.sourceName.isNotEmpty) bundle.sourceName,
+    ];
+    final source =
+        bundle.sourceUrl.isNotEmpty ? bundle.sourceUrl : bundle.articleRef;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: GlassCard(
           padding: EdgeInsets.zero,
-          child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              leading: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 44, height: 44,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: CachedNetworkImage(
-                          imageUrl: AppImages.categoryImage(section.category),
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(color: AppTheme.primaryColor.withValues(alpha: 0.08)),
-                          errorWidget: (_, __, ___) => Container(color: AppTheme.primaryColor.withValues(alpha: 0.08)),
+          child: Material(
+            color: Colors.transparent,
+            child: Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                key: PageStorageKey(bundle.id),
+                onExpansionChanged: (expanded) {
+                  setState(() => _expanded = expanded);
+                },
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primaryColor.withValues(alpha: 0.62),
+                            AppTheme.accentViolet.withValues(alpha: 0.62),
+                          ],
                         ),
                       ),
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft, end: Alignment.bottomRight,
-                              colors: [
-                                AppTheme.primaryColor.withValues(alpha: 0.5),
-                                AppTheme.accentViolet.withValues(alpha: 0.5),
-                              ],
-                            ),
-                          ),
-                          child: Center(child: Image.asset(section.iconPath, width: 22, height: 22, color: Colors.white)),
+                      child: Center(
+                        child: Image.asset(
+                          widget.iconPath,
+                          width: 22,
+                          height: 22,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                title: Text(
+                  bundle.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textP(context),
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Wrap(
+                    spacing: 5,
+                    runSpacing: 4,
+                    children: [
+                      _badge(context, bundle.category, AppTheme.primaryColor),
+                      _badge(
+                        context,
+                        bundle.origin.label,
+                        _originColor(bundle.origin),
+                      ),
+                      Text(
+                        '${bundle.facts.length} facts',
+                        style: AppFonts.inter(
+                          fontSize: 10,
+                          color: AppTheme.textS(context),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              title: Text(section.title, style: AppFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textP(context))),
-              subtitle: Text('${section.facts.length} key facts', style: AppFonts.inter(fontSize: 11, color: AppTheme.textS(context))),
-              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              children: section.facts.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final fact = entry.value;
-                final saved = progress.isFactSaved(fact);
-
-                // Highlight search matches
-                final hasMatch = _searchQuery.isNotEmpty && fact.toLowerCase().contains(_searchQuery.toLowerCase());
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Container(
-                    padding: hasMatch ? const EdgeInsets.all(8) : EdgeInsets.zero,
-                    decoration: hasMatch
-                        ? BoxDecoration(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.15)),
-                          )
-                        : null,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Container(
-                            width: 20, height: 20,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                children: _expanded
+                    ? [
+                        if (metadata.isNotEmpty)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 5),
                               child: Text(
-                                '${idx + 1}',
-                                style: AppFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.primaryColor),
+                                metadata.join(' • '),
+                                key: ValueKey('bundle-metadata-${bundle.id}'),
+                                style: AppFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textS(context),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            fact,
-                            style: AppFonts.inter(
-                              fontSize: 13,
-                              color: AppTheme.textP(context),
-                              height: 1.55,
+                        if (source.isNotEmpty)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                'Source: $source',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppFonts.inter(
+                                  fontSize: 9,
+                                  color: AppTheme.textS(context),
+                                ),
+                              ),
                             ),
                           ),
+                        Column(
+                          children: [
+                            for (var index = 0;
+                                index < bundle.facts.length;
+                                index++)
+                              _buildFact(
+                                context,
+                                bundle.facts[index],
+                                index,
+                              ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () => progress.toggleSavedFact(fact),
-                          child: Icon(
-                            saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                            color: saved ? AppTheme.warningOrange : AppTheme.textS(context),
-                            size: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+                      ]
+                    : const [],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildFact(BuildContext context, StudyFact fact, int index) {
+    final progress = widget.progress;
+    final stableSaved = progress.isFactSaved(fact.id);
+    final legacySaved = progress.isFactSaved(fact.text);
+    final saved = stableSaved || legacySaved;
+    final query = StudyText.searchKey(widget.searchQuery);
+    final highlighted = query.isNotEmpty && fact.normalizedText.contains(query);
+
+    return Container(
+      key: ValueKey('must-know-fact-${fact.id}'),
+      margin: const EdgeInsets.only(top: 7),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? AppTheme.primaryColor.withValues(alpha: 0.08)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 21,
+            height: 21,
+            margin: const EdgeInsets.only(top: 2),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${index + 1}',
+              style: AppFonts.inter(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.primaryColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              fact.text,
+              style: AppFonts.inter(
+                fontSize: 13,
+                color: AppTheme.textP(context),
+                height: 1.5,
+              ),
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: saved ? 'Remove bookmark' : 'Save fact',
+            onPressed: () {
+              if (stableSaved) {
+                progress.toggleSavedFact(fact.id);
+              } else if (legacySaved) {
+                progress.toggleSavedFact(fact.text);
+              } else {
+                progress.toggleSavedFact(fact.id);
+              }
+            },
+            icon: Icon(
+              saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+              color: saved ? AppTheme.warningOrange : AppTheme.textS(context),
+              size: 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _badge(BuildContext context, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: AppFonts.inter(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Color _originColor(StudyContentOrigin origin) {
+    switch (origin) {
+      case StudyContentOrigin.foundation:
+        return AppTheme.accentViolet;
+      case StudyContentOrigin.newsDerived:
+        return AppTheme.successGreen;
+      case StudyContentOrigin.external:
+        return AppTheme.warningOrange;
+    }
   }
 }
 
