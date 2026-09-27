@@ -1,0 +1,70 @@
+name: Complete Historical Vocabulary Backfill
+
+# One-time, checkpointed continuation after the canonical release-day backfill
+# exhausted the project's read quota. Runs after the next daily quota reset and
+# becomes a one-read no-op once 2026-08-18..2026-09-15 is complete.
+on:
+  schedule:
+    - cron: '30 8 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Read/derive only; do not write words or checkpoint'
+        type: boolean
+        default: true
+      from:
+        description: 'Optional inclusive override start date (YYYY-MM-DD)'
+        type: string
+        required: false
+      to:
+        description: 'Inclusive end date'
+        type: string
+        default: '2026-09-15'
+      max_dates:
+        description: 'Dates in this chunk'
+        type: string
+        default: '30'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: historical-vocabulary-v2
+  cancel-in-progress: false
+
+jobs:
+  continue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: backend/content-scraper/package-lock.json
+      - name: Install locked dependencies
+        working-directory: backend/content-scraper
+        run: npm ci
+      - name: Test canonical pipeline
+        working-directory: backend/content-scraper
+        run: |
+          npm test
+          node --check resume-vocabulary-backfill.js
+      - name: Resume bounded historical vocabulary
+        working-directory: backend/content-scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_FROM: ${{ inputs.from }}
+          INPUT_TO: ${{ inputs.to }}
+          INPUT_MAX_DATES: ${{ inputs.max_dates }}
+        run: |
+          args=(--to "${INPUT_TO:-2026-09-15}" --max-dates "${INPUT_MAX_DATES:-30}")
+          if [ -n "$INPUT_FROM" ]; then args+=(--from "$INPUT_FROM"); fi
+          # Scheduled runs are live. Manual runs default to dry for inspection.
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          node resume-vocabulary-backfill.js "${args[@]}"

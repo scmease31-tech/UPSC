@@ -4,6 +4,10 @@ import crypto from 'node:crypto';
 
 import { runBackfill } from '../backfill.js';
 import {
+  nextCheckpoint,
+  runCheckpointedVocabulary,
+} from '../resume-vocabulary-backfill.js';
+import {
   CONTENT_SCHEMA_VERSION,
   flashcardId,
   generateFlashcards,
@@ -632,4 +636,49 @@ test('indexed vocabulary writer creates and enriches with zero Firestore reads',
   assert.equal(existing.get('resilience').meaning, 'The ability to recover.');
   assert.equal(existing.get('resilience').sourceUrl, 'https://example.com/resilience');
   assert.equal(existing.get('perspicacious').id, 'v-perspicacious');
+});
+
+
+test('vocabulary continuation checkpoint records the exact resume boundary', () => {
+  assert.deepEqual(
+    nextCheckpoint({
+      hasMore: true,
+      nextFrom: '2026-09-01',
+      completedDates: ['2026-08-18'],
+      totals: { docs: 12, uploaded: 11, skipped: 1 },
+    }, '2026-09-15'),
+    {
+      nextFrom: '2026-09-01',
+      to: '2026-09-15',
+      completed: false,
+      completedDates: 1,
+      vocabularyDocs: 12,
+      uploaded: 11,
+      skipped: 1,
+    },
+  );
+});
+
+test('completed vocabulary continuation is a no-op on later schedules', async () => {
+  let backfillCalls = 0;
+  let writes = 0;
+  const result = await runCheckpointedVocabulary({
+    firestore: {
+      collection: () => ({
+        doc: () => ({
+          get: async () => ({
+            exists: true,
+            data: () => ({ completed: true, to: '2026-09-15' }),
+          }),
+          set: async () => { writes++; },
+        }),
+      }),
+    },
+    options: { from: '', to: '2026-09-15', maxDates: 30, dryRun: false },
+    run: async () => { backfillCalls++; },
+    log: () => {},
+  });
+  assert.equal(result.skippedAsComplete, true);
+  assert.equal(backfillCalls, 0);
+  assert.equal(writes, 0);
 });
