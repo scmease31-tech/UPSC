@@ -48,7 +48,11 @@ Widget _host(Widget child) => RepaintBoundary(
 
 void main() {
   setUpAll(loadAppFonts);
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    // Screenshot harnesses intentionally use the plugin's in-memory test store.
+    // ignore: invalid_use_of_visible_for_testing_member
+    SharedPreferences.setMockInitialValues({});
+  });
 
   testWidgets('vocabulary library', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
