@@ -6,7 +6,14 @@ import { classify as classifyUpload } from '../inbox-ingest.js';
 import { parsePyqBlock } from '../scrapers.js';
 import { isBlank, missingFieldPatch, SCHEME_DETAIL_FIELDS } from '../uploader.js';
 import { restructure, isStructured } from '../restructure.js';
-import { generateDailyQuiz, generateFlashcards, generateKeyFacts, generateSchemes, schemeNameProblem } from '../generators.js';
+import {
+  generateDailyQuiz,
+  generateFlashcards,
+  generateKeyFacts,
+  generateSchemes,
+  primaryCategory,
+  schemeNameProblem,
+} from '../generators.js';
 
 const base = 'https://www.upsc.gov.in/sites/default/files/';
 
@@ -764,4 +771,18 @@ test('generateSchemes no longer emits the rejected shapes', () => {
   }
   // The genuine one in that text still comes through.
   assert.ok(names.some((n) => /Jal Jeevan Mission/i.test(n)), `got: ${names.join(' | ')}`);
+});
+
+
+// Roundup generation calls the same exported helper as the content generators.
+// It was previously file-private, so every content-producing scheduled run
+// finished its other writes and then failed twice (weekly + monthly) with
+// `ReferenceError: primaryCategory is not defined`.
+test('roundups can use the exported primary article category', () => {
+  assert.equal(
+    primaryCategory({ categoryTags: ['General', 'Economy', 'Polity'] }),
+    'Economy'
+  );
+  assert.equal(primaryCategory({ categoryTags: [] }), 'General');
+  assert.equal(primaryCategory({}), 'General');
 });

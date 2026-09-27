@@ -1,6 +1,6 @@
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { generateDailyQuiz } from './generators.js';
+import { generateDailyQuiz, primaryCategory } from './generators.js';
 
 let db = null;
 

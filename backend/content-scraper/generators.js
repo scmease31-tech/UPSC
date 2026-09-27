@@ -43,7 +43,7 @@ function findExampleSentence(text, term) {
 }
 
 /** Map an article's primary category tag to a broad UPSC sector label. */
-function primaryCategory(article) {
+export function primaryCategory(article) {
   const tags = article.categoryTags || [];
   const first = tags.find((t) => t && t.toLowerCase() !== 'general');
   return clean(first || tags[0] || 'General');
