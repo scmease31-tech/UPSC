@@ -375,44 +375,76 @@ export async function enrichCollection(
   if (!db) initFirebase();
   const collection = db.collection(collectionName);
   const BATCH_SIZE = 400;
+  let detailLogs = 0;
 
   for (let offset = 0; offset < docs.length; offset += BATCH_SIZE) {
     const chunk = docs.slice(offset, offset + BATCH_SIZE);
-    const batch = db.batch();
-    let writes = 0;
-
+    const valid = [];
     for (const doc of chunk) {
       if (!doc.id) {
         console.error(`  [err] ${collectionName}: doc missing id`);
         stats.errors++;
-        continue;
+      } else {
+        valid.push({ doc, ref: collection.doc(doc.id) });
       }
+    }
+    if (valid.length === 0) continue;
+
+    let snapshots;
+    try {
+      // One RPC per 400 records instead of one serial read per record. The old
+      // loop needed 4,375 round trips before a flashcard backfill could even
+      // start vocabulary and repeatedly ran into workflow timeouts.
+      snapshots = await db.getAll(...valid.map(({ ref }) => ref));
+    } catch (error) {
+      console.error(
+        `[Firebase] Bulk read failed for ${collectionName} ` +
+        `(${offset + 1}-${offset + valid.length}): ${error.message}`
+      );
+      stats.errors += valid.length;
+      continue;
+    }
+
+    const batch = db.batch();
+    let writes = 0;
+    let chunkCreated = 0;
+    let chunkEnriched = 0;
+    let chunkUnchanged = 0;
+
+    for (let index = 0; index < valid.length; index++) {
+      const { doc, ref } = valid[index];
+      const snapshot = snapshots[index];
       const label = String(doc[labelField] || doc.id).slice(0, 60);
-      const docRef = collection.doc(doc.id);
       try {
-        const snapshot = await docRef.get();
         if (!snapshot.exists) {
           const { id, ...data } = doc;
           if (!dryRun) {
-            batch.set(docRef, { ...data, createdAt: FieldValue.serverTimestamp() });
+            batch.set(ref, { ...data, createdAt: FieldValue.serverTimestamp() });
             writes++;
           }
           stats.created++;
-          console.log(`  [add] ${collectionName}: ${label}`);
+          chunkCreated++;
+          if (detailLogs++ < 20) console.log(`  [add] ${collectionName}: ${label}`);
           continue;
         }
 
         const patch = patcher(snapshot.data() || {}, doc, fields);
         if (Object.keys(patch).length === 0) {
           stats.unchanged++;
+          chunkUnchanged++;
           continue;
         }
         if (!dryRun) {
-          batch.update(docRef, { ...patch, enrichedAt: FieldValue.serverTimestamp() });
+          batch.update(ref, { ...patch, enrichedAt: FieldValue.serverTimestamp() });
           writes++;
         }
         stats.enriched++;
-        console.log(`  [fill] ${collectionName}: ${label} → ${Object.keys(patch).join(', ')}`);
+        chunkEnriched++;
+        if (detailLogs++ < 20) {
+          console.log(
+            `  [fill] ${collectionName}: ${label} → ${Object.keys(patch).join(', ')}`
+          );
+        }
       } catch (error) {
         console.error(`  [err] ${collectionName}/${doc.id}: ${error.message}`);
         stats.errors++;
@@ -427,6 +459,14 @@ export async function enrichCollection(
         stats.errors += writes;
       }
     }
+    console.log(
+      `  [batch] ${collectionName} ${offset + 1}-${offset + valid.length}: ` +
+      `created=${chunkCreated} enriched=${chunkEnriched} ` +
+      `unchanged=${chunkUnchanged} errors=${stats.errors}`
+    );
+  }
+  if (detailLogs > 20) {
+    console.log(`  [${collectionName}] ${detailLogs - 20} additional changes summarized by batch`);
   }
   return stats;
 }
