@@ -261,8 +261,8 @@ export async function lookupDictionaryWord(word, {
   fetchImpl = globalThis.fetch,
   timeoutMs = TIMEOUT,
   retries = 2,
-  baseDelayMs = 350,
-  maxDelayMs = 4_000,
+  baseDelayMs = 1_500,
+  maxDelayMs = 10_000,
   jitterRatio = 0.15,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   random = Math.random,
@@ -288,7 +288,16 @@ export async function lookupDictionaryWord(word, {
         const notFound = httpStatus === 404;
         const retryable = httpStatus === 429 || httpStatus >= 500 || httpStatus === 0;
         if (!notFound && retryable && attempt < maxAttempts) {
-          const delayMs = retryDelay(attempt, { baseDelayMs, maxDelayMs, jitterRatio, random });
+          const retryAfter = Number.parseFloat(
+            response?.headers?.get?.('retry-after') || '',
+          );
+          const retryAfterMs = Number.isFinite(retryAfter)
+            ? Math.max(0, Math.round(retryAfter * 1_000))
+            : 0;
+          const delayMs = Math.max(
+            retryAfterMs,
+            retryDelay(attempt, { baseDelayMs, maxDelayMs, jitterRatio, random }),
+          );
           onStatus({ word, attempt, maxAttempts, status: 'retry', httpStatus, delayMs });
           await sleep(delayMs);
           continue;
@@ -422,10 +431,12 @@ function documentFor(item, entry) {
 export async function extractDailyVocabularyDetailed(articles, {
   limit = 12,
   pool = 40,
-  concurrency = 4,
+  concurrency = 1,
   excludeWords = new Set(),
   lookup = lookupDictionaryWord,
   lookupOptions = {},
+  interBatchDelayMs,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   log = console.log,
   onStats = () => {},
   onLookupStatus,
@@ -444,6 +455,13 @@ export async function extractDailyVocabularyDetailed(articles, {
   };
   const docs = [];
   const width = Math.max(1, Math.trunc(concurrency) || 1);
+  // Wikimedia asks clients to avoid request bursts. Production lookups are
+  // spaced at two requests/second; injected tests stay instant unless they opt
+  // into a delay. This throttle is shared by each sequential batch rather than
+  // hidden inside retries, so successful requests are rate-limited too.
+  const batchDelay = interBatchDelayMs === undefined
+    ? (lookup === lookupDictionaryWord ? 500 : 0)
+    : Math.max(0, Number(interBatchDelayMs) || 0);
   const statusLogger = onLookupStatus || ((status) => {
     const detail = status.httpStatus ? ` http=${status.httpStatus}` : '';
     const wait = status.delayMs !== undefined ? ` backoffMs=${status.delayMs}` : '';
@@ -476,6 +494,9 @@ export async function extractDailyVocabularyDetailed(articles, {
       } else {
         stats.missCount++;
       }
+    }
+    if (batchDelay > 0 && offset + width < pending.length && docs.length < limit) {
+      await sleep(batchDelay);
     }
   }
 
