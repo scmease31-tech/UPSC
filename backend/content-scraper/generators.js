@@ -27,8 +27,8 @@ function hashId(prefix, ...parts) {
   return `${prefix}_${h}`;
 }
 
-function clean(str) {
-  return (str || '').replace(/\s+/g, ' ').trim();
+export function clean(str) {
+  return String(str ?? '').replace(/\s+/g, ' ').trim();
 }
 
 /** Find the first sentence in `text` that contains `term` (for usage examples). */

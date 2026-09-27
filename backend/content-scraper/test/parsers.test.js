@@ -4,7 +4,12 @@ import assert from 'node:assert/strict';
 import { classifyPaper, parsePrelimsPaper, parseMainsPaper } from '../upsc-papers.js';
 import { classify as classifyUpload } from '../inbox-ingest.js';
 import { parsePyqBlock } from '../scrapers.js';
-import { isBlank, missingFieldPatch, SCHEME_DETAIL_FIELDS } from '../uploader.js';
+import {
+  buildRoundupDocument,
+  isBlank,
+  missingFieldPatch,
+  SCHEME_DETAIL_FIELDS,
+} from '../uploader.js';
 import { restructure, isStructured } from '../restructure.js';
 import {
   generateDailyQuiz,
@@ -785,4 +790,42 @@ test('roundups can use the exported primary article category', () => {
   );
   assert.equal(primaryCategory({ categoryTags: [] }), 'General');
   assert.equal(primaryCategory({}), 'General');
+});
+
+
+test('the complete roundup transform executes with canonical article data', () => {
+  const articles = [
+    {
+      ...sampleArticle,
+      id: 'roundup-1',
+      title: '  Monetary Policy Review  ',
+      summary: '  The RBI retained its policy rate.  ',
+      categoryTags: ['General', 'Economy'],
+      newspaper: 'The Hindu',
+      publishedDate: '2026-09-26',
+      upscPaper: 'GS-III',
+    },
+    {
+      ...sampleArticle,
+      id: 'roundup-2',
+      title: 'Wetland Conservation',
+      categoryTags: ['Environment'],
+      newspaper: null,
+      publishedDate: '2026-09-25',
+      upscPaper: 'GS-III',
+    },
+  ];
+  const roundup = buildRoundupDocument(
+    articles,
+    { id: 'week_2026-09-21', start: '2026-09-21', end: '2026-09-26' },
+    'weekly'
+  );
+
+  assert.equal(roundup.id, 'week_2026-09-21');
+  assert.equal(roundup.storyCount, 2);
+  assert.deepEqual(roundup.categoryCounts, { Economy: 1, Environment: 1 });
+  assert.equal(roundup.keyStories[0].title, 'Monetary Policy Review');
+  assert.equal(roundup.keyStories[1].newspaper, '');
+  assert.ok(Array.isArray(roundup.reviewQuestions));
+  assert.ok(!('generatedAt' in roundup), 'server timestamp belongs in the writer');
 });
