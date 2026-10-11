@@ -2,13 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <!-- Required for the DIRECT sideload in-app updater to hand the downloaded
-         APK to the Android system package installer. The system installer still
-         shows the mandatory final "Install?" confirmation; this app NEVER
-         performs a silent/unattended install. This permission and the package
-         install below are sideload-only and must be stripped for a Play Store
-         build (Play's Device and Network Abuse policy prohibits them). -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- Sideload permission removed for Play Store build -->
     <application
         android:label="UPSC Daily Edge"
         android:name="${applicationName}"
@@ -55,11 +49,6 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- So the app can resolve/launch the system package installer on
-             Android 11+ (package visibility) for the sideload updater. -->
-        <intent>
-            <action android:name="android.intent.action.INSTALL_PACKAGE"/>
-            <data android:mimeType="application/vnd.android.package-archive"/>
-        </intent>
+        <!-- Sideload intent query removed for Play Store build -->
     </queries>
 </manifest>
